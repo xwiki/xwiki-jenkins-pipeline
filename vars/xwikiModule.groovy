@@ -17,6 +17,14 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
+
+// Example usage:
+//   xwikiModule {
+//     name = 'application-faq'
+//     goals = 'clean deploy' (default is 'clean install')
+//     profiles = 'legacy,integration-tests,jetty,hsqldb,firefox' (default is 'quality,legacy,integration-tests')
+//  }
+
 def call(body) {
     // evaluate the body block, and collect configuration into the object
     def config = [:]
@@ -37,15 +45,20 @@ def call(body) {
         stage('Build') {
             dir (config.name) {
                 checkout scm
-                withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx1024m']) {
-                    try {
-                        sh "mvn clean install jacoco:report -Pquality -U -e -Dmaven.test.failure.ignore"
-                        currentBuild.result = 'SUCCESS'
-                    } catch (Exception err) {
-                        currentBuild.result = 'FAILURE'
-                        notifyByMail(currentBuild.result)
-                        throw e
-                    }
+                // Execute the XVNC plugin (useful for integration-tests)
+                wrap([$class: 'Xvnc']) {
+                    withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx1024m']) {
+                      try {
+                          def goals = config.goals ?: 'clean install'
+                          def profiles = config.profiles ?: 'quality,legacy,integration-tests'
+                          sh "mvn ${goals} jacoco:report -P${profiles} -U -e -Dmaven.test.failure.ignore"
+                          currentBuild.result = 'SUCCESS'
+                      } catch (Exception err) {
+                          currentBuild.result = 'FAILURE'
+                          notifyByMail(currentBuild.result)
+                          throw e
+                      }
+                   }
                 }
             }
         }
