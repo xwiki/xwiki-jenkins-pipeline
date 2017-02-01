@@ -21,7 +21,7 @@
 // Example usage:
 //   xwikiModule {
 //     name = 'application-faq'
-//     goals = 'clean deploy' (default is 'clean install')
+//     goals = 'clean install' (default is 'clean deploy')
 //     profiles = 'legacy,integration-tests,jetty,hsqldb,firefox' (default is 'quality,legacy,integration-tests')
 //  }
 
@@ -49,7 +49,7 @@ def call(body) {
                 wrap([$class: 'Xvnc']) {
                     withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx1024m']) {
                       try {
-                          def goals = config.goals ?: 'clean install'
+                          def goals = config.goals ?: 'clean deploy'
                           def profiles = config.profiles ?: 'quality,legacy,integration-tests'
                           sh "mvn ${goals} jacoco:report -P${profiles} -U -e -Dmaven.test.failure.ignore"
                           currentBuild.result = 'SUCCESS'
