@@ -35,7 +35,7 @@ def call(body) {
             mvnHome = tool 'Maven'
         }
         stage('Build') {
-            dir ($config.name) {
+            dir (${config.name}) {
                 checkout scm
                 withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx1024m']) {
                     try {
