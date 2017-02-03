@@ -20,7 +20,6 @@
 
 // Example usage:
 //   xwikiModule {
-//     name = 'application-faq'
 //     goals = 'clean install' (default is 'clean deploy')
 //     profiles = 'legacy,integration-tests,jetty,hsqldb,firefox' (default is 'quality,legacy,integration-tests')
 //     mavenOpts = '-Xmx2048m' (default is '-Xmx1024m')
@@ -53,26 +52,24 @@ def call(body) {
             echo "Using Java: ${env.JAVA_HOME}"
         }
         stage('Build') {
-            dir (config.name) {
-                checkout scm
-                // Execute the XVNC plugin (useful for integration-tests)
-                wrap([$class: 'Xvnc']) {
-                    def mavenOpts = config.mavenOpts ?: '-Xmx1024m'
-                    echo "Using Maven options: ${mavenOpts}"
-                    withEnv(["PATH+MAVEN=${mvnHome}/bin", "MAVEN_OPTS=${mavenOpts}"]) {
-                      try {
-                          def goals = config.goals ?: 'clean deploy'
-                          echo "Using Maven goals: ${goals}"
-                          def profiles = config.profiles ?: 'quality,legacy,integration-tests'
-                          echo "Using Maven profiles: ${profiles}"
-                          sh "mvn ${goals} jacoco:report -P${profiles} -U -e -Dmaven.test.failure.ignore"
-                          currentBuild.result = 'SUCCESS'
-                      } catch (Exception err) {
-                          currentBuild.result = 'FAILURE'
-                          notifyByMail(currentBuild.result)
-                          throw e
-                      }
-                   }
+            checkout scm
+            // Execute the XVNC plugin (useful for integration-tests)
+            wrap([$class: 'Xvnc']) {
+                def mavenOpts = config.mavenOpts ?: '-Xmx1024m'
+                echo "Using Maven options: ${mavenOpts}"
+                withEnv(["PATH+MAVEN=${mvnHome}/bin", "MAVEN_OPTS=${mavenOpts}"]) {
+                    try {
+                        def goals = config.goals ?: 'clean deploy'
+                        echo "Using Maven goals: ${goals}"
+                        def profiles = config.profiles ?: 'quality,legacy,integration-tests'
+                        echo "Using Maven profiles: ${profiles}"
+                        sh "mvn ${goals} jacoco:report -P${profiles} -U -e -Dmaven.test.failure.ignore"
+                        currentBuild.result = 'SUCCESS'
+                    } catch (Exception err) {
+                        currentBuild.result = 'FAILURE'
+                        notifyByMail(currentBuild.result)
+                        throw e
+                    }
                 }
             }
         }
