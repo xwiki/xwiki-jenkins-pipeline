@@ -45,7 +45,7 @@ def call(body) {
             // NOTE: Needs to be configured in the global configuration.
             def mavenTool = config.mavenTool ?: 'Maven'
             mvnHome = tool mavenTool
-            print "Using Maven: ${mvnHome}"
+            echoXWiki "Using Maven: ${mvnHome}"
         }
         stage('Build') {
             checkout scm
@@ -54,15 +54,15 @@ def call(body) {
             // Execute the XVNC plugin (useful for integration-tests)
             wrap([$class: 'Xvnc']) {
                 def mavenOpts = config.mavenOpts ?: '-Xmx1024m'
-                print "Using Maven options: ${mavenOpts}"
+                echoXWiki "Using Maven options: ${mavenOpts}"
                 withEnv(["PATH+MAVEN=${mvnHome}/bin", "MAVEN_OPTS=${mavenOpts}"]) {
                     try {
                         def goals = config.goals ?: 'clean deploy'
-                        print "Using Maven goals: ${goals}"
+                        echoXWiki "Using Maven goals: ${goals}"
                         def profiles = config.profiles ?: 'quality,legacy,integration-tests'
-                        print "Using Maven profiles: ${profiles}"
+                        echoXWiki "Using Maven profiles: ${profiles}"
                         def timeoutThreshold = config.timeout ?: 240
-                        print "Using timeout: ${timeoutThreshold}"
+                        echoXWiki "Using timeout: ${timeoutThreshold}"
                         // Abort the build if it takes more than the timeout threshold (in minutes).
                         timeout(timeoutThreshold) {
                             sh "mvn ${goals} jacoco:report -P${profiles} -U -e -Dmaven.test.failure.ignore"
@@ -101,7 +101,7 @@ def notifyByMail(String buildStatus) {
     }
 }
 
-def print(string) {
+def echoXWiki(string) {
     echo "\u27A1 ${string}"
 }
 
@@ -114,7 +114,7 @@ def configureJavaTool(config) {
     }
     env.JAVA_HOME="${tool javaTool}"
     env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
-    print "Using Java: ${env.JAVA_HOME}"
+    echoXWiki "Using Java: ${env.JAVA_HOME}"
 }
 
 def getJavaTool() {
