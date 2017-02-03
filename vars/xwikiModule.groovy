@@ -25,6 +25,7 @@
 //     mavenOpts = '-Xmx2048m' (default is '-Xmx1024m')
 //     mavenTool = 'Maven 3' (default is 'Maven')
 //     javaTool = 'java7' (default is 'official')
+//     timeout = 60 (default is 240 minutes)
 //  }
 
 def call(body) {
@@ -60,7 +61,11 @@ def call(body) {
                         echo "Using Maven goals: ${goals}"
                         def profiles = config.profiles ?: 'quality,legacy,integration-tests'
                         echo "Using Maven profiles: ${profiles}"
-                        sh "mvn ${goals} jacoco:report -P${profiles} -U -e -Dmaven.test.failure.ignore"
+                        def timeout = config.timeout ?: 240
+                        // Abort the build if it takes more than the timeout threshold (in minutes).
+                        timeout(timeout) {
+                            sh "mvn ${goals} jacoco:report -P${profiles} -U -e -Dmaven.test.failure.ignore"
+                        }
                         currentBuild.result = 'SUCCESS'
                     } catch (Exception err) {
                         currentBuild.result = 'FAILURE'
