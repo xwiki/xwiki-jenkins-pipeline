@@ -23,7 +23,9 @@
 //     name = 'application-faq'
 //     goals = 'clean install' (default is 'clean deploy')
 //     profiles = 'legacy,integration-tests,jetty,hsqldb,firefox' (default is 'quality,legacy,integration-tests')
-//     memory = '-Xmx2048m' (default is '-Xmx1024m')
+//     mavenOpts = '-Xmx2048m' (default is '-Xmx1024m')
+//     mavenTool = 'Maven 3' (default is 'Maven')
+//     javaTool = 'java7' (default is 'official')
 //  }
 
 def call(body) {
@@ -41,15 +43,20 @@ def call(body) {
         stage('Preparation') {
             // Get the Maven tool.
             // NOTE: Needs to be configured in the global configuration.
-            mvnHome = tool 'Maven'
+            def mavenTool = config.mavenTool ?: 'Maven'
+            mvnHome = tool mavenTool
+            // Configure which Java version to use by Maven
+            def javaTool = config.javaTool ?: 'official'
+            env.JAVA_HOME="${tool javaTool}"
+            env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
         }
         stage('Build') {
             dir (config.name) {
                 checkout scm
                 // Execute the XVNC plugin (useful for integration-tests)
                 wrap([$class: 'Xvnc']) {
-                    def memory = config.memory ?: '-Xmx1024m'
-                    withEnv(["PATH+MAVEN=${mvnHome}/bin", "MAVEN_OPTS=${memory}"]) {
+                    def mavenOpts = config.memory ?: '-Xmx1024m'
+                    withEnv(["PATH+MAVEN=${mvnHome}/bin", "MAVEN_OPTS=${mavenOpts}"]) {
                       try {
                           def goals = config.goals ?: 'clean deploy'
                           def profiles = config.profiles ?: 'quality,legacy,integration-tests'
