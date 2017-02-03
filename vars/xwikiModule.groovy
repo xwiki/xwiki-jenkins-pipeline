@@ -23,6 +23,7 @@
 //     name = 'application-faq'
 //     goals = 'clean install' (default is 'clean deploy')
 //     profiles = 'legacy,integration-tests,jetty,hsqldb,firefox' (default is 'quality,legacy,integration-tests')
+//     memory = '-Xmx2048m' (default is '-Xmx1024m')
 //  }
 
 def call(body) {
@@ -47,7 +48,8 @@ def call(body) {
                 checkout scm
                 // Execute the XVNC plugin (useful for integration-tests)
                 wrap([$class: 'Xvnc']) {
-                    withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx1024m']) {
+                    def memory = config.memory ?: '-Xmx1024m'
+                    withEnv(["PATH+MAVEN=${mvnHome}/bin", "MAVEN_OPTS=${memory}"]) {
                       try {
                           def goals = config.goals ?: 'clean deploy'
                           def profiles = config.profiles ?: 'quality,legacy,integration-tests'
