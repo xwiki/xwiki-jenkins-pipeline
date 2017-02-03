@@ -45,21 +45,26 @@ def call(body) {
             // NOTE: Needs to be configured in the global configuration.
             def mavenTool = config.mavenTool ?: 'Maven'
             mvnHome = tool mavenTool
+            echo "Using Maven: ${mvnHome}"
             // Configure which Java version to use by Maven
             def javaTool = config.javaTool ?: 'official'
             env.JAVA_HOME="${tool javaTool}"
             env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
+            echo "Using Java: ${env.JAVA_HOME}"
         }
         stage('Build') {
             dir (config.name) {
                 checkout scm
                 // Execute the XVNC plugin (useful for integration-tests)
                 wrap([$class: 'Xvnc']) {
-                    def mavenOpts = config.memory ?: '-Xmx1024m'
+                    def mavenOpts = config.mavenOpts ?: '-Xmx1024m'
+                    echo "Using Maven options: ${mavenOpts}"
                     withEnv(["PATH+MAVEN=${mvnHome}/bin", "MAVEN_OPTS=${mavenOpts}"]) {
                       try {
                           def goals = config.goals ?: 'clean deploy'
+                          echo "Using Maven goals: ${goals}"
                           def profiles = config.profiles ?: 'quality,legacy,integration-tests'
+                          echo "Using Maven profiles: ${profiles}"
                           sh "mvn ${goals} jacoco:report -P${profiles} -U -e -Dmaven.test.failure.ignore"
                           currentBuild.result = 'SUCCESS'
                       } catch (Exception err) {
