@@ -45,14 +45,11 @@ def call(body) {
             def mavenTool = config.mavenTool ?: 'Maven'
             mvnHome = tool mavenTool
             echo "Using Maven: ${mvnHome}"
-            // Configure which Java version to use by Maven
-            def javaTool = config.javaTool ?: 'official'
-            env.JAVA_HOME="${tool javaTool}"
-            env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
-            echo "Using Java: ${env.JAVA_HOME}"
         }
         stage('Build') {
             checkout scm
+            // Configure the version of Java to use
+            configureJavaTool(config)
             // Execute the XVNC plugin (useful for integration-tests)
             wrap([$class: 'Xvnc']) {
                 def mavenOpts = config.mavenOpts ?: '-Xmx1024m'
@@ -85,7 +82,6 @@ def call(body) {
 def notifyByMail(String buildStatus) {
     buildStatus =  buildStatus ?: 'SUCCESSFUL'
     def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
-    def summary = "${subject} (${env.BUILD_URL})"
     def details = """<p>STARTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
     <p>Check console output at &QUOT;<a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>&QUOT;</p>"""
 
@@ -97,4 +93,41 @@ def notifyByMail(String buildStatus) {
     if (to != null && !to.isEmpty()) {
         mail to: to, subject: subject, body: details
     }
+}
+
+def configureJavaTool(config) {
+    // Configure which Java version to use by Maven. If not specified try to guess it depending on the
+    // parent pom version.
+    def javaTool = config.javaTool
+    if (!javaTool) {
+        javaTool = getJavaTool()
+    }
+    env.JAVA_HOME="${tool javaTool}"
+    env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
+    echo "Using Java: ${env.JAVA_HOME}"
+}
+
+def getJavaTool() {
+    def pom = readMavenPom file: 'pom.xml'
+    def parent = pom.parent
+    def parentGroupId = parent.groupId
+    def parentArtifactId = parent.artifactId
+    def parentVersion = parent.version
+    if (isKnownParent(parentGroupId, parentArtifactId)) {
+        // If version < 8 then use Java7, otherwise official
+        def major = parentVersion.substring(0, parentVersion.indexOf('.'))
+        if (major.toInteger() < 8) {
+            return "java7"
+        }
+    }
+    return 'official'
+}
+
+def boolean isKnownParent(parentGroupId, parentArtifactId) {
+    return (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-platform') ||
+        (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-commons') || 
+        (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-rendering') || 
+        (parentGroupId == 'org.xwiki.commons' && parentArtifactId == 'xwiki-commons-pom') ||
+        (parentGroupId == 'org.xwiki.rendering' && parentArtifactId == 'xwiki-rendering') ||
+        (parentGroupId == 'org.xwiki.platform' && parentArtifactId == 'xwiki-platform')
 }
