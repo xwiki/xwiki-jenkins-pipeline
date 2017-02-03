@@ -72,7 +72,7 @@ def call(body) {
         }
         stage('Post Build') {
             // Archive the generated artifacts
-            archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+            archiveArtifacts artifacts: '**/target/*.jar,**/target/*.xar', fingerprint: true
             // Save the JUnit test report
             junit testResults: '**/target/surefire-reports/TEST-*.xml'
         }
