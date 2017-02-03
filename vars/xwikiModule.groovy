@@ -62,6 +62,7 @@ def call(body) {
                         def profiles = config.profiles ?: 'quality,legacy,integration-tests'
                         echo "Using Maven profiles: ${profiles}"
                         def timeout = config.timeout ?: 240
+                        echo "Using timeout: ${timeout}"
                         // Abort the build if it takes more than the timeout threshold (in minutes).
                         timeout(timeout) {
                             sh "mvn ${goals} jacoco:report -P${profiles} -U -e -Dmaven.test.failure.ignore"
