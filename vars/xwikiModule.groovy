@@ -137,5 +137,6 @@ def boolean isKnownParent(parentGroupId, parentArtifactId) {
         (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-rendering') || 
         (parentGroupId == 'org.xwiki.commons' && parentArtifactId == 'xwiki-commons-pom') ||
         (parentGroupId == 'org.xwiki.rendering' && parentArtifactId == 'xwiki-rendering') ||
-        (parentGroupId == 'org.xwiki.platform' && parentArtifactId == 'xwiki-platform')
+        (parentGroupId == 'org.xwiki.platform' && parentArtifactId == 'xwiki-platform') ||
+        (parentGroupId == 'org.xwiki.platform' && parentArtifactId == 'xwiki-platform-distribution')
 }
