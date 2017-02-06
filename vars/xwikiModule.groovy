@@ -22,7 +22,8 @@
 //   xwikiModule {
 //     goals = 'clean install' (default is 'clean deploy')
 //     profiles = 'quality' (default is 'quality,legacy,integration-tests,jetty,hsqldb,firefox')
-//     mavenOpts = '-Xmx1024m' (default is '-Xmx1024m')
+//     mavenOpts = '-Xmx1024m'
+//         (default is '-Xmx1536m -Xms256m' for java8 and '-Xmx1536m -Xms256m -XX:MaxPermSize=512m' for java8)
 //     mavenTool = 'Maven 3' (default is 'Maven')
 //     javaTool = 'java7' (default is 'official')
 //     timeout = 60 (default is 240 minutes)
@@ -50,11 +51,9 @@ def call(body) {
         stage('Build') {
             checkout scm
             // Configure the version of Java to use
-            configureJavaTool(config)
+            def mavenOpts = configureJavaTool(config)
             // Execute the XVNC plugin (useful for integration-tests)
             wrap([$class: 'Xvnc']) {
-                def mavenOpts = config.mavenOpts ?: '-Xmx2048m'
-                echoXWiki "Using Maven options: ${mavenOpts}"
                 withEnv(["PATH+MAVEN=${mvnHome}/bin", "MAVEN_OPTS=${mavenOpts}"]) {
                     try {
                         def goals = config.goals ?: 'clean deploy'
@@ -116,6 +115,18 @@ def configureJavaTool(config) {
     env.JAVA_HOME="${tool javaTool}"
     env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
     echoXWiki "Using Java: ${env.JAVA_HOME}"
+
+    // Configure MAVEN_OPTS based on the java version found and whether uses have configured the mavenOpts or not
+    def mavenOpts = config.mavenOpts
+    if (!mavenOpts) {
+        mavenOpts = '-Xmx1536m -Xms256m'
+        if (javaTool == 'java7') {
+            mavenOpts = "${mavenOpts} -XX:MaxPermSize=512m"
+        }
+    }
+    echoXWiki "Using Maven options: ${mavenOpts}"
+
+    return mavenOpts
 }
 
 def getJavaTool() {
