@@ -21,7 +21,7 @@
 // Example usage:
 //   xwikiModule {
 //     goals = 'clean install' (default is 'clean deploy')
-//     profiles = 'legacy,integration-tests,jetty,hsqldb,firefox' (default is 'quality,legacy,integration-tests')
+//     profiles = 'quality' (default is 'quality,legacy,integration-tests,jetty,hsqldb,firefox')
 //     mavenOpts = '-Xmx2048m' (default is '-Xmx1024m')
 //     mavenTool = 'Maven 3' (default is 'Maven')
 //     javaTool = 'java7' (default is 'official')
@@ -59,7 +59,7 @@ def call(body) {
                     try {
                         def goals = config.goals ?: 'clean deploy'
                         echoXWiki "Using Maven goals: ${goals}"
-                        def profiles = config.profiles ?: 'quality,legacy,integration-tests'
+                        def profiles = config.profiles ?: 'quality,legacy,integration-tests,jetty,hsqldb,firefox'
                         echoXWiki "Using Maven profiles: ${profiles}"
                         def timeoutThreshold = config.timeout ?: 240
                         echoXWiki "Using timeout: ${timeoutThreshold}"
