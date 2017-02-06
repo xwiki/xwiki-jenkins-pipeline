@@ -22,7 +22,7 @@
 //   xwikiModule {
 //     goals = 'clean install' (default is 'clean deploy')
 //     profiles = 'quality' (default is 'quality,legacy,integration-tests,jetty,hsqldb,firefox')
-//     mavenOpts = '-Xmx2048m' (default is '-Xmx1024m')
+//     mavenOpts = '-Xmx1024m' (default is '-Xmx1024m')
 //     mavenTool = 'Maven 3' (default is 'Maven')
 //     javaTool = 'java7' (default is 'official')
 //     timeout = 60 (default is 240 minutes)
@@ -53,7 +53,7 @@ def call(body) {
             configureJavaTool(config)
             // Execute the XVNC plugin (useful for integration-tests)
             wrap([$class: 'Xvnc']) {
-                def mavenOpts = config.mavenOpts ?: '-Xmx1024m'
+                def mavenOpts = config.mavenOpts ?: '-Xmx2048m'
                 echoXWiki "Using Maven options: ${mavenOpts}"
                 withEnv(["PATH+MAVEN=${mvnHome}/bin", "MAVEN_OPTS=${mavenOpts}"]) {
                     try {
