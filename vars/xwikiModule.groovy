@@ -79,11 +79,18 @@ def call(body) {
         stage('Post Build') {
             // Save the JUnit test report
             junit testResults: '**/target/surefire-reports/TEST-*.xml', allowEmptyResults: true
+            // TODO: For each failed test, find if there's an image for it taken by the XWiki selenium tests and if so
+            // embed it in the failed test's description. See attachScreenshotToFailingTests() method in
+            // http://ci.xwiki.org/scriptler/editScript?id=postbuild.groovy
+            // We need to convert this script to a Groovy pipeline script
+
         }
     }
 }
 
 def notifyByMail(String buildStatus) {
+    // TODO: Handle false positives as we used to do in http://ci.xwiki.org/scriptler/editScript?id=postbuild.groovy
+    // We need to convert this script to a Groovy pipeline script
     emailext (
         subject: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
         body: """<p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
