@@ -84,19 +84,16 @@ def call(body) {
 }
 
 def notifyByMail(String buildStatus) {
-    buildStatus =  buildStatus ?: 'SUCCESSFUL'
-    def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
-    def details = """<p>STARTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
-    <p>Check console output at &QUOT;<a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>&QUOT;</p>"""
-
-    def to = emailextrecipients([
+    emailext (
+        subject: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+        body: """<p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+        <p>Check console output at &QUOT;<a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>&QUOT;</p>""",
+        recipientProviders: [
             [$class: 'CulpritsRecipientProvider'],
             [$class: 'DevelopersRecipientProvider'],
             [$class: 'RequesterRecipientProvider']
-    ])
-    if (to != null && !to.isEmpty()) {
-        mail to: to, subject: subject, body: details
-    }
+        ]
+    )
 }
 
 def echoXWiki(string) {
