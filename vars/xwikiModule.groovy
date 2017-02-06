@@ -83,7 +83,6 @@ def call(body) {
             // embed it in the failed test's description. See attachScreenshotToFailingTests() method in
             // http://ci.xwiki.org/scriptler/editScript?id=postbuild.groovy
             // We need to convert this script to a Groovy pipeline script
-
         }
     }
 }
@@ -129,7 +128,7 @@ def getJavaTool() {
         // If version < 8 then use Java7, otherwise official
         def major = parentVersion.substring(0, parentVersion.indexOf('.'))
         if (major.toInteger() < 8) {
-            return "java7"
+            return 'java7'
         }
     }
     return 'official'
