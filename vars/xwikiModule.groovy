@@ -47,6 +47,9 @@ def call(body) {
             def mavenTool = config.mavenTool ?: 'Maven'
             mvnHome = tool mavenTool
             echoXWiki "Using Maven: ${mvnHome}"
+            // Set the description
+            currentBuild.description = """Snapshots can be found at 
+                http://nexus.xwiki.org/nexus/content/groups/public-snapshots/"""
         }
         stage('Build') {
             checkout scm
