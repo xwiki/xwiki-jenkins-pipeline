@@ -67,7 +67,7 @@ def call(body) {
                             sh "mvn ${goals} jacoco:report -P${profiles} -U -e -Dmaven.test.failure.ignore"
                         }
                         currentBuild.result = 'SUCCESS'
-                    } catch (Exception err) {
+                    } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         notifyByMail(currentBuild.result)
                         throw e
