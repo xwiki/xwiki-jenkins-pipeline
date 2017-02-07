@@ -71,20 +71,23 @@ def call(body) {
                         notifyByMail(currentBuild.result)
                         throw e
                     }
-                    // Also send a mail notification when the job has failed tests (ie the job is marked unstable)
-                    if (currentBuild.result == 'UNSTABLE') {
-                        notifyByMail(currentBuild.result)
-                    }
                 }
             }
         }
         stage('Post Build') {
             // Save the JUnit test report
             junit testResults: '**/target/surefire-reports/TEST-*.xml', allowEmptyResults: true
+
             // TODO: For each failed test, find if there's an image for it taken by the XWiki selenium tests and if so
             // embed it in the failed test's description. See attachScreenshotToFailingTests() method in
             // http://ci.xwiki.org/scriptler/editScript?id=postbuild.groovy
             // We need to convert this script to a Groovy pipeline script
+
+            // Also send a mail notification when the job has failed tests.
+            // The JUnit archiver above will mark the build as UNSTABLE when there are failed tests
+            if (currentBuild.result == 'UNSTABLE') {
+                notifyByMail(currentBuild.result)
+            }
         }
     }
 }
