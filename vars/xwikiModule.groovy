@@ -64,6 +64,11 @@ def call(body) {
                         echoXWiki "Using timeout: ${timeoutThreshold}"
                         // Abort the build if it takes more than the timeout threshold (in minutes).
                         timeout(timeoutThreshold) {
+                            // Note: We use -Dmaven.test.failure.ignore so that the maven build continues till the
+                            // end and is not stopped by the first failing test. This allows to get more info from the
+                            // build (see all failing tests for all modules built). Also note that the build is marked
+                            // unstable when there are failing tests by the JUnit Archiver executed during the
+                            // 'Post Build' stage below.
                             sh "mvn ${goals} jacoco:report -P${profiles} -U -e -Dmaven.test.failure.ignore"
                         }
                     } catch (Exception e) {
