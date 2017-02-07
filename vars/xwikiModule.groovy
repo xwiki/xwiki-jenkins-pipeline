@@ -66,11 +66,14 @@ def call(body) {
                         timeout(timeoutThreshold) {
                             sh "mvn ${goals} jacoco:report -P${profiles} -U -e -Dmaven.test.failure.ignore"
                         }
-                        currentBuild.result = 'SUCCESS'
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         notifyByMail(currentBuild.result)
                         throw e
+                    }
+                    // Also send a mail notification when the job has failed tests (ie the job is marked unstable)
+                    if (currentBuild.result == 'UNSTABLE') {
+                        notifyByMail(currentBuild.result)
                     }
                 }
             }
@@ -90,8 +93,8 @@ def notifyByMail(String buildStatus) {
     // TODO: Handle false positives as we used to do in http://ci.xwiki.org/scriptler/editScript?id=postbuild.groovy
     // We need to convert this script to a Groovy pipeline script
     emailext (
-        subject: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-        body: """<p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+        subject: "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+        body: """<p>${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
         <p>Check console output at &QUOT;<a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>&QUOT;</p>""",
         recipientProviders: [
             [$class: 'CulpritsRecipientProvider'],
