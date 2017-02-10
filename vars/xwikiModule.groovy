@@ -29,21 +29,19 @@
 //     timeout = 60 (default is 240 minutes)
 //  }
 
-def call(body) {
-    // evaluate the body block, and collect configuration into the object
+def call(body)
+{
+    // Evaluate the body block, and collect configuration into the config object
     def config = [:]
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = config
     body()
 
-    // Now build, based on the configuration provided, using the followong configuration:
-    // - config.name: the name of the module in git, e.g. "syntax-markdown"
-
     node {
         def mvnHome
         stage('Preparation') {
             // Get the Maven tool.
-            // NOTE: Needs to be configured in the global configuration.
+            // NOTE: The Maven tool Needs to be configured in the Jenkins global configuration.
             def mavenTool = config.mavenTool ?: 'Maven'
             mvnHome = tool mavenTool
             echoXWiki "Using Maven: ${mvnHome}"
@@ -97,7 +95,8 @@ def call(body) {
     }
 }
 
-def notifyByMail(String buildStatus) {
+def notifyByMail(String buildStatus)
+{
     // TODO: Handle false positives as we used to do in http://ci.xwiki.org/scriptler/editScript?id=postbuild.groovy
     // We need to convert this script to a Groovy pipeline script
     emailext (
@@ -112,17 +111,25 @@ def notifyByMail(String buildStatus) {
     )
 }
 
-def echoXWiki(string) {
+/**
+ * Echo text with a special character prefix to make it stand out in the pipeline logs.
+ */
+def echoXWiki(string)
+{
     echo "\u27A1 ${string}"
 }
 
-def configureJavaTool(config) {
-    // Configure which Java version to use by Maven. If not specified try to guess it depending on the
-    // parent pom version.
+/**
+ * Configure which Java version to use by Maven and which Java memory options to use when the {@code javaTool} and
+ * {@code mavenOpts} config parameter weren't specified.
+ */
+def configureJavaTool(config)
+{
     def javaTool = config.javaTool
     if (!javaTool) {
         javaTool = getJavaTool()
     }
+    // NOTE: The Java tool Needs to be configured in the Jenkins global configuration.
     env.JAVA_HOME="${tool javaTool}"
     env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
     echoXWiki "Using Java: ${env.JAVA_HOME}"
@@ -140,7 +147,12 @@ def configureJavaTool(config) {
     return mavenOpts
 }
 
-def getJavaTool() {
+/**
+ * Read the parent pom to try to guess the java tool to use based on the parent pom version.
+ * XWiki versions < 8 should use Java 7.
+ */
+def getJavaTool()
+{
     def pom = readMavenPom file: 'pom.xml'
     def parent = pom.parent
     def parentGroupId = parent.groupId
@@ -156,7 +168,12 @@ def getJavaTool() {
     return 'official'
 }
 
-def boolean isKnownParent(parentGroupId, parentArtifactId) {
+/**
+ * Since we're trying to guess the Java version to use based on the parent POM version, we need to ensure that the
+ * parent POM points to an XWiki core module (there are several possible) so that we can compare with the version 8.
+ */
+def boolean isKnownParent(parentGroupId, parentArtifactId)
+{
     return (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-platform') ||
         (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-commons') || 
         (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-rendering') || 
