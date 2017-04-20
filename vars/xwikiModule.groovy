@@ -25,6 +25,7 @@
 //     mavenOpts = '-Xmx1024m'
 //         (default is '-Xmx1536m -Xms256m' for java8 and '-Xmx1536m -Xms256m -XX:MaxPermSize=512m' for java8)
 //     mavenTool = 'Maven 3' (default is 'Maven')
+//     properties = '-Dparam1=value1 -Dparam2value2' (default is empty)
 //     javaTool = 'java7' (default is 'official')
 //     timeout = 60 (default is 240 minutes)
 //  }
@@ -58,6 +59,8 @@ def call(body)
                         echoXWiki "Using Maven goals: ${goals}"
                         def profiles = config.profiles ?: 'quality,legacy,integration-tests,jetty,hsqldb,firefox'
                         echoXWiki "Using Maven profiles: ${profiles}"
+                        def properties = config.properties ?: ''
+                        echoXWiki "Using Maven properties: ${properties}"
                         def timeoutThreshold = config.timeout ?: 240
                         echoXWiki "Using timeout: ${timeoutThreshold}"
                         // Abort the build if it takes more than the timeout threshold (in minutes).
@@ -67,7 +70,8 @@ def call(body)
                             // build (see all failing tests for all modules built). Also note that the build is marked
                             // unstable when there are failing tests by the JUnit Archiver executed during the
                             // 'Post Build' stage below.
-                            sh "mvn ${goals} jacoco:report -P${profiles} -U -e -Dmaven.test.failure.ignore"
+                            def fullProperties = "-Dmaven.test.failure.ignore ${properties}"
+                            sh "mvn ${goals} jacoco:report -P${profiles} -U -e ${fullProperties}"
                         }
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
