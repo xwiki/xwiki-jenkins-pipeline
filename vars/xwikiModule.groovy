@@ -23,7 +23,7 @@
 //     goals = 'clean install' (default is 'clean deploy')
 //     profiles = 'quality' (default is 'quality,legacy,integration-tests,jetty,hsqldb,firefox')
 //     mavenOpts = '-Xmx1024m'
-//         (default is '-Xmx1536m -Xms256m' for java8 and '-Xmx1536m -Xms256m -XX:MaxPermSize=512m' for java8)
+//         (default is '-Xmx1536m -Xms256m' for java8 and '-Xmx1536m -Xms256m -XX:MaxPermSize=512m' for java7)
 //     mavenTool = 'Maven 3' (default is 'Maven')
 //     properties = '-Dparam1=value1 -Dparam2value2' (default is empty)
 //     javaTool = 'java7' (default is 'official')
