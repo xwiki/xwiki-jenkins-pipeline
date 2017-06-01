@@ -91,6 +91,7 @@ def call(body)
 
             // For each failed test, find if there's a screenshot for it taken by the XWiki selenium tests and if so
             // embed it in the failed test's description.
+            attachScreenshotToFailingTests()
 
             // Also send a mail notification when the job has failed tests.
             // The JUnit archiver above will mark the build as UNSTABLE when there are failed tests
