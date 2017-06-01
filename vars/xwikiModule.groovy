@@ -279,11 +279,18 @@ def attachScreenshotToFailingTests() {
         def imageAbsolutePath1 = new FilePath(targetFolderPath, "selenium-screenshots/${testClass}-${testExample}.png")
         // Selenium 2 test screenshots.
         def imageAbsolutePath2 = new FilePath(targetFolderPath, "screenshots/${testSimpleClass}-${testExample}.png")
+        // If screenshotDirectory system property is not defined we save screenshots in the tmp dir so we must also
+        // support this.
+        def imageAbsolutePath3 =
+            new FilePath(createFilePath(System.getProperty("java.io.tmpdir")), "${testExample}.png")
+
         // Determine which one exists, if any.
         echo "Image path 1 (selenium 1) [${imageAbsolutePath1}], Exists: [${imageAbsolutePath1.exists()}]"
         echo "Image path 2 (selenium 2) [${imageAbsolutePath2}], Exists: [${imageAbsolutePath2.exists()}]"
+        echo "Image path 3 (tmp) [${imageAbsolutePath3}], Exists: [${imageAbsolutePath3.exists()}]"
         def imageAbsolutePath = imageAbsolutePath1.exists() ?
-            imageAbsolutePath1 : (imageAbsolutePath2.exists() ? imageAbsolutePath2 : null)
+            imageAbsolutePath1 : (imageAbsolutePath2.exists() ? imageAbsolutePath2 :
+                (imageAbsolutePath3.exists() ? imageAbsolutePath3 : null))
 
         echo "Attaching screenshot to description: [${imageAbsolutePath}]"
 
