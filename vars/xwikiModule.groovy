@@ -195,16 +195,13 @@ boolean isKnownParent(parentGroupId, parentArtifactId)
  * Create a FilePath instance that points either to a file on the master node or a file on a remote agent node.
  */
 def createFilePath(String path) {
-    def filePath
     if (env['NODE_NAME'] == null) {
         error "envvar NODE_NAME is not set, probably not inside an node {} or running an older version of Jenkins!";
     } else if (env['NODE_NAME'].equals("master")) {
-        filePath = new FilePath(new File(path));
+        return filePath = new FilePath(new File(path));
     } else {
-        filePath = new FilePath(Jenkins.getInstance().getComputer(env['NODE_NAME']).getChannel(), path);
+        return filePath = new FilePath(Jenkins.getInstance().getComputer(env['NODE_NAME']).getChannel(), path);
     }
-    echo "Node name [${env['NODE_NAME']}], File path = [${filePath}]"
-    return filePath
 }
 
 /**
@@ -282,7 +279,7 @@ def attachScreenshotToFailingTests() {
         // If screenshotDirectory system property is not defined we save screenshots in the tmp dir so we must also
         // support this.
         def imageAbsolutePath3 =
-            new FilePath(createFilePath(System.getProperty("java.io.tmpdir")), "${testExample}.png")
+            new FilePath(createFilePath(System.getProperty("java.io.tmpdir")), "${testSimpleClass}-${testExample}.png")
 
         // Determine which one exists, if any.
         echo "Image path 1 (selenium 1) [${imageAbsolutePath1}], Exists: [${imageAbsolutePath1.exists()}]"
