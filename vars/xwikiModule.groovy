@@ -94,6 +94,10 @@ def call(body)
             echoXWiki "Attaching screenshots to test result pages (if any)..."
             attachScreenshotToFailingTests()
 
+            // Check for false positives
+            echoXWiki "Checking for false positives in build result..."
+            validateBuild();
+
             // Also send a mail notification when the job has failed tests.
             // The JUnit archiver above will mark the build as UNSTABLE when there are failed tests
             if (currentBuild.result == 'UNSTABLE') {
@@ -212,36 +216,11 @@ def createFilePath(String path) {
  * <ul>
  *   <li>Install the <a href="http://wiki.jenkins-ci.org/display/JENKINS/Groovy+Postbuild+Plugin">Groovy Postbuild
  *       plugin</a>. This exposes the "manager" variable needed by the script.</li>
- *   <li>The following security exceptions must be added to http://<jenkins server ip>/scriptApproval/:
- *       <pre><code>
- *         field hudson.tasks.test.AbstractTestResultAction owner
- *         method hudson.FilePath exists
- *         method hudson.FilePath getParent
- *         method hudson.FilePath read
- *         method hudson.model.Actionable getAction java.lang.Class
- *         method hudson.model.Saveable save
- *         method hudson.tasks.junit.CaseResult getClassName
- *         method hudson.tasks.junit.CaseResult getSimpleName
- *         method hudson.tasks.junit.CaseResult getSuiteResult
- *         method hudson.tasks.junit.SuiteResult getFile
- *         method hudson.tasks.junit.TestObject getName
- *         method hudson.tasks.test.AbstractTestResultAction getFailedTests
- *         method hudson.tasks.test.AbstractTestResultAction getResult
- *         method hudson.tasks.test.AbstractTestResultAction setDescription hudson.tasks.test.TestObject java.lang.String
- *         method hudson.tasks.test.TestResult getParentAction
- *         method org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper getRawBuild
- *         method org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder$BadgeManager getBuild
- *         new hudson.FilePath hudson.FilePath java.lang.String
- *         new hudson.FilePath java.io.File
- *         new java.io.File java.lang.String
- *         staticMethod hudson.util.IOUtils toByteArray java.io.InputStream
- *         staticMethod javax.xml.bind.DatatypeConverter printBase64Binary byte[]
- *       </code></pre>
- *     </li>
- *     <li>Install the <a href="https://wiki.jenkins-ci.org/display/JENKINS/PegDown+Formatter+Plugin">Pegdown Formatter
+ *   <li>Add the required security exceptions to http://<jenkins server ip>/scriptApproval/ if need be.</li>
+ *   <li>Install the <a href="https://wiki.jenkins-ci.org/display/JENKINS/PegDown+Formatter+Plugin">Pegdown Formatter
  *       plugin</a> and set the description syntax to be Pegdown in the Global Security configuration
  *       (http://<jenkins server ip>/configureSecurity).</li>
- *  </ul>
+ * </ul>
  */
 def attachScreenshotToFailingTests() {
     def testResults = manager.build.getAction(TestResultAction.class)
@@ -307,5 +286,82 @@ def attachScreenshotToFailingTests() {
             testResultAction.setDescription(failedTest, description)
             currentBuild.rawBuild.save()
         }
+    }
+}
+
+/**
+ * Validates a build by looking for known cases of failures not related to code, marks them accordingly and decides
+ * not to trigger an email for false positives.
+ *
+ * To make this script works the following needs to be setup on the Jenkins instance:
+ * <ul>
+ *   <li>Install the <a href="http://wiki.jenkins-ci.org/display/JENKINS/Groovy+Postbuild+Plugin">Groovy Postbuild
+ *       plugin</a>. This exposes the "manager" variable needed by the script.</li>
+ *   <li>Add the required security exceptions to http://<jenkins server ip>/scriptApproval/ if need be.</li>
+ * </ul>
+ */
+def validateBuild() {
+    def messages = [
+        [".*A fatal error has been detected by the Java Runtime Environment.*", "JVM Crash", "A JVM crash happened!"],
+        [".*Error: cannot open display: :1.0.*", "VNC not running", "VNC connection issue!"],
+        [".*java.lang.NoClassDefFoundError: Could not initialize class sun.awt.X11GraphicsEnvironment.*", "VNC issue",
+            "VNC connection issue!"],
+        [".*hudson.plugins.git.GitException: Could not fetch from any repository.*", "Git issue",
+            "Git fetching issue!"],
+        [".*Error communicating with the remote browser. It may have died..*", "Browser issue",
+            "Connection to Browser has died!"],
+        [".*Failed to start XWiki in .* seconds.*", "XWiki Start", "Failed to start XWiki fast enough!"],
+        [".*Failed to transfer file.*nexus.*Return code is:.*ReasonPhrase:Service Temporarily Unavailable.",
+            "Nexus down", "Nexus is down!"],
+        [".*com.jcraft.jsch.JSchException: java.net.UnknownHostException: maven.xwiki.org.*",
+            "maven.xwiki.org unavailable", "maven.xwiki.org is not reachable!"],
+        [".*Fatal Error: Unable to find package java.lang in classpath or bootclasspath.*", "Compilation issue",
+            "Compilation issue!"],
+        [".*hudson.plugins.git.GitException: Command.*", "Git issue", "Git issue!"],
+        [".*Caused by: org.openqa.selenium.WebDriverException: Failed to connect to binary FirefoxBinary.*",
+            "Browser issue", "Browser setup is wrong somehow!"],
+        [".*java.net.SocketTimeoutException: Read timed out.*", "Unknown connection issue",
+            "Unknown connection issue!"],
+        [".*Can't connect to X11 window server.*", "VNC not running", "VNC connection issue!"],
+        [".*The forked VM terminated without saying properly goodbye.*", "Surefire Forked VM crash",
+            "Surefire Forked VM issue!"],
+        [".*java.lang.RuntimeException: Unexpected exception deserializing from disk cache.*", "GWT building issue",
+            "GWT building issue!"],
+        [".*Unable to bind to locking port 7054.*", "Selenium bind issue with browser", "Selenium issue!"],
+        [".*Error binding monitor port 8079: java.net.BindException: Cannot assign requested address.*",
+            "XWiki instance already running", "XWiki stop issue!"],
+        [".*Caused by: java.util.zip.ZipException: invalid block type.*", "Maven build error",
+            "Maven generated some invalid Zip file"],
+        [".*java.lang.ClassNotFoundException: org.jvnet.hudson.maven3.listeners.MavenProjectInfo.*", "Jenkins error",
+            "Unknown Jenkins error!"],
+        [".*Failed to execute goal org.codehaus.mojo:sonar-maven-plugin.*No route to host.*", "Sonar error",
+            "Error connecting to Sonar!"]
+    ]
+
+    def shouldSendEmail = true
+    messages.each { message ->
+        if (manager.logContains(message.get(0))) {
+            manager.addWarningBadge(message.get(1))
+            manager.createSummary("warning.gif").appendText("<h1>${message.get(2)}</h1>", false, false, false, "red")
+            manager.buildUnstable()
+            shouldSendEmail = false
+        }
+    }
+
+    // This should work in combination with the following "Pre-send Script" that should be set up in the Mail
+    // Notification plugin:
+    //
+    //   import hudson.model.*
+    //
+    //    build.actions.each { action ->
+    //      if (action instanceof ParametersAction) {
+    //        if (action.getParameter("noEmail")) {
+    //          cancel = true
+    //        }
+    //      }
+    //    }
+    if (!shouldSendEmail) {
+        def pa = new ParametersAction(new BooleanParameterValue("noEmail", true))
+        manager.build.addAction(pa)
     }
 }
