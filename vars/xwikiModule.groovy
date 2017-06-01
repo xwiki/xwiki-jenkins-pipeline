@@ -195,14 +195,16 @@ boolean isKnownParent(parentGroupId, parentArtifactId)
  * Create a FilePath instance that points either to a file on the master node or a file on a remote agent node.
  */
 def createFilePath(String path) {
-    echoXWiki "Node name = ${env['NODE_NAME']}"
+    def filePath
     if (env['NODE_NAME'] == null) {
         error "envvar NODE_NAME is not set, probably not inside an node {} or running an older version of Jenkins!";
     } else if (env['NODE_NAME'].equals("master")) {
-        return new FilePath(new File(path));
+        filePath = new FilePath(new File(path));
     } else {
-        return new FilePath(Jenkins.getInstance().getComputer(env['NODE_NAME']).getChannel(), path);
+        filePath = new FilePath(Jenkins.getInstance().getComputer(env['NODE_NAME']).getChannel(), path);
     }
+    echo "Node name [${env['NODE_NAME']}], File path = [${filePath}]"
+    return filePath
 }
 
 /**
@@ -278,10 +280,12 @@ def attachScreenshotToFailingTests() {
         // Selenium 2 test screenshots.
         def imageAbsolutePath2 = new FilePath(targetFolderPath, "screenshots/${testSimpleClass}-${testExample}.png")
         // Determine which one exists, if any.
+        echo "Image path 1 (selenium 1) [${imageAbsolutePath1}], Exists: [${imageAbsolutePath1.exists()}]"
+        echo "Image path 2 (selenium 2) [${imageAbsolutePath2}], Exists: [${imageAbsolutePath2.exists()}]"
         def imageAbsolutePath = imageAbsolutePath1.exists() ?
             imageAbsolutePath1 : (imageAbsolutePath2.exists() ? imageAbsolutePath2 : null)
 
-        echoXWiki "Attaching screenshot to description: [${imageAbsolutePath}]"
+        echo "Attaching screenshot to description: [${imageAbsolutePath}]"
 
         // If the screenshot exists...
         if (imageAbsolutePath != null) {
@@ -296,8 +300,6 @@ def attachScreenshotToFailingTests() {
             def description = "<h3>Screenshot</h3>"
             description += "<a href=\"" + imageDataString + "\"><img style=\"width: 800px\" src=\""
                 + imageDataString + "\" /></a>"
-
-            echoXWiki "Setting description to: [${description}]"
 
             // Set the description to the failing test and save it to disk.
             testResultAction.setDescription(failedTest, description)
