@@ -17,6 +17,10 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
+import hudson.FilePath
+import hudson.tasks.junit.TestResultAction
+import hudson.util.IOUtils
+import javax.xml.bind.DatatypeConverter
 
 // Example usage:
 //   xwikiModule {
@@ -85,10 +89,8 @@ def call(body)
             // Save the JUnit test report
             junit testResults: '**/target/surefire-reports/TEST-*.xml', allowEmptyResults: true
 
-            // TODO: For each failed test, find if there's an image for it taken by the XWiki selenium tests and if so
-            // embed it in the failed test's description. See attachScreenshotToFailingTests() method in
-            // http://ci.xwiki.org/scriptler/editScript?id=postbuild.groovy
-            // We need to convert this script to a Groovy pipeline script
+            // For each failed test, find if there's a screenshot for it taken by the XWiki selenium tests and if so
+            // embed it in the failed test's description.
 
             // Also send a mail notification when the job has failed tests.
             // The JUnit archiver above will mark the build as UNSTABLE when there are failed tests
@@ -176,7 +178,7 @@ def getJavaTool()
  * Since we're trying to guess the Java version to use based on the parent POM version, we need to ensure that the
  * parent POM points to an XWiki core module (there are several possible) so that we can compare with the version 8.
  */
-def boolean isKnownParent(parentGroupId, parentArtifactId)
+boolean isKnownParent(parentGroupId, parentArtifactId)
 {
     return (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-platform') ||
         (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-commons') || 
@@ -185,4 +187,119 @@ def boolean isKnownParent(parentGroupId, parentArtifactId)
         (parentGroupId == 'org.xwiki.rendering' && parentArtifactId == 'xwiki-rendering') ||
         (parentGroupId == 'org.xwiki.platform' && parentArtifactId == 'xwiki-platform') ||
         (parentGroupId == 'org.xwiki.platform' && parentArtifactId == 'xwiki-platform-distribution')
+}
+
+/**
+ * Create a FilePath instance that points either to a file on the master node or a file on a remote agent node.
+ */
+def createFilePath(String path) {
+    echoXWiki "Node name = ${env['NODE_NAME']}"
+    if (env['NODE_NAME'] == null) {
+        error "envvar NODE_NAME is not set, probably not inside an node {} or running an older version of Jenkins!";
+    } else if (env['NODE_NAME'].equals("master")) {
+        return new FilePath(new File(path));
+    } else {
+        return new FilePath(Jenkins.getInstance().getComputer(env['NODE_NAME']).getChannel(), path);
+    }
+}
+
+/**
+ * Attach the screenshot of a failing XWiki Selenium test to the failed test's description.
+ * The screenshot is preserved after the workspace gets cleared by a new build.
+ *
+ * To make this script works the following needs to be setup on the Jenkins instance:
+ * <ul>
+ *   <li>Install the <a href="http://wiki.jenkins-ci.org/display/JENKINS/Groovy+Postbuild+Plugin">Groovy Postbuild
+ *       plugin</a>. This exposes the "manager" variable needed by the script.</li>
+ *   <li>The following security exceptions must be added to http://<jenkins server ip>/scriptApproval/:
+ *       <pre><code>
+ *         field hudson.tasks.test.AbstractTestResultAction owner
+ *         method hudson.FilePath exists
+ *         method hudson.FilePath getParent
+ *         method hudson.FilePath read
+ *         method hudson.model.Actionable getAction java.lang.Class
+ *         method hudson.model.Saveable save
+ *         method hudson.tasks.junit.CaseResult getClassName
+ *         method hudson.tasks.junit.CaseResult getSimpleName
+ *         method hudson.tasks.junit.CaseResult getSuiteResult
+ *         method hudson.tasks.junit.SuiteResult getFile
+ *         method hudson.tasks.junit.TestObject getName
+ *         method hudson.tasks.test.AbstractTestResultAction getFailedTests
+ *         method hudson.tasks.test.AbstractTestResultAction getResult
+ *         method hudson.tasks.test.AbstractTestResultAction setDescription hudson.tasks.test.TestObject java.lang.String
+ *         method hudson.tasks.test.TestResult getParentAction
+ *         method org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper getRawBuild
+ *         method org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder$BadgeManager getBuild
+ *         new hudson.FilePath hudson.FilePath java.lang.String
+ *         new hudson.FilePath java.io.File
+ *         new java.io.File java.lang.String
+ *         staticMethod hudson.util.IOUtils toByteArray java.io.InputStream
+ *         staticMethod javax.xml.bind.DatatypeConverter printBase64Binary byte[]
+ *       </code></pre>
+ *     </li>
+ *     <li>Install the <a href="https://wiki.jenkins-ci.org/display/JENKINS/PegDown+Formatter+Plugin">Pegdown Formatter
+ *       plugin</a> and set the description syntax to be Pegdown in the Global Security configuration
+ *       (http://<jenkins server ip>/configureSecurity).</li>
+ *  </ul>
+ */
+def attachScreenshotToFailingTests() {
+    def testResults = manager.build.getAction(TestResultAction.class)
+    if (testResults == null) {
+        // No tests were run in this build, nothing left to do.
+        return
+    }
+
+    // Go through each failed test in the current build.
+    def failedTests = testResults.getFailedTests()
+    for (def failedTest : failedTests) {
+        // Compute the test's screenshot file name.
+        def testClass = failedTest.getClassName()
+        def testSimpleClass = failedTest.getSimpleName()
+        def testExample = failedTest.getName()
+
+        // Example of value for suiteResultFile (it's a String):
+        //   /Users/vmassol/.jenkins/workspace/blog/application-blog-test/application-blog-test-tests/target/
+        //     surefire-reports/TEST-org.xwiki.blog.test.ui.AllTests.xml
+        def suiteResultFile = failedTest.getSuiteResult().getFile()
+        if (suiteResultFile == null) {
+            // No results available. Go to the next test.
+            continue
+        }
+
+        // Compute the screenshot's location on the build agent.
+        // Example of target folder path:
+        //   /Users/vmassol/.jenkins/workspace/blog/application-blog-test/application-blog-test-tests/target
+        def targetFolderPath = createFilePath(suiteResultFile).getParent().getParent()
+        // The screenshot can have 2 possible file names and locations, we have to look for both.
+        // Selenium 1 test screenshots.
+        def imageAbsolutePath1 = new FilePath(targetFolderPath, "selenium-screenshots/${testClass}-${testExample}.png")
+        // Selenium 2 test screenshots.
+        def imageAbsolutePath2 = new FilePath(targetFolderPath, "screenshots/${testSimpleClass}-${testExample}.png")
+        // Determine which one exists, if any.
+        def imageAbsolutePath = imageAbsolutePath1.exists() ?
+            imageAbsolutePath1 : (imageAbsolutePath2.exists() ? imageAbsolutePath2 : null)
+
+        echoXWiki "Attaching screenshot to description: [${imageAbsolutePath}]"
+
+        // If the screenshot exists...
+        if (imageAbsolutePath != null) {
+            // Build a base64 string of the image's content.
+            def imageDataStream = imageAbsolutePath.read()
+            byte[] imageData = IOUtils.toByteArray(imageDataStream)
+            def imageDataString = "data:image/png;base64," + DatatypeConverter.printBase64Binary(imageData)
+
+            def testResultAction = failedTest.getParentAction()
+
+            // Build a description HTML to be set for the failing test that includes the image in Data URI format.
+            def description = "<h3>Screenshot</h3>"
+            description += "<a href=\"" + imageDataString + "\"><img style=\"width: 800px\" src=\""
+                + imageDataString + "\" /></a>"
+
+            echoXWiki "Setting description to: [${description}]"
+
+            // Set the description to the failing test and save it to disk.
+            testResultAction.setDescription(failedTest, description)
+            currentBuild.rawBuild.save()
+        }
+    }
 }
