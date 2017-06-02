@@ -24,7 +24,8 @@ import javax.xml.bind.DatatypeConverter
 
 // Example usage:
 //   xwikiModule {
-//     goals = 'clean install' (default is 'clean deploy')
+//     goals = 'clean install' (default is 'clean deploy' for 'master' and 'stable-*' branches and 'clean install'
+//         for the rest)
 //     profiles = 'quality' (default is 'quality,legacy,integration-tests,jetty,hsqldb,firefox')
 //     mavenOpts = '-Xmx1024m'
 //         (default is '-Xmx1536m -Xms256m' for java8 and '-Xmx1536m -Xms256m -XX:MaxPermSize=512m' for java7)
@@ -64,7 +65,7 @@ def call(body)
                 //   (if the Jenkins Tasks Scanner Plugin is installed)
                 withMaven(maven: mavenTool, mavenOpts: mavenOpts) {
                     try {
-                        def goals = config.goals ?: 'clean deploy'
+                        def goals = computeMavenGoals(config)
                         echoXWiki "Using Maven goals: ${goals}"
                         def profiles = config.profiles ?: 'quality,legacy,integration-tests,jetty,hsqldb,firefox'
                         echoXWiki "Using Maven profiles: ${profiles}"
@@ -191,6 +192,23 @@ def getJavaTool()
         }
     }
     return 'official'
+}
+
+def computeMavenGoals(config)
+{
+    def goals = config.goals
+    if (!goals) {
+        // Use "deploy" goal for "master" and "stable-*" branches only and "install" for the rest.
+        // This is to avoid having branches with the same version polluting the maven snapshot repo, overwriting one
+        // another.
+        if (env['BRANCH_NAME'].equals("master") || env['BRANCH_NAME'].startsWith('stable-)')) {
+            goals = "deploy"
+        } else {
+            goals = "install"
+        }
+        goals = "clean ${goals}"
+    }
+    return goals
 }
 
 /**
