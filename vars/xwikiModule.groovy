@@ -43,13 +43,11 @@ def call(body)
     body()
 
     node {
-        def mvnHome
+        def mavenTool
         stage('Preparation') {
             // Get the Maven tool.
             // NOTE: The Maven tool Needs to be configured in the Jenkins global configuration.
-            def mavenTool = config.mavenTool ?: 'Maven'
-            mvnHome = tool mavenTool
-            echoXWiki "Using Maven: ${mvnHome}"
+            mavenTool = config.mavenTool ?: 'Maven'
         }
         stage('Build') {
             checkout scm
@@ -57,7 +55,14 @@ def call(body)
             def mavenOpts = configureJavaTool(config)
             // Execute the XVNC plugin (useful for integration-tests)
             wrap([$class: 'Xvnc']) {
-                withEnv(["PATH+MAVEN=${mvnHome}/bin", "MAVEN_OPTS=${mavenOpts}"]) {
+                // Execute the Maven build.
+                // Note that withMaven() will also perform some post build steps:
+                // - Archive and fingerprint generated Maven artifacts and Maven attached artifacts
+                // - Publish JUnit / Surefire reports (if the Jenkins JUnit Plugin is installed)
+                // - Publish Findbugs reports (if the Jenkins FindBugs Plugin is installed)
+                // - Publish a report of the tasks ("FIXME" and "TODO") found in the java source code
+                //   (if the Jenkins Tasks Scanner Plugin is installed)
+                withMaven(maven: mavenTool, mavenOpts: mavenOpts) {
                     try {
                         def goals = config.goals ?: 'clean deploy'
                         echoXWiki "Using Maven goals: ${goals}"
@@ -86,9 +91,6 @@ def call(body)
             }
         }
         stage('Post Build') {
-            // Save the JUnit test report
-            junit testResults: '**/target/surefire-reports/TEST-*.xml', allowEmptyResults: true
-
             // For each failed test, find if there's a screenshot for it taken by the XWiki selenium tests and if so
             // embed it in the failed test's description.
             echoXWiki "Attaching screenshots to test result pages (if any)..."
