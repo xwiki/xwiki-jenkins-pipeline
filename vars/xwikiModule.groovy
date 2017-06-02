@@ -167,15 +167,18 @@ def getJavaTool()
 {
     def pom = readMavenPom file: 'pom.xml'
     def parent = pom.parent
+    def groupId
+    def artifactId
+    def version
     if (parent != null) {
-        def groupId = parent.groupId
-        def artifactId = parent.artifactId
-        def version = parent.version
+        groupId = parent.groupId
+        artifactId = parent.artifactId
+        version = parent.version
     } else {
         // We're on the top pom (no parent)
-        def groupId = pom.groupId
-        def artifactId = pom.artifactId
-        def version = pom.version
+        groupId = pom.groupId
+        artifactId = pom.artifactId
+        version = pom.version
 
     }
     if (isKnownParent(groupId, artifactId)) {
