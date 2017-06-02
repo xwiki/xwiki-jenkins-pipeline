@@ -167,12 +167,20 @@ def getJavaTool()
 {
     def pom = readMavenPom file: 'pom.xml'
     def parent = pom.parent
-    def parentGroupId = parent.groupId
-    def parentArtifactId = parent.artifactId
-    def parentVersion = parent.version
-    if (isKnownParent(parentGroupId, parentArtifactId)) {
+    if (parent != null) {
+        def groupId = parent.groupId
+        def artifactId = parent.artifactId
+        def version = parent.version
+    } else {
+        // We're on the top pom (no parent)
+        def groupId = pom.groupId
+        def artifactId = pom.artifactId
+        def version = pom.version
+
+    }
+    if (isKnownParent(groupId, artifactId)) {
         // If version < 8 then use Java7, otherwise official
-        def major = parentVersion.substring(0, parentVersion.indexOf('.'))
+        def major = version.substring(0, version.indexOf('.'))
         if (major.toInteger() < 8) {
             return 'java7'
         }
