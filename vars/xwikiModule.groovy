@@ -366,6 +366,7 @@ def boolean checkForFalsePositives() {
             manager.addWarningBadge(message.get(1))
             manager.createSummary("warning.gif").appendText("<h1>${message.get(2)}</h1>", false, false, false, "red")
             manager.buildUnstable()
+            echoXWiki "False positive detected [${message.get(2)}], not sending email ..."
             return true
         }
     }
