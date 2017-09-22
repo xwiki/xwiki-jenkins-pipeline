@@ -99,11 +99,11 @@ def call(body)
 
             // Check for false positives
             echoXWiki "Checking for false positives in build result..."
-            validateBuild();
+            def isFalsePositive = checkForFalsePositives()
 
             // Also send a mail notification when the job has failed tests.
             // The JUnit archiver above will mark the build as UNSTABLE when there are failed tests
-            if (currentBuild.result == 'UNSTABLE') {
+            if (currentBuild.result == 'UNSTABLE' && !isFalsePositive) {
                 notifyByMail(currentBuild.result)
             }
         }
@@ -112,8 +112,6 @@ def call(body)
 
 def notifyByMail(String buildStatus)
 {
-    // TODO: Handle false positives as we used to do in http://ci.xwiki.org/scriptler/editScript?id=postbuild.groovy
-    // We need to convert this script to a Groovy pipeline script
     emailext (
         subject: "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
         body: """<p>${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
@@ -321,17 +319,11 @@ def attachScreenshotToFailingTests() {
 }
 
 /**
- * Validates a build by looking for known cases of failures not related to code, marks them accordingly and decides
- * not to trigger an email for false positives.
+ * Check for false positives for known cases of failures not related to code.
  *
- * To make this script works the following needs to be setup on the Jenkins instance:
- * <ul>
- *   <li>Install the <a href="http://wiki.jenkins-ci.org/display/JENKINS/Groovy+Postbuild+Plugin">Groovy Postbuild
- *       plugin</a>. This exposes the "manager" variable needed by the script.</li>
- *   <li>Add the required security exceptions to http://<jenkins server ip>/scriptApproval/ if need be.</li>
- * </ul>
+ *  @return false if the build has false positives and thus no mail should be sent
  */
-def validateBuild() {
+def boolean checkForFalsePositives() {
     def messages = [
         [".*A fatal error has been detected by the Java Runtime Environment.*", "JVM Crash", "A JVM crash happened!"],
         [".*Error: cannot open display: :1.0.*", "VNC not running", "VNC connection issue!"],
@@ -369,30 +361,14 @@ def validateBuild() {
             "Error connecting to Sonar!"]
     ]
 
-    def shouldSendEmail = true
     messages.each { message ->
         if (manager.logContains(message.get(0))) {
             manager.addWarningBadge(message.get(1))
             manager.createSummary("warning.gif").appendText("<h1>${message.get(2)}</h1>", false, false, false, "red")
             manager.buildUnstable()
-            shouldSendEmail = false
+            return true
         }
     }
 
-    // This should work in combination with the following "Pre-send Script" that should be set up in the Mail
-    // Notification plugin:
-    //
-    //   import hudson.model.*
-    //
-    //    build.actions.each { action ->
-    //      if (action instanceof ParametersAction) {
-    //        if (action.getParameter("noEmail")) {
-    //          cancel = true
-    //        }
-    //      }
-    //    }
-    if (!shouldSendEmail) {
-        def pa = new ParametersAction(new BooleanParameterValue("noEmail", true))
-        manager.build.addAction(pa)
-    }
+    return false
 }
