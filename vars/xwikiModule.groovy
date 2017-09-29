@@ -33,6 +33,7 @@ import javax.xml.bind.DatatypeConverter
 //     properties = '-Dparam1=value1 -Dparam2value2' (default is empty)
 //     javaTool = 'java7' (default is 'official')
 //     timeout = 60 (default is 240 minutes)
+//     disabled = true (allows disabling a build, defaults to true)
 //  }
 
 def call(body)
@@ -49,6 +50,13 @@ def call(body)
             // Get the Maven tool.
             // NOTE: The Maven tool Needs to be configured in the Jenkins global configuration.
             mavenTool = config.mavenTool ?: 'Maven'
+
+            // Check if the build should be aborted
+            if (config.disabled) {
+                currentBuild.result = 'ABORTED'
+                echoXWiki "Aborting build since it's disabled explicitly..."
+                return
+            }
         }
         stage('Build') {
             checkout scm
