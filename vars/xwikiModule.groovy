@@ -54,8 +54,7 @@ def call(body)
             // Check if the build should be aborted
             if (config.disabled) {
                 currentBuild.result = 'ABORTED'
-                echoXWiki "Aborting build since it's disabled explicitly..."
-                return
+                error "Aborting build since it's disabled explicitly..."
             }
         }
         stage('Build') {
