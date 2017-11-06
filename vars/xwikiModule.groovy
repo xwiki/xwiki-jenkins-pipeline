@@ -36,6 +36,11 @@ import javax.xml.bind.DatatypeConverter
 //     disabled = true (allows disabling a build, defaults to true)
 //  }
 
+// If you need to setup a Jenkins instance where the following script will work you'll need to:
+// - Configure Global tools named 'Maven' for Maven, 'java7' for Java 7, 'official' for Java 8
+// - Have the Jenkins XVnc plugin installed
+// - Have the Jenkins Mail Ext plugin installed
+
 def call(body)
 {
     // Evaluate the body block, and collect configuration into the config object
