@@ -435,6 +435,7 @@ def boolean checkForFlickers()
 
             // For each failed test, check if it's in the known flicker list.
             // If all failed tests are flickers then don't send notification email
+            def containsAtLeastOneFlicker = false
             containsOnlyFlickers = true
             failedTests.each() { testResult ->
                 // Format of a Test Result id is "junit/<package name>/<test class name>/<test method name>"
@@ -442,12 +443,20 @@ def boolean checkForFlickers()
                 def testName = "${parts[1]}.${parts[2]}#${parts[3]}"
                 if (knownFlickers.contains(testName)) {
                     // Add the information that the test is a flicker to the test's description
-                    testResult.setDescription("<h1>This is a flickering test</h1>${testResult.getDescription()}")
+                    testResult.setDescription(
+                        "<h1 style='color:red'>This is a flickering test</h1>${testResult.getDescription() ?: ''}")
                     echoXWiki "Found flickering test: [${testName}]"
+                    containsAtLeastOneFlicker = true
                 } else {
                     // This is a real failing test, thus we'll need to send athe notification email...
                     containsOnlyFlickers = false
                 }
+            }
+
+            if (containsAtLeastOneFlicker) {
+                manager.addWarningBadge("Contains some flickering tests")
+                manager.createSummary("warning.gif").appendText("<h1>Contains some flickering tests</h1>", false,
+                    false, false, "red")
             }
         }
     }
