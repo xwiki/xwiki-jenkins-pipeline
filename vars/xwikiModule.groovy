@@ -21,6 +21,7 @@ import hudson.FilePath
 import hudson.tasks.junit.TestResultAction
 import hudson.util.IOUtils
 import javax.xml.bind.DatatypeConverter
+import hudson.tasks.test.AbstractTestResultAction
 
 // Example usage:
 //   xwikiModule {
@@ -109,13 +110,13 @@ def call(body)
             echoXWiki "Attaching screenshots to test result pages (if any)..."
             attachScreenshotToFailingTests()
 
-            // Check for false positives
-            echoXWiki "Checking for false positives in build result..."
-            def isFalsePositive = checkForFalsePositives()
+            // Check for false positives & Flickers.
+            echoXWiki "Checking for false positives and flickers in build results..."
+            def containsFalsePositivesOrOnlyFlickers = checkForFalsePositivesAndFlickers()
 
             // Also send a mail notification when the job has failed tests.
             // The JUnit archiver above will mark the build as UNSTABLE when there are failed tests
-            if (currentBuild.result == 'UNSTABLE' && !isFalsePositive) {
+            if (currentBuild.result == 'UNSTABLE' && !containsFalsePositivesOrOnlyFlickers) {
                 notifyByMail(currentBuild.result)
             }
         }
@@ -239,13 +240,14 @@ boolean isKnownParent(parentGroupId, parentArtifactId)
 /**
  * Create a FilePath instance that points either to a file on the master node or a file on a remote agent node.
  */
-def createFilePath(String path) {
+def createFilePath(String path)
+{
     if (env['NODE_NAME'] == null) {
-        error "envvar NODE_NAME is not set, probably not inside an node {} or running an older version of Jenkins!";
+        error "envvar NODE_NAME is not set, probably not inside an node {} or running an older version of Jenkins!"
     } else if (env['NODE_NAME'].equals("master")) {
-        return new FilePath(new File(path));
+        return new FilePath(new File(path))
     } else {
-        return new FilePath(Jenkins.getInstance().getComputer(env['NODE_NAME']).getChannel(), path);
+        return new FilePath(Jenkins.getInstance().getComputer(env['NODE_NAME']).getChannel(), path)
     }
 }
 
@@ -263,7 +265,8 @@ def createFilePath(String path) {
  *       (http://<jenkins server ip>/configureSecurity).</li>
  * </ul>
  */
-def attachScreenshotToFailingTests() {
+def attachScreenshotToFailingTests()
+{
     def testResults = manager.build.getAction(TestResultAction.class)
     if (testResults == null) {
         // No tests were run in this build, nothing left to do.
@@ -331,11 +334,28 @@ def attachScreenshotToFailingTests() {
 }
 
 /**
+ * Check for false positives for known cases of failures not related to code + check for test flickers.
+ *
+ * @return true if the build has false positives or if there are only flickering tests
+ */
+def boolean checkForFalsePositivesAndFlickers()
+{
+    // Step 1: Check for false positives
+    def containsFalsePositives = checkForFalsePositives()
+
+    // Step 2: Check for flickers
+    def containsOnlyFlickers = checkForFlickers()
+
+    return containsFalsePositives || containsOnlyFlickers
+}
+
+/**
  * Check for false positives for known cases of failures not related to code.
  *
- *  @return false if the build has false positives and thus no mail should be sent
+ * @return true if false positives have been detected
  */
-def boolean checkForFalsePositives() {
+def boolean checkForFalsePositives()
+{
     def messages = [
         [".*A fatal error has been detected by the Java Runtime Environment.*", "JVM Crash", "A JVM crash happened!"],
         [".*Error: cannot open display: :1.0.*", "VNC not running", "VNC connection issue!"],
@@ -378,10 +398,59 @@ def boolean checkForFalsePositives() {
             manager.addWarningBadge(message.get(1))
             manager.createSummary("warning.gif").appendText("<h1>${message.get(2)}</h1>", false, false, false, "red")
             manager.buildUnstable()
-            echoXWiki "False positive detected [${message.get(2)}], not sending email ..."
+            echoXWiki "False positive detected [${message.get(2)}] ..."
             return true
         }
     }
+}
 
-    return false
+/**
+ * Check for test flickers, and modify test result descriptions for tests that are identified as flicker. A test is
+ * a flicker if there's a JIRA issue having the "Flickering Test" custom field containing the FQN of the test in the
+ * format {@code <java package name>#<test name>}.
+ *
+ * @return true if the failing tests only contain flickering tests
+ */
+def boolean checkForFlickers()
+{
+    boolean containsOnlyFlickers = false
+    AbstractTestResultAction testResultAction =  currentBuild.rawBuild.getAction(AbstractTestResultAction.class)
+    if (testResultAction != null) {
+        // Find all failed tests
+        def failedTests = testResultAction.getResult().getFailedTests()
+        if (failedTests.size() > 0) {
+            // Get all false positives from JIRA
+            def url = "https://jira.xwiki.org/sr/jira.issueviews:searchrequest-xml/temp/SearchRequest.xml?".concat(
+                    "jqlQuery=%22Flickering%20Test%22%20is%20not%20empty%20and%20resolution%20=%20Unresolved")
+            def root = new XmlSlurper().parseText(url.toURL().text)
+            def knownFlickers = []
+            root.channel.item.customfields.customfield.each() { customfield ->
+                if (customfield.customfieldname == 'Flickering Test') {
+                    customfield.customfieldvalues.customfieldvalue.text().split(',').each() {
+                        knownFlickers.add(it)
+                    }
+                }
+            }
+            echoXWiki "Known flickering tests: ${knownFlickers}"
+
+            // For each failed test, check if it's in the known flicker list.
+            // If all failed tests are flickers then don't send notification email
+            containsOnlyFlickers = true
+            failedTests.each() { testResult ->
+                // Format of a Test Result id is "junit/<package name>/<test class name>/<test method name>"
+                def parts = testResult.getId().split('/')
+                def testName = "${parts[1]}.${parts[2]}#${parts[3]}"
+                if (knownFlickers.contains(testName)) {
+                    // Add the information that the test is a flicker to the test's description
+                    testResult.setDescripton("<h1>This is a flickering test</h1>${testResult.getDescription()}")
+                    echoXWiki "Found flickering test: [${testName}]"
+                } else {
+                    // This is a real failing test, thus we'll need to send athe notification email...
+                    containsOnlyFlickers = false
+                }
+            }
+        }
+    }
+
+    return containsOnlyFlickers
 }
