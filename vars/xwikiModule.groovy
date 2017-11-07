@@ -442,7 +442,7 @@ def boolean checkForFlickers()
                 def testName = "${parts[1]}.${parts[2]}#${parts[3]}"
                 if (knownFlickers.contains(testName)) {
                     // Add the information that the test is a flicker to the test's description
-                    testResult.setDescripton("<h1>This is a flickering test</h1>${testResult.getDescription()}")
+                    testResult.setDescription("<h1>This is a flickering test</h1>${testResult.getDescription()}")
                     echoXWiki "Found flickering test: [${testName}]"
                 } else {
                     // This is a real failing test, thus we'll need to send athe notification email...
