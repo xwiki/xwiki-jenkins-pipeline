@@ -35,6 +35,7 @@ import hudson.tasks.test.AbstractTestResultAction
 //     javaTool = 'java7' (default is 'official')
 //     timeout = 60 (default is 240 minutes)
 //     disabled = true (allows disabling a build, defaults to true)
+//     xvnc = false (disable running xvnc, useful when running on a local Jenkins, defaults to true)
 //  }
 
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
@@ -82,7 +83,8 @@ def call(body)
             // Configure the version of Java to use
             def mavenOpts = configureJavaTool(config)
             // Execute the XVNC plugin (useful for integration-tests)
-            wrap([$class: 'Xvnc']) {
+
+            wrapInXvnc(config) {
                 // Execute the Maven build.
                 // Note that withMaven() will also perform some post build steps:
                 // - Archive and fingerprint generated Maven artifacts and Maven attached artifacts
@@ -137,9 +139,17 @@ def call(body)
     }
 }
 
-def build()
+def wrapInXvnc(config, closure)
 {
-
+    boolean isXvncEnabled = config.xvnc ?: true
+    if (isXvncEnabled) {
+        wrap([$class: 'Xvnc']) {
+            closure()
+        }
+    } else {
+        echoXWiki "Xvnc disabled, building without it!"
+        closure()
+    }
 }
 
 def notifyByMail(String buildStatus)
