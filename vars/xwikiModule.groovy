@@ -38,9 +38,23 @@ import hudson.tasks.test.AbstractTestResultAction
 //  }
 
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
-// - Configure Global tools named 'Maven' for Maven, 'java7' for Java 7, 'official' for Java 8
-// - Have the Jenkins XVnc plugin installed
-// - Have the Jenkins Mail Ext plugin installed
+//
+// - Configure Global tools:
+//   - One named 'Maven' for Maven,
+//   - One named 'java7' for Java 7
+//   - One named 'official' for Java 8
+// - Configure a Global Pipeline library
+//   - Name: 'XWiki'
+//   - Version: 'master'
+//   - Enable 'Load implicitly'
+//   - Choose modern SCM and then GitHub:
+//     - owner: 'xwiki'
+//     - repository: 'xwiki-jenkins-pipeline'
+// - Have the following plugins installed:
+//   - XVnc plugin. You'll also need to have the "vncserver" executable available in the path
+//   - Email Extension plugin
+//   - Build Timeout plugin
+//   - Pipeline Utility Steps plugin
 
 def call(body)
 {
@@ -121,6 +135,11 @@ def call(body)
             }
         }
     }
+}
+
+def build()
+{
+
 }
 
 def notifyByMail(String buildStatus)
