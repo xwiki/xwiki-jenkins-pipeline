@@ -140,7 +140,7 @@ def call(body)
 
 def wrapInXvnc(config, closure)
 {
-    boolean isXvncEnabled = config.xvnc ?: true
+    def isXvncEnabled = config.xvnc == null ? true : config.xvnc
     if (isXvncEnabled) {
         wrap([$class: 'Xvnc']) {
             closure()
