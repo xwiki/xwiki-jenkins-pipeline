@@ -83,7 +83,6 @@ def call(body)
             // Configure the version of Java to use
             def mavenOpts = configureJavaTool(config)
             // Execute the XVNC plugin (useful for integration-tests)
-
             wrapInXvnc(config) {
                 // Execute the Maven build.
                 // Note that withMaven() will also perform some post build steps:
