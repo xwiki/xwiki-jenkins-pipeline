@@ -69,6 +69,7 @@ def call(body)
 
     node {
         def mavenTool
+        def mavenOpts
         stage('Preparation') {
             // Get the Maven tool.
             // NOTE: The Maven tool Needs to be configured in the Jenkins global configuration.
@@ -79,11 +80,13 @@ def call(body)
                 currentBuild.result = 'ABORTED'
                 error "Aborting build since it's disabled explicitly..."
             }
+
+            checkout scm
+
+            // Configure the version of Java to use
+            mavenOpts = configureJavaTool(config)
         }
         stage('Build') {
-            checkout scm
-            // Configure the version of Java to use
-            def mavenOpts = configureJavaTool(config)
             // Execute the XVNC plugin (useful for integration-tests)
             wrapInXvnc(config) {
                 // Execute the Maven build.
