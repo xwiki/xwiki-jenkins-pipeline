@@ -53,9 +53,11 @@ import hudson.tasks.test.AbstractTestResultAction
 //     - repository: 'xwiki-jenkins-pipeline'
 // - Have the following plugins installed:
 //   - XVnc plugin. You'll also need to have the "vncserver" executable available in the path
-//   - Email Extension plugin
-//   - Build Timeout plugin
-//   - Pipeline Utility Steps plugin
+//   - Email Extension plugin (provides emailext() API)
+//   - Build Timeout plugin (provides timeout() API)
+//   - Pipeline Utility Steps plugin (provides readMavenPom() API)
+//   - Pipeline Maven Integration plugin (provides withMaven() API)
+//   - Groovy Post Build plugin (provides the 'manager' variable)
 
 def call(body)
 {
