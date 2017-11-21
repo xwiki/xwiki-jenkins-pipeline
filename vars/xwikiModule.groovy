@@ -86,6 +86,11 @@ def call(body)
 
             // Configure the version of Java to use
             mavenOpts = configureJavaTool(config)
+
+            // Display some environmental information that can be useful to debug some failures
+            // Note: if the executables don't exist, this won't fail the step thanks to "returnStatus: true".
+            sh script: 'ps -ef', returnStatus: true
+            sh script: 'netstat -nltp', returnStatus: true
         }
         stage('Build') {
             // Execute the XVNC plugin (useful for integration-tests)
