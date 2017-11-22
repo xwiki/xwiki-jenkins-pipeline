@@ -55,6 +55,7 @@ import hudson.tasks.test.AbstractTestResultAction
 //     timeout = 60 (default is 240 minutes)
 //     disabled = true (allows disabling a build, defaults to true)
 //     xvnc = false (disable running xvnc, useful when running on a local Jenkins, defaults to true)
+//     pom = 'some/other/pom.xml' (defaults to 'pom.xml')
 
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
 //
@@ -131,13 +132,15 @@ def call(body)
                     echoXWiki "Using timeout: ${timeoutThreshold}"
                     // Abort the build if it takes more than the timeout threshold (in minutes).
                     timeout(timeoutThreshold) {
+                        def pom = config.pom ?: 'pom.xml'
+                        echoXWiki "Using POM fole: ${pom}"
                         // Note: We use -Dmaven.test.failure.ignore so that the maven build continues till the
                         // end and is not stopped by the first failing test. This allows to get more info from the
                         // build (see all failing tests for all modules built). Also note that the build is marked
                         // unstable when there are failing tests by the JUnit Archiver executed during the
                         // 'Post Build' stage below.
                         def fullProperties = "-Dmaven.test.failure.ignore ${properties}"
-                        sh "mvn ${goals} jacoco:report -P${profiles} -U -e ${fullProperties}"
+                        sh "mvn -f ${pom} ${goals} jacoco:report -P${profiles} -U -e ${fullProperties}"
                     }
                 } catch (Exception e) {
                     currentBuild.result = 'FAILURE'
