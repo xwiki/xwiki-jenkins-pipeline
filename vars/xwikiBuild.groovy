@@ -163,8 +163,12 @@ def call(body)
 
         // Also send a mail notification when the job has failed tests.
         // The JUnit archiver above will mark the build as UNSTABLE when there are failed tests
-        if (currentBuild.result == 'UNSTABLE' && !containsFalsePositivesOrOnlyFlickers) {
-            notifyByMail(currentBuild.result)
+        echoXWiki "Checking if email should be sent or not"
+        if (currentBuild.result == 'UNSTABLE')
+            if (!containsFalsePositivesOrOnlyFlickers) {
+                notifyByMail(currentBuild.result)
+            } else {
+                echoXWiki "No email sent even if some tests failed because they contain only flickering tests!"
         }
     }
 }
