@@ -86,7 +86,6 @@ def call(body)
     body()
 
     def mavenTool
-    def mavenOpts
     stage('Preparation') {
         // Get the Maven tool.
         // NOTE: The Maven tool Needs to be configured in the Jenkins global configuration.
@@ -101,7 +100,7 @@ def call(body)
         checkout scm
 
         // Configure the version of Java to use
-        mavenOpts = configureJavaTool(config)
+        configureJavaTool(config)
 
         // Display some environmental information that can be useful to debug some failures
         // Note: if the executables don't exist, this won't fail the step thanks to "returnStatus: true".
@@ -120,8 +119,9 @@ def call(body)
             //   (if the Jenkins Tasks Scanner Plugin is installed)
             echoXWiki "Using Java: ${env.JAVA_HOME}"
             echoXWiki "Using Maven tool: ${mavenTool}"
-            echoXWiki "Using Maven options: ${mavenOpts}"
-            withMaven(maven: mavenTool, mavenOpts: "${mavenOpts}") {
+            echoXWiki "Using Maven options: ${env.MAVEN_OPTS}"
+            // Note: We're not passing "mavenOpts" voluntarily, see configureJavaTool()
+            withMaven(maven: mavenTool) {
                 try {
                     def goals = computeMavenGoals(config)
                     echoXWiki "Using Maven goals: ${goals}"
@@ -226,7 +226,10 @@ def configureJavaTool(config)
             mavenOpts = "${mavenOpts} -XX:MaxPermSize=512m"
         }
     }
-    return mavenOpts
+    // Note: withMaven is concatenating any passed "mavenOpts" with env.MAVEN_OPTS. Thus in order to fully
+    // control the maven options used we only set env.MAVEN_OPTS and don't pass "mavenOpts" when using withMaven.
+    // See http://bit.ly/2zwl4IU
+    env.MAVEN_OPTS = mavenOpts
 }
 
 /**
