@@ -364,9 +364,6 @@ def attachScreenshotToFailingTests()
                 new FilePath(createFilePath(System.getProperty("java.io.tmpdir")), "${testSimpleClass}-${testExample}.png")
 
         // Determine which one exists, if any.
-        echo "Image path 1 (selenium 1) [${imageAbsolutePath1}], Exists: [${imageAbsolutePath1.exists()}]"
-        echo "Image path 2 (selenium 2) [${imageAbsolutePath2}], Exists: [${imageAbsolutePath2.exists()}]"
-        echo "Image path 3 (tmp) [${imageAbsolutePath3}], Exists: [${imageAbsolutePath3.exists()}]"
         def imageAbsolutePath = imageAbsolutePath1.exists() ?
                 imageAbsolutePath1 : (imageAbsolutePath2.exists() ? imageAbsolutePath2 :
                 (imageAbsolutePath3.exists() ? imageAbsolutePath3 : null))
