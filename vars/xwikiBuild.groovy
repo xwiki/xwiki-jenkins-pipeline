@@ -56,6 +56,7 @@ import hudson.tasks.test.AbstractTestResultAction
 //     disabled = true (allows disabling a build, defaults to true)
 //     xvnc = false (disable running xvnc, useful when running on a local Jenkins, defaults to true)
 //     pom = 'some/other/pom.xml' (defaults to 'pom.xml')
+//     archiveArtifacts = true (defaults to false since we don't need that as we push to a maven repo)
 
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
 //
@@ -112,7 +113,8 @@ def call(body)
         wrapInXvnc(config) {
             // Execute the Maven build.
             // Note that withMaven() will also perform some post build steps:
-            // - Archive and fingerprint generated Maven artifacts and Maven attached artifacts
+            // - Archive and fingerprint generated Maven artifacts and Maven attached artifacts (if archiveArtifacts
+            //   is set to true, see above)
             // - Publish JUnit / Surefire reports (if the Jenkins JUnit Plugin is installed)
             // - Publish Findbugs reports (if the Jenkins FindBugs Plugin is installed)
             // - Publish a report of the tasks ("FIXME" and "TODO") found in the java source code
@@ -120,8 +122,10 @@ def call(body)
             echoXWiki "Using Java: ${env.JAVA_HOME}"
             echoXWiki "Using Maven tool: ${mavenTool}"
             echoXWiki "Using Maven options: ${env.MAVEN_OPTS}"
+            def archiveArtifacts = config.archiveArtifacts == null ? false : config.archiveArtifacts
+            echoXWiki "Artifact archiving: ${archiveArtifacts}"
             // Note: We're not passing "mavenOpts" voluntarily, see configureJavaTool()
-            withMaven(maven: mavenTool) {
+            withMaven(maven: mavenTool, options: [artifactsPublisher(disabled: archiveArtifacts)]) {
                 try {
                     def goals = computeMavenGoals(config)
                     echoXWiki "Using Maven goals: ${goals}"
