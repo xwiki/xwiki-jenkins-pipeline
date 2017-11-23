@@ -486,7 +486,15 @@ def boolean checkForFlickers()
             def knownFlickers = []
             root.channel.item.customfields.customfield.each() { customfield ->
                 if (customfield.customfieldname == 'Flickering Test') {
+                    def packageName = ''
                     customfield.customfieldvalues.customfieldvalue.text().split(',').each() {
+                        // Check if a package is specified and if not use the previously found package name
+                        // This is an optimization to make it shorter to specify several tests in the same test class.
+                        // e.g.: "org.xwiki.test.ui.extension.ExtensionTest#testUpgrade,testUninstall"
+                        int pos = it.indexOf('#')
+                        if (pos > -1) {
+                            packageName = it.substring(0, pos)
+                        }
                         knownFlickers.add(it)
                     }
                 }
