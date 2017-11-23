@@ -121,7 +121,7 @@ def call(body)
             echoXWiki "Using Java: ${env.JAVA_HOME}"
             echoXWiki "Using Maven tool: ${mavenTool}"
             echoXWiki "Using Maven options: ${mavenOpts}"
-            withMaven(maven: mavenTool, mavenOpts: mavenOpts) {
+            withMaven(maven: mavenTool, mavenOpts: "${mavenOpts}") {
                 try {
                     def goals = computeMavenGoals(config)
                     echoXWiki "Using Maven goals: ${goals}"
