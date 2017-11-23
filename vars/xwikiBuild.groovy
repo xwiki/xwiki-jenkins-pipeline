@@ -120,6 +120,9 @@ def call(body)
             // - Publish Findbugs reports (if the Jenkins FindBugs Plugin is installed)
             // - Publish a report of the tasks ("FIXME" and "TODO") found in the java source code
             //   (if the Jenkins Tasks Scanner Plugin is installed)
+            echoXWiki "Using Java: ${env.JAVA_HOME}"
+            echoXWiki "Using Maven tool: ${mavenTool}"
+            echoXWiki "Using Maven options: ${mavenOpts}"
             withMaven(maven: mavenTool, mavenOpts: mavenOpts) {
                 try {
                     def goals = computeMavenGoals(config)
@@ -133,7 +136,7 @@ def call(body)
                     // Abort the build if it takes more than the timeout threshold (in minutes).
                     timeout(timeoutThreshold) {
                         def pom = config.pom ?: 'pom.xml'
-                        echoXWiki "Using POM fole: ${pom}"
+                        echoXWiki "Using POM file: ${pom}"
                         // Note: We use -Dmaven.test.failure.ignore so that the maven build continues till the
                         // end and is not stopped by the first failing test. This allows to get more info from the
                         // build (see all failing tests for all modules built). Also note that the build is marked
@@ -216,7 +219,6 @@ def configureJavaTool(config)
     // NOTE: The Java tool Needs to be configured in the Jenkins global configuration.
     env.JAVA_HOME="${tool javaTool}"
     env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
-    echoXWiki "Using Java: ${env.JAVA_HOME}"
 
     // Configure MAVEN_OPTS based on the java version found and whether uses have configured the mavenOpts or not
     def mavenOpts = config.mavenOpts
@@ -226,8 +228,6 @@ def configureJavaTool(config)
             mavenOpts = "${mavenOpts} -XX:MaxPermSize=512m"
         }
     }
-    echoXWiki "Using Maven options: ${mavenOpts}"
-
     return mavenOpts
 }
 
