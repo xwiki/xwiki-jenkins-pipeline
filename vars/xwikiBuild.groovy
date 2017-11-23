@@ -107,8 +107,6 @@ def call(body)
         // Note: if the executables don't exist, this won't fail the step thanks to "returnStatus: true".
         sh script: 'ps -ef', returnStatus: true
         sh script: 'netstat -nltp', returnStatus: true
-
-        stash name: 'sources', includes: 'pom.xml,src/'
     }
     stage('Build') {
         // Execute the XVNC plugin (useful for integration-tests)
