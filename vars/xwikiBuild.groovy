@@ -86,6 +86,15 @@ def call(body)
     def config = [:]
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = config
+
+    // Only keep the 10 most recent builds.
+    // Note that the UI allows to set this value but it seems it's not working and is thus infinite if we don't set it
+    // here...
+    def projectProperties = [
+        [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', numToKeepStr: '10']]
+    ]
+    properties(projectProperties)
+
     body()
 
     def mavenTool
