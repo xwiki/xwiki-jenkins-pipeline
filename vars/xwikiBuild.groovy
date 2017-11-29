@@ -514,7 +514,7 @@ def boolean checkForFalsePositives()
 def boolean checkForFlickers()
 {
     boolean containsOnlyFlickers = false
-    AbstractTestResultAction testResultAction =  currentBuild.rawBuild.getAction(AbstractTestResultAction.class)
+    AbstractTestResultAction testResultAction = currentBuild.rawBuild.getAction(AbstractTestResultAction.class)
     if (testResultAction != null) {
         // Find all failed tests
         def failedTests = testResultAction.getResult().getFailedTests()
@@ -549,14 +549,16 @@ def boolean checkForFlickers()
                 // Format of a Test Result id is "junit/<package name>/<test class name>/<test method name>"
                 def parts = testResult.getId().split('/')
                 def testName = "${parts[1]}.${parts[2]}#${parts[3]}"
+                echoXWiki "Analyzing test [${testResult.getId()}] for flicker..."
                 if (knownFlickers.contains(testName)) {
                     // Add the information that the test is a flicker to the test's description
                     testResult.setDescription(
                             "<h1 style='color:red'>This is a flickering test</h1>${testResult.getDescription() ?: ''}")
-                    echoXWiki "Found flickering test: [${testName}]"
+                    echo "   It's a flicker"
                     containsAtLeastOneFlicker = true
                 } else {
-                    // This is a real failing test, thus we'll need to send athe notification email...
+                    echo "   Not a flicker"
+                    // This is a real failing test, thus we'll need to send the notification email...
                     containsOnlyFlickers = false
                 }
             }
