@@ -83,6 +83,14 @@ import hudson.tasks.test.AbstractTestResultAction
 
 def call(body)
 {
+    call('Default', body)
+}
+
+/**
+ * @param name a string representing the current build
+ */
+def call(name, body)
+{
     def config = [:]
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = config
@@ -96,7 +104,7 @@ def call(body)
     body()
 
     def mavenTool
-    stage('Preparation') {
+    stage("Preparation for ${name}") {
         // Get the Maven tool.
         // NOTE: The Maven tool Needs to be configured in the Jenkins global configuration.
         mavenTool = config.mavenTool ?: 'Maven'
@@ -117,7 +125,7 @@ def call(body)
         sh script: 'ps -ef', returnStatus: true
         sh script: 'netstat -nltp', returnStatus: true
     }
-    stage('Build') {
+    stage("Build for ${name}") {
         // Execute the XVNC plugin (useful for integration-tests)
         wrapInXvnc(config) {
             // Execute the Maven build.
@@ -169,7 +177,7 @@ def call(body)
             }
         }
     }
-    stage('Post Build') {
+    stage("Post Build for ${name}") {
         // For each failed test, find if there's a screenshot for it taken by the XWiki selenium tests and if so
         // embed it in the failed test's description.
         echoXWiki "Attaching screenshots to test result pages (if any)..."
