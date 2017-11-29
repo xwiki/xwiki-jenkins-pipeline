@@ -145,8 +145,8 @@ def call(name, body)
                 config.fingerprintDependencies
             echoXWiki "Dependencies fingerprinting: ${fingerprintDependencies}"
             // Note: We're not passing "mavenOpts" voluntarily, see configureJavaTool()
-            withMaven(maven: mavenTool, options: [artifactsPublisher(disabled: archiveArtifacts),
-                dependenciesFingerprintPublisher(disabled: fingerprintDependencies)])
+            withMaven(maven: mavenTool, options: [artifactsPublisher(disabled: !archiveArtifacts),
+                dependenciesFingerprintPublisher(disabled: !fingerprintDependencies)])
             {
                 try {
                     def goals = computeMavenGoals(config)
