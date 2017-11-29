@@ -424,7 +424,8 @@ def attachScreenshotToFailingTests()
             def testResultAction = failedTest.getParentAction()
 
             // Build a description HTML to be set for the failing test that includes the image in Data URI format.
-            def description = """<h3>Screenshot</h3><a href="${imageDataString}"><img style="width: 800px" src="${imageDataString}" /></a>"""
+            def imgText = """<img style="width: 800px" src="${imageDataString}" />"""
+            def description = """<h3>Screenshot</h3><a href="${imageDataString}">${imgText}</a>"""
 
             // Set the description to the failing test and save it to disk.
             testResultAction.setDescription(failedTest, description)
