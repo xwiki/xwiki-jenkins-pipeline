@@ -57,8 +57,8 @@ import hudson.tasks.test.AbstractTestResultAction
 //     xvnc = false (disable running xvnc, useful when running on a local Jenkins, defaults to true)
 //     pom = 'some/other/pom.xml' (defaults to 'pom.xml')
 //     archiveArtifacts = true (defaults to false since we don't need that as we push to a maven repo)
-//     fingerprintDependencies = true (default to false since it seems it leads to large build.xml files that take
-//         time to load when viewing jobs in Jenkins UI)
+//     fingerprintDependencies = false (default to true since it's required by the withMaven dependency graph feature
+//         in order to have builds trigger automatically other builds when dependencies are built)
 
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
 //
@@ -141,7 +141,7 @@ def call(name, body)
             echoXWiki "Using Maven options: ${env.MAVEN_OPTS}"
             def archiveArtifacts = config.archiveArtifacts == null ? false : config.archiveArtifacts
             echoXWiki "Artifact archiving: ${archiveArtifacts}"
-            def fingerprintDependencies = config.fingerprintDependencies == null ? false :
+            def fingerprintDependencies = config.fingerprintDependencies == null ? true :
                 config.fingerprintDependencies
             echoXWiki "Dependencies fingerprinting: ${fingerprintDependencies}"
             // Note: We're not passing "mavenOpts" voluntarily, see configureJavaTool()
