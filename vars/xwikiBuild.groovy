@@ -214,6 +214,10 @@ def wrapInXvnc(config, closure)
 
 def notifyByMail(String buildStatus)
 {
+    // Sending mails to:
+    // - culprits: list of users who committed a change since the last non-broken build till now
+    // - developers: anyone who checked in code for the last build
+    // - requester: whoever triggered the build manually
     emailext (
         subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - ${buildStatus}",
         body: '''
