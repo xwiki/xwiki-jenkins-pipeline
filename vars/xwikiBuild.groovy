@@ -214,6 +214,8 @@ def wrapInXvnc(config, closure)
 
 def notifyByMail(String buildStatus)
 {
+    echoXWiki "Build has failed, sending mails to concerned parties"
+
     // Sending mails to:
     // - culprits: list of users who committed a change since the last non-broken build till now
     // - developers: anyone who checked in code for the last build
