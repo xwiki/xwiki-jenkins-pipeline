@@ -531,18 +531,22 @@ def boolean checkForFlickers()
                 "jqlQuery=%22Flickering%20Test%22%20is%20not%20empty%20and%20resolution%20=%20Unresolved")
             def root = new XmlSlurper().parseText(url.toURL().text)
             def knownFlickers = []
+            def packageName = ''
             root.channel.item.customfields.customfield.each() { customfield ->
                 if (customfield.customfieldname == 'Flickering Test') {
-                    def packageName = ''
                     customfield.customfieldvalues.customfieldvalue.text().split(',').each() {
                         // Check if a package is specified and if not use the previously found package name
                         // This is an optimization to make it shorter to specify several tests in the same test class.
                         // e.g.: "org.xwiki.test.ui.extension.ExtensionTest#testUpgrade,testUninstall"
+                        def fullName
                         int pos = it.indexOf('#')
                         if (pos > -1) {
                             packageName = it.substring(0, pos)
+                            fullName = it
+                        } else {
+                            fullName = "${packageName}.${it}".toString()
                         }
-                        knownFlickers.add(it)
+                        knownFlickers.add(fullName)
                     }
                 }
             }
@@ -554,9 +558,11 @@ def boolean checkForFlickers()
             containsOnlyFlickers = true
             failedTests.each() { testResult ->
                 // Format of a Test Result id is "junit/<package name>/<test class name>/<test method name>"
+                // Example: "junit/org.xwiki.test.ui.repository/RepositoryTest/validateAllFeatures"
+                // => testName = "org.xwiki.test.ui.repository.RepositoryTest#validateAllFeatures"
                 def parts = testResult.getId().split('/')
-                def testName = "${parts[1]}.${parts[2]}#${parts[3]}"
-                echoXWiki "Analyzing test [${testResult.getId()}] for flicker..."
+                def testName = "${parts[1]}.${parts[2]}#${parts[3]}".toString()
+                echoXWiki "Analyzing test [${testName}] for flicker..."
                 if (knownFlickers.contains(testName)) {
                     // Add the information that the test is a flicker to the test's description
                     testResult.setDescription(
