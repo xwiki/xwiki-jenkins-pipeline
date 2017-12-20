@@ -335,7 +335,7 @@ def computeMavenGoals(config)
  * Since we're trying to guess the Java version to use based on the parent POM version, we need to ensure that the
  * parent POM points to an XWiki core module (there are several possible) so that we can compare with the version 8.
  */
-boolean isKnownParent(parentGroupId, parentArtifactId)
+def isKnownParent(parentGroupId, parentArtifactId)
 {
     return (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-platform') ||
         (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-commons') ||
@@ -445,7 +445,7 @@ def attachScreenshotToFailingTests()
  *
  * @return true if the build has false positives or if there are only flickering tests
  */
-def boolean checkForFalsePositivesAndFlickers()
+def checkForFalsePositivesAndFlickers()
 {
     // Step 1: Check for false positives
     def containsFalsePositives = checkForFalsePositives()
@@ -461,7 +461,7 @@ def boolean checkForFalsePositivesAndFlickers()
  *
  * @return true if false positives have been detected
  */
-def boolean checkForFalsePositives()
+def checkForFalsePositives()
 {
     def messages = [
         [".*A fatal error has been detected by the Java Runtime Environment.*", "JVM Crash", "A JVM crash happened!"],
@@ -518,7 +518,7 @@ def boolean checkForFalsePositives()
  *
  * @return true if the failing tests only contain flickering tests
  */
-def boolean checkForFlickers()
+def checkForFlickers()
 {
     boolean containsOnlyFlickers = false
     AbstractTestResultAction testResultAction = currentBuild.rawBuild.getAction(AbstractTestResultAction.class)
@@ -526,34 +526,9 @@ def boolean checkForFlickers()
         // Find all failed tests
         def failedTests = testResultAction.getResult().getFailedTests()
         if (failedTests.size() > 0) {
-            // Get all false positives from JIRA
-            def url = "https://jira.xwiki.org/sr/jira.issueviews:searchrequest-xml/temp/SearchRequest.xml?".concat(
-                "jqlQuery=%22Flickering%20Test%22%20is%20not%20empty%20and%20resolution%20=%20Unresolved")
-            def root = new XmlSlurper().parseText(url.toURL().text)
-            def knownFlickers = []
-            def packageName = ''
-            root.channel.item.customfields.customfield.each() { customfield ->
-                if (customfield.customfieldname == 'Flickering Test') {
-                    customfield.customfieldvalues.customfieldvalue.text().split(',').each() {
-                        // Check if a package is specified and if not use the previously found package name
-                        // This is an optimization to make it shorter to specify several tests in the same test class.
-                        // e.g.: "org.xwiki.test.ui.extension.ExtensionTest#testUpgrade,testUninstall"
-                        def fullName
-                        int pos = it.indexOf('#')
-                        if (pos > -1) {
-                            packageName = it.substring(0, pos)
-                            fullName = it
-                        } else {
-                            fullName = "${packageName}.${it}".toString()
-                        }
-                        knownFlickers.add(fullName)
-                    }
-                }
-            }
-            echoXWiki "Known flickering tests: ${knownFlickers}"
+            def knownFlickers = getKnownFlickeringTests()
 
             // For each failed test, check if it's in the known flicker list.
-            // If all failed tests are flickers then don't send notification email
             def containsAtLeastOneFlicker = false
             containsOnlyFlickers = true
             failedTests.each() { testResult ->
@@ -564,9 +539,14 @@ def boolean checkForFlickers()
                 def testName = "${parts[1]}.${parts[2]}#${parts[3]}".toString()
                 echoXWiki "Analyzing test [${testName}] for flicker..."
                 if (knownFlickers.contains(testName)) {
-                    // Add the information that the test is a flicker to the test's description
-                    testResult.setDescription(
-                        "<h1 style='color:red'>This is a flickering test</h1>${testResult.getDescription() ?: ''}")
+                    // Add the information that the test is a flicker to the test's description. Only display this
+                    // once (a Jenkinsfile can contain several builds and this this code can be called several times
+                    // for the same tests).
+                    def flickeringText = 'This is a flickering test'
+                    if (testResult.getDescription() == null || !testResult.getDescription().contains(flickeringText)) {
+                        testResult.setDescription(
+                            "<h1 style='color:red'>${flickeringText}</h1>${testResult.getDescription() ?: ''}")
+                    }
                     echo "   It's a flicker"
                     containsAtLeastOneFlicker = true
                 } else {
@@ -585,4 +565,38 @@ def boolean checkForFlickers()
     }
 
     return containsOnlyFlickers
+}
+
+/**
+ * @return all known flickering tests from JIRA in the format
+ *         {@code org.xwiki.test.ui.repository.RepositoryTest#validateAllFeatures}
+ */
+def getKnownFlickeringTests()
+{
+    def knownFlickers = []
+    def url = "https://jira.xwiki.org/sr/jira.issueviews:searchrequest-xml/temp/SearchRequest.xml?".concat(
+            "jqlQuery=%22Flickering%20Test%22%20is%20not%20empty%20and%20resolution%20=%20Unresolved")
+    def root = new XmlSlurper().parseText(url.toURL().text)
+    def packageName = ''
+    root.channel.item.customfields.customfield.each() { customfield ->
+        if (customfield.customfieldname == 'Flickering Test') {
+            customfield.customfieldvalues.customfieldvalue.text().split(',').each() {
+                // Check if a package is specified and if not use the previously found package name
+                // This is an optimization to make it shorter to specify several tests in the same test class.
+                // e.g.: "org.xwiki.test.ui.extension.ExtensionTest#testUpgrade,testUninstall"
+                def fullName
+                int pos = it.indexOf('#')
+                if (pos > -1) {
+                    packageName = it.substring(0, pos)
+                    fullName = it
+                } else {
+                    fullName = "${packageName}.${it}".toString()
+                }
+                knownFlickers.add(fullName)
+            }
+        }
+    }
+    echoXWiki "Known flickering tests: ${knownFlickers}"
+
+    return knownFlickers
 }
