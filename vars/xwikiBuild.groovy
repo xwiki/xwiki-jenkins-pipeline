@@ -188,10 +188,9 @@ def call(name, body)
         echoXWiki "Checking for false positives and flickers in build results..."
         def containsFalsePositivesOrOnlyFlickers = checkForFalsePositivesAndFlickers()
 
-        // Also send a mail notification when the job has failed tests.
-        // The JUnit archiver above will mark the build as UNSTABLE when there are failed tests
-        echoXWiki "Checking if email should be sent or not"
-        if (currentBuild.result == 'UNSTABLE')
+        // Also send a mail notification when the job is not successful.
+        if (currentBuild.result != 'SUCCESS')
+            echoXWiki "Checking if email should be sent or not"
             if (!containsFalsePositivesOrOnlyFlickers) {
                 notifyByMail(currentBuild.result)
             } else {
