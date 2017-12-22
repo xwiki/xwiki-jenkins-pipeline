@@ -24,6 +24,7 @@ import hudson.tasks.junit.TestResultAction
 import hudson.util.IOUtils
 import javax.xml.bind.DatatypeConverter
 import hudson.tasks.test.AbstractTestResultAction
+import org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildSummaryAction
 
 // Example usage:
 // parallel(
@@ -557,9 +558,18 @@ def checkForFlickers()
             }
 
             if (containsAtLeastOneFlicker) {
-                manager.addWarningBadge("Contains some flickering tests")
-                manager.createSummary("warning.gif").appendText("<h1>Contains some flickering tests</h1>", false,
-                    false, false, "red")
+                // Only add the badge if none already exist
+                def badgeFound = false
+                def badgeText = 'Contains some flickering tests'
+                currentBuild.getRawBuild().getActions(GroovyPostbuildSummaryAction.class).each() {
+                    if (it.getText().contains(badgeText)) {
+                        found = true
+                    }
+                }
+                if (!badgeFound) {
+                    manager.addWarningBadge(badgeText)
+                    manager.createSummary("warning.gif").appendText("<h1>${badgeText}</h1>", false, false, false, "red")
+                }
             }
         }
     }
