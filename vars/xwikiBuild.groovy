@@ -398,6 +398,8 @@ def attachScreenshotToFailingTests()
 
     // Go through each failed test in the current build.
     def failedTests = testResults.getFailedTests()
+    // Clear potentially problematic non-serializable object reference.
+    testResults = null
     for (def failedTest : failedTests) {
         // Compute the test's screenshot file name.
         def testClass = failedTest.getClassName()
@@ -449,6 +451,8 @@ def attachScreenshotToFailingTests()
 
             // Set the description to the failing test and save it to disk.
             testResultAction.setDescription(failedTest, description)
+            // Clear potentially problematic non-serializable object reference.
+            testResultAction = null
             currentBuild.rawBuild.save()
         }
     }
@@ -542,6 +546,8 @@ def checkForFlickers()
     if (testResultAction != null) {
         // Find all failed tests
         def failedTests = testResultAction.getResult().getFailedTests()
+        // Clear potentially problematic non-serializable object reference.
+        testResultAction = null
         if (failedTests.size() > 0) {
             def knownFlickers = getKnownFlickeringTests()
 
