@@ -25,6 +25,7 @@ import hudson.util.IOUtils
 import javax.xml.bind.DatatypeConverter
 import hudson.tasks.test.AbstractTestResultAction
 import org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildSummaryAction
+import com.cloudbees.groovy.cps.NonCPS
 
 // Example usage:
 // parallel(
@@ -82,6 +83,11 @@ import org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildSummaryAction
 //   - Pipeline Maven Integration plugin (provides withMaven() API)
 //   - Groovy Post Build plugin (provides the 'manager' variable)
 
+// Implementatio notes:
+// * We use @NonCPS to avoid issues with non-serializable local variables. Method must not call pipeline steps
+//   See https://github.com/jenkinsci/pipeline-plugin/blob/master/TUTORIAL.md#serializing-local-variables and
+//   https://github.com/jenkinsci/workflow-cps-plugin/blob/master/README.md#technical-design
+
 def call(body)
 {
     call('Default', body)
@@ -120,7 +126,8 @@ def call(name, body)
         checkout scm
 
         // Configure the version of Java to use
-        configureJavaTool(config)
+        def pom = readMavenPom file: 'pom.xml'
+        configureJavaTool(config, pom)
 
         // Display some environmental information that can be useful to debug some failures
         // Note: if the executables don't exist, this won't fail the step thanks to "returnStatus: true".
@@ -250,6 +257,7 @@ ${BUILD_LOG_REGEX, regex = ".*Finished at:.*", linesBefore = 100, linesAfter = 1
 /**
  * Echo text with a special character prefix to make it stand out in the pipeline logs.
  */
+@NonCPS
 def echoXWiki(string)
 {
     echo "\u27A1 ${string}"
@@ -259,11 +267,12 @@ def echoXWiki(string)
  * Configure which Java version to use by Maven and which Java memory options to use when the {@code javaTool} and
  * {@code mavenOpts} config parameter weren't specified.
  */
-def configureJavaTool(config)
+@NonCPS
+def configureJavaTool(def config, def pom)
 {
     def javaTool = config.javaTool
     if (!javaTool) {
-        javaTool = getJavaTool()
+        javaTool = getJavaTool(pom)
     }
     // NOTE: The Java tool Needs to be configured in the Jenkins global configuration.
     env.JAVA_HOME="${tool javaTool}"
@@ -287,9 +296,9 @@ def configureJavaTool(config)
  * Read the parent pom to try to guess the java tool to use based on the parent pom version.
  * XWiki versions < 8 should use Java 7.
  */
-def getJavaTool()
+@NonCPS
+def getJavaTool(def pom)
 {
-    def pom = readMavenPom file: 'pom.xml'
     def parent = pom.parent
     def groupId
     def artifactId
@@ -315,6 +324,7 @@ def getJavaTool()
     return 'official'
 }
 
+@NonCPS
 def computeMavenGoals(config)
 {
     def goals = config.goals
@@ -336,6 +346,7 @@ def computeMavenGoals(config)
  * Since we're trying to guess the Java version to use based on the parent POM version, we need to ensure that the
  * parent POM points to an XWiki core module (there are several possible) so that we can compare with the version 8.
  */
+@NonCPS
 def isKnownParent(parentGroupId, parentArtifactId)
 {
     return (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-platform') ||
@@ -350,6 +361,7 @@ def isKnownParent(parentGroupId, parentArtifactId)
 /**
  * Create a FilePath instance that points either to a file on the master node or a file on a remote agent node.
  */
+@NonCPS
 def createFilePath(String path)
 {
     if (env['NODE_NAME'] == null) {
@@ -375,6 +387,7 @@ def createFilePath(String path)
  *       (http://<jenkins server ip>/configureSecurity).</li>
  * </ul>
  */
+@NonCPS
 def attachScreenshotToFailingTests()
 {
     def testResults = manager.build.getAction(TestResultAction.class)
@@ -416,8 +429,8 @@ def attachScreenshotToFailingTests()
 
         // Determine which one exists, if any.
         def imageAbsolutePath = imageAbsolutePath1.exists() ?
-                imageAbsolutePath1 : (imageAbsolutePath2.exists() ? imageAbsolutePath2 :
-                (imageAbsolutePath3.exists() ? imageAbsolutePath3 : null))
+            imageAbsolutePath1 : (imageAbsolutePath2.exists() ? imageAbsolutePath2 :
+            (imageAbsolutePath3.exists() ? imageAbsolutePath3 : null))
 
         echo "Attaching screenshot to description: [${imageAbsolutePath}]"
 
@@ -446,6 +459,7 @@ def attachScreenshotToFailingTests()
  *
  * @return true if the build has false positives or if there are only flickering tests
  */
+@NonCPS
 def checkForFalsePositivesAndFlickers()
 {
     // Step 1: Check for false positives
@@ -462,6 +476,7 @@ def checkForFalsePositivesAndFlickers()
  *
  * @return true if false positives have been detected
  */
+@NonCPS
 def checkForFalsePositives()
 {
     def messages = [
@@ -519,6 +534,7 @@ def checkForFalsePositives()
  *
  * @return true if the failing tests only contain flickering tests
  */
+@NonCPS
 def checkForFlickers()
 {
     boolean containsOnlyFlickers = false
@@ -581,6 +597,7 @@ def checkForFlickers()
  * @return all known flickering tests from JIRA in the format
  *         {@code org.xwiki.test.ui.repository.RepositoryTest#validateAllFeatures}
  */
+@NonCPS
 def getKnownFlickeringTests()
 {
     def knownFlickers = []
