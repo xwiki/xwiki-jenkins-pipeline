@@ -281,7 +281,7 @@ def configureJavaTool(def config, def pom)
     // Configure MAVEN_OPTS based on the java version found and whether uses have configured the mavenOpts or not
     def mavenOpts = config.mavenOpts
     if (!mavenOpts) {
-        mavenOpts = '-Xmx1536m -Xms256m'
+        mavenOpts = '-Xmx2112m -Xms256m'
         if (javaTool == 'java7') {
             mavenOpts = "${mavenOpts} -XX:MaxPermSize=512m"
         }
