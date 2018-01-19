@@ -286,7 +286,7 @@ def configureJavaTool(def config, def pom)
     echoXWiki "Found overridden Maven options: ${config.mavenOpts}"
     def mavenOpts = config.mavenOpts
     if (!mavenOpts) {
-        mavenOpts = '-Xmx2112m -Xms256m'
+        mavenOpts = '-Xmx1536m -Xms256m'
         if (javaTool == 'java7') {
             mavenOpts = "${mavenOpts} -XX:MaxPermSize=512m"
         }
