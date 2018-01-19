@@ -25,7 +25,6 @@ import hudson.util.IOUtils
 import javax.xml.bind.DatatypeConverter
 import hudson.tasks.test.AbstractTestResultAction
 import org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildSummaryAction
-import com.cloudbees.groovy.cps.NonCPS
 
 // Example usage:
 // parallel(
@@ -82,11 +81,6 @@ import com.cloudbees.groovy.cps.NonCPS
 //   - Pipeline Utility Steps plugin (provides readMavenPom() API)
 //   - Pipeline Maven Integration plugin (provides withMaven() API)
 //   - Groovy Post Build plugin (provides the 'manager' variable)
-
-// Implementatio notes:
-// * We use @NonCPS to avoid issues with non-serializable local variables. Method must not call pipeline steps
-//   See https://github.com/jenkinsci/pipeline-plugin/blob/master/TUTORIAL.md#serializing-local-variables and
-//   https://github.com/jenkinsci/workflow-cps-plugin/blob/master/README.md#technical-design
 
 def call(body)
 {
@@ -262,7 +256,6 @@ ${BUILD_LOG_REGEX, regex = ".*Finished at:.*", linesBefore = 100, linesAfter = 1
 /**
  * Echo text with a special character prefix to make it stand out in the pipeline logs.
  */
-@NonCPS
 def echoXWiki(string)
 {
     echo "\u27A1 ${string}"
@@ -301,7 +294,6 @@ def configureJavaTool(def config, def pom)
  * Read the parent pom to try to guess the java tool to use based on the parent pom version.
  * XWiki versions < 8 should use Java 7.
  */
-@NonCPS
 def getJavaTool(def pom)
 {
     def parent = pom.parent
@@ -329,7 +321,6 @@ def getJavaTool(def pom)
     return 'official'
 }
 
-@NonCPS
 def computeMavenGoals(config)
 {
     def goals = config.goals
@@ -351,7 +342,6 @@ def computeMavenGoals(config)
  * Since we're trying to guess the Java version to use based on the parent POM version, we need to ensure that the
  * parent POM points to an XWiki core module (there are several possible) so that we can compare with the version 8.
  */
-@NonCPS
 def isKnownParent(parentGroupId, parentArtifactId)
 {
     return (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-platform') ||
@@ -366,7 +356,6 @@ def isKnownParent(parentGroupId, parentArtifactId)
 /**
  * Create a FilePath instance that points either to a file on the master node or a file on a remote agent node.
  */
-@NonCPS
 def createFilePath(String path)
 {
     if (env['NODE_NAME'] == null) {
@@ -392,7 +381,6 @@ def createFilePath(String path)
  *       (http://<jenkins server ip>/configureSecurity).</li>
  * </ul>
  */
-@NonCPS
 def attachScreenshotToFailingTests()
 {
     def testResults = manager.build.getAction(TestResultAction.class)
@@ -403,6 +391,9 @@ def attachScreenshotToFailingTests()
 
     // Go through each failed test in the current build.
     def failedTests = testResults.getFailedTests()
+    // Clear potentially problematic non-serializable object reference, after we've used it.
+    // See https://github.com/jenkinsci/pipeline-plugin/blob/master/TUTORIAL.md#serializing-local-variables
+    testResults = null
     for (def failedTest : failedTests) {
         // Compute the test's screenshot file name.
         def testClass = failedTest.getClassName()
@@ -454,6 +445,9 @@ def attachScreenshotToFailingTests()
 
             // Set the description to the failing test and save it to disk.
             testResultAction.setDescription(failedTest, description)
+            // Clear potentially problematic non-serializable object reference, after we've used it.
+            // See https://github.com/jenkinsci/pipeline-plugin/blob/master/TUTORIAL.md#serializing-local-variables
+            testResultAction = null
             currentBuild.rawBuild.save()
         }
     }
@@ -464,7 +458,6 @@ def attachScreenshotToFailingTests()
  *
  * @return true if the build has false positives or if there are only flickering tests
  */
-@NonCPS
 def checkForFalsePositivesAndFlickers()
 {
     // Step 1: Check for false positives
@@ -481,7 +474,6 @@ def checkForFalsePositivesAndFlickers()
  *
  * @return true if false positives have been detected
  */
-@NonCPS
 def checkForFalsePositives()
 {
     def messages = [
@@ -539,7 +531,6 @@ def checkForFalsePositives()
  *
  * @return true if the failing tests only contain flickering tests
  */
-@NonCPS
 def checkForFlickers()
 {
     boolean containsOnlyFlickers = false
@@ -547,6 +538,9 @@ def checkForFlickers()
     if (testResultAction != null) {
         // Find all failed tests
         def failedTests = testResultAction.getResult().getFailedTests()
+        // Clear potentially problematic non-serializable object reference, after we've used it.
+        // See https://github.com/jenkinsci/pipeline-plugin/blob/master/TUTORIAL.md#serializing-local-variables
+        testResultAction = null
         if (failedTests.size() > 0) {
             def knownFlickers = getKnownFlickeringTests()
 
@@ -602,7 +596,6 @@ def checkForFlickers()
  * @return all known flickering tests from JIRA in the format
  *         {@code org.xwiki.test.ui.repository.RepositoryTest#validateAllFeatures}
  */
-@NonCPS
 def getKnownFlickeringTests()
 {
     def knownFlickers = []
