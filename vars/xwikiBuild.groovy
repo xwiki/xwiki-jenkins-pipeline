@@ -108,7 +108,7 @@ def call(name, body)
         [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', numToKeepStr: '10']],
         disableConcurrentBuilds()
     ]
-//    properties(projectProperties)
+    properties(projectProperties)
 
     echoXWiki "Calling Jenkinsfile..."
     def config = [:]
