@@ -98,21 +98,22 @@ def call(body)
  */
 def call(name, body)
 {
-    echoXWiki "Start of pipeline library"
-
-    def config = [:]
-    body.resolveStrategy = Closure.DELEGATE_FIRST
-    body.delegate = config
-
-    // Only keep the 10 most recent builds.
-    echoXWiki "Only keep the 10 most recent builds"
+    // Only keep the 10 most recent builds & disable concurrent builds to avoid rebuilding whenever a new commit is
+    // made. The commits will accumulate till the previous build is finished before starting a new one.
+    // Note 1: this is limiting concurrency per branch only.
+    // Note 2: This needs to be one of the first code executed which is why it's the first step we execute.
+    // See https://thepracticalsysadmin.com/limit-jenkins-multibranch-pipeline-builds/ for details.
+    echoXWiki "Only keep the 10 most recent builds + disable concurrent builds"
     def projectProperties = [
-        [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', numToKeepStr: '10']],
-        disableConcurrentBuilds()
+            [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', numToKeepStr: '10']],
+            disableConcurrentBuilds()
     ]
     properties(projectProperties)
 
     echoXWiki "Calling Jenkinsfile..."
+    def config = [:]
+    body.resolveStrategy = Closure.DELEGATE_FIRST
+    body.delegate = config
     body()
 
     def mavenTool
