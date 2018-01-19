@@ -104,11 +104,7 @@ def call(name, body)
     // Note 2: This needs to be one of the first code executed which is why it's the first step we execute.
     // See https://thepracticalsysadmin.com/limit-jenkins-multibranch-pipeline-builds/ for details.
     echoXWiki "Only keep the 10 most recent builds + disable concurrent builds"
-    def projectProperties = [
-            [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', numToKeepStr: '10']],
-            disableConcurrentBuilds()
-    ]
-    properties(projectProperties)
+    properties(disableConcurrentBuilds())
 
     echoXWiki "Calling Jenkinsfile..."
     def config = [:]
