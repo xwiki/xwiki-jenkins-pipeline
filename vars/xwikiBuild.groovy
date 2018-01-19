@@ -279,6 +279,7 @@ def configureJavaTool(def config, def pom)
     env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
 
     // Configure MAVEN_OPTS based on the java version found and whether uses have configured the mavenOpts or not
+    echoXWiki "Found overridden Maven options: ${config.mavenOpts}"
     def mavenOpts = config.mavenOpts
     if (!mavenOpts) {
         mavenOpts = '-Xmx2112m -Xms256m'
