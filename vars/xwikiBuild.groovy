@@ -52,7 +52,7 @@ import com.cloudbees.groovy.cps.NonCPS
 //     mavenOpts = '-Xmx1024m'
 //         (default is '-Xmx1536m -Xms256m' for java8 and '-Xmx1536m -Xms256m -XX:MaxPermSize=512m' for java7)
 //     mavenTool = 'Maven 3' (default is 'Maven')
-//     systemProperties = '-Dparam1=value1 -Dparam2value2' (default is empty)
+//     properties = '-Dparam1=value1 -Dparam2value2' (default is empty)
 //     javaTool = 'java7' (default is 'official')
 //     timeout = 60 (default is 240 minutes)
 //     disabled = true (allows disabling a build, defaults to true)
@@ -167,8 +167,8 @@ def call(name, body)
                     echoXWiki "Using Maven goals: ${goals}"
                     def profiles = config.profiles ?: 'quality,legacy,integration-tests,jetty,hsqldb,firefox'
                     echoXWiki "Using Maven profiles: ${profiles}"
-                    def systemProperties = config.systemProperties ?: ''
-                    echoXWiki "Using system properties: ${systemProperties}"
+                    def properties = config.properties ?: ''
+                    echoXWiki "Using Maven properties: ${properties}"
                     def timeoutThreshold = config.timeout ?: 240
                     echoXWiki "Using timeout: ${timeoutThreshold}"
                     // Abort the build if it takes more than the timeout threshold (in minutes).
@@ -180,8 +180,8 @@ def call(name, body)
                         // build (see all failing tests for all modules built). Also note that the build is marked
                         // unstable when there are failing tests by the JUnit Archiver executed during the
                         // 'Post Build' stage below.
-                        def fullSystemProperties = "-Dmaven.test.failure.ignore ${systemProperties}"
-                        sh "mvn -f ${pom} ${goals} jacoco:report -P${profiles} -U -e ${fullSystemProperties}"
+                        def fullProperties = "-Dmaven.test.failure.ignore ${properties}"
+                        sh "mvn -f ${pom} ${goals} jacoco:report -P${profiles} -U -e ${fullProperties}"
                     }
                 } catch (Exception e) {
                     currentBuild.result = 'FAILURE'
