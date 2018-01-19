@@ -98,17 +98,21 @@ def call(body)
  */
 def call(name, body)
 {
+    echoXWiki "Start of pipeline library"
+
     def config = [:]
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = config
 
     // Only keep the 10 most recent builds.
+    echoXWiki "Only keep the 10 most recent builds"
     def projectProperties = [
         [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', numToKeepStr: '10']],
         disableConcurrentBuilds()
     ]
     properties(projectProperties)
 
+    echoXWiki "Calling Jenkinsfile..."
     body()
 
     def mavenTool
