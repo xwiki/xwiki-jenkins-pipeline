@@ -132,7 +132,7 @@ def call(name, body)
 
         // Configure the version of Java to use
         def pom = readMavenPom file: 'pom.xml'
-        configureJavaTool(config, pom)
+        configureJavaTool(config, pom, env)
 
         // Display some environmental information that can be useful to debug some failures
         // Note: if the executables don't exist, this won't fail the step thanks to "returnStatus: true".
@@ -273,7 +273,7 @@ def echoXWiki(string)
  * {@code mavenOpts} config parameter weren't specified.
  */
 @NonCPS
-def configureJavaTool(def config, def pom)
+def configureJavaTool(def config, def pom, def env)
 {
     def javaTool = config.javaTool
     if (!javaTool) {
