@@ -25,6 +25,7 @@ import hudson.util.IOUtils
 import javax.xml.bind.DatatypeConverter
 import hudson.tasks.test.AbstractTestResultAction
 import org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildSummaryAction
+import com.cloudbees.groovy.cps.NonCPS
 
 // Example usage:
 // parallel(
@@ -543,6 +544,7 @@ def checkForFlickers()
         testResultAction = null
         if (failedTests.size() > 0) {
             def knownFlickers = getKnownFlickeringTests()
+            echoXWiki "Known flickering tests: ${knownFlickers}"
 
             // For each failed test, check if it's in the known flicker list.
             def containsAtLeastOneFlicker = false
@@ -596,12 +598,14 @@ def checkForFlickers()
  * @return all known flickering tests from JIRA in the format
  *         {@code org.xwiki.test.ui.repository.RepositoryTest#validateAllFeatures}
  */
+@NonCPS
 def getKnownFlickeringTests()
 {
     def knownFlickers = []
     def url = "https://jira.xwiki.org/sr/jira.issueviews:searchrequest-xml/temp/SearchRequest.xml?".concat(
             "jqlQuery=%22Flickering%20Test%22%20is%20not%20empty%20and%20resolution%20=%20Unresolved")
     def root = new XmlSlurper().parseText(url.toURL().text)
+    // Note: slurper nodes are not seralizable, hence the @NonCPS annotation above.
     def packageName = ''
     root.channel.item.customfields.customfield.each() { customfield ->
         if (customfield.customfieldname == 'Flickering Test') {
@@ -621,7 +625,6 @@ def getKnownFlickeringTests()
             }
         }
     }
-    echoXWiki "Known flickering tests: ${knownFlickers}"
 
     return knownFlickers
 }
