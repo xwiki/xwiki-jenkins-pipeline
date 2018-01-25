@@ -205,6 +205,8 @@ def call(name, body)
                 echoXWiki "No email sent even if some tests failed because they contain only flickering tests!"
         }
     }
+
+    return currentBuild
 }
 
 def wrapInXvnc(config, closure)
