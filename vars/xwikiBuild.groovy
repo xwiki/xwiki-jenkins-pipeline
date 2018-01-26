@@ -440,10 +440,10 @@ def attachScreenshotToFailingTests()
             imageAbsolutePath1 : (imageAbsolutePath2.exists() ? imageAbsolutePath2 :
             (imageAbsolutePath3.exists() ? imageAbsolutePath3 : null))
 
-        echo "Attaching screenshot to description: [${imageAbsolutePath}]"
-
         // If the screenshot exists...
         if (imageAbsolutePath != null) {
+            echo "Attaching screenshot to description: [${imageAbsolutePath}]"
+
             // Build a base64 string of the image's content.
             def imageDataStream = imageAbsolutePath.read()
             byte[] imageData = IOUtils.toByteArray(imageDataStream)
