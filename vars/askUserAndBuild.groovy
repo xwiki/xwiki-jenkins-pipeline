@@ -24,9 +24,13 @@
  * Ask the user what to build.
  *
  * @param buildMap A map consisting of build configuration. See the Jenkinsfile for xwiki-platform to see how to use it
+ * @param body the closure containins any method required by the buildMap
  */
-def call(def buildMap)
+def call(def buildMap, body)
 {
+    // Evaluate methods that may be required by the calls to buildMap[...]
+    body()
+
     // If a user is manually triggering this job, then ask what to build
     if (currentBuild.rawBuild.getCauses()[0].toString().contains('UserIdCause')) {
         echo "Build triggered by user, asking question..."
