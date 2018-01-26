@@ -29,6 +29,7 @@ def call(def buildMap)
 {
     // If a user is manually triggering this job, then ask what to build
     if (currentBuild.rawBuild.getCauses()[0].toString().contains('UserIdCause')) {
+        echo "Build triggered by user, asking question..."
         def userInput
         try {
             timeout(time: 60, unit: 'SECONDS') {
@@ -48,6 +49,7 @@ def call(def buildMap)
         }
         buildMap[userInput]
     } else {
+        echo "Build triggered automatically, building all..."
         buildMap['All']
     }
 }
