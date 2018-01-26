@@ -197,8 +197,8 @@ def call(String name = 'Default', body)
             if (!containsFalsePositivesOrOnlyFlickers) {
                 notifyByMail(currentBuild.result)
             } else {
-                echoXWiki "No email sent even if some tests failed because they contain only flickering tests! "
-                    + "Considering job as stable!"
+                echoXWiki "No email sent even if some tests failed because they contain only flickering tests!"
+                echoXWiki "Considering job as stable!"
                 currentBuild.result = 'SUCCESS'
         }
     }
