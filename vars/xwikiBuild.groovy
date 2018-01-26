@@ -83,15 +83,10 @@ import com.cloudbees.groovy.cps.NonCPS
 //   - Pipeline Maven Integration plugin (provides withMaven() API)
 //   - Groovy Post Build plugin (provides the 'manager' variable)
 
-def call(body)
-{
-    call('Default', body)
-}
-
 /**
  * @param name a string representing the current build
  */
-def call(name, body)
+def call(String name = 'Default', body)
 {
     // Only keep the 10 most recent builds & disable concurrent builds to avoid rebuilding whenever a new commit is
     // made. The commits will accumulate till the previous build is finished before starting a new one.
@@ -202,7 +197,9 @@ def call(name, body)
             if (!containsFalsePositivesOrOnlyFlickers) {
                 notifyByMail(currentBuild.result)
             } else {
-                echoXWiki "No email sent even if some tests failed because they contain only flickering tests!"
+                echoXWiki "No email sent even if some tests failed because they contain only flickering tests! "
+                    + "Considering job as stable!"
+                currentBuild.result = 'SUCCESS'
         }
     }
 
