@@ -24,36 +24,35 @@
  * Ask the user what to build.
  *
  * @param buildMap A map consisting of build configuration. See the Jenkinsfile for xwiki-platform to see how to use it
- * @param body the closure containins any method required by the buildMap
+ * @return the id of the item selected in the passed buildMap
  */
-def call(def buildMap, body)
+def call(def buildMap)
 {
-    // Evaluate methods that may be required by the calls to buildMap[...]
-    body()
+    def selection
 
     // If a user is manually triggering this job, then ask what to build
     if (currentBuild.rawBuild.getCauses()[0].toString().contains('UserIdCause')) {
         echo "Build triggered by user, asking question..."
-        def userInput
         try {
             timeout(time: 60, unit: 'SECONDS') {
                 def choices = buildMap.collect { k,v -> "$k" }.join('\n')
-                userInput = input(id: 'userInput', message: 'Select what to build', parameters: [
+                selection = input(id: 'selection', message: 'Select what to build', parameters: [
                         choice(choices: choices, description: 'Choose with build to execute', name: 'build')
                 ])
             }
         } catch(err) {
             def user = err.getCauses()[0].getUser()
             if ('SYSTEM' == user.toString()) { // SYSTEM means timeout.
-                userInput = 'All'
+                selection = 'All'
             } else {
                 // Aborted by user
                 throw err
             }
         }
-        buildMap[userInput]
     } else {
         echo "Build triggered automatically, building all..."
-        buildMap['All']
+        selection = 'All'
     }
+
+    return selection
 }
