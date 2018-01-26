@@ -174,25 +174,38 @@ def call(String name = 'Default', body)
                         sh "mvn -f ${pom} ${goals} jacoco:report -P${profiles} -U -e ${fullProperties}"
                     }
                 } catch (Exception e) {
-                    currentBuild.result = 'FAILURE'
-                    notifyByMail(currentBuild.result)
+                    // - If this line is reached it means the build has failed (other than for failing tests) or has
+                    //   been aborted (because we told maven above to not stop on test failures!)
+                    // - We stop the build by throwing the exception.
+                    // - Note that withMaven() doesn't set any build result in this case but we don't need to set any
+                    //   since we're stopping the build!
+                    // - Don't send emails for aborts! We discover aborts by checking for exit code 143.
+                    if (!e.getMessage().contains('exit code 143')) {
+                        notifyByMail('ERROR')
+                    }
                     throw e
                 }
             }
         }
     }
     stage("Post Build for ${name}") {
+        // If the job made it to here it means the Maven build has either succeeded or some tests have failed.
+        // If the build has succeeded, then currentBuild.result is null (since withMaven doesn't set it in this case).
+        if (currentBuild.result == null) {
+            currentBuild.result = 'SUCCESS'
+        }
+
         // For each failed test, find if there's a screenshot for it taken by the XWiki selenium tests and if so
         // embed it in the failed test's description.
-        echoXWiki "Attaching screenshots to test result pages (if any)..."
-        attachScreenshotToFailingTests()
+        if (currentBuild.result != 'SUCCESS') {
+            echoXWiki "Attaching screenshots to test result pages (if any)..."
+            attachScreenshotToFailingTests()
 
-        // Check for false positives & Flickers.
-        echoXWiki "Checking for false positives and flickers in build results..."
-        def containsFalsePositivesOrOnlyFlickers = checkForFalsePositivesAndFlickers()
+            // Check for false positives & Flickers.
+            echoXWiki "Checking for false positives and flickers in build results..."
+            def containsFalsePositivesOrOnlyFlickers = checkForFalsePositivesAndFlickers()
 
-        // Also send a mail notification when the job is not successful.
-        if (currentBuild.result != 'SUCCESS')
+            // Also send a mail notification when the job is not successful.
             echoXWiki "Checking if email should be sent or not"
             if (!containsFalsePositivesOrOnlyFlickers) {
                 notifyByMail(currentBuild.result)
@@ -200,10 +213,9 @@ def call(String name = 'Default', body)
                 echoXWiki "No email sent even if some tests failed because they contain only flickering tests!"
                 echoXWiki "Considering job as stable!"
                 currentBuild.result = 'SUCCESS'
+            }
         }
     }
-
-    return currentBuild
 }
 
 def wrapInXvnc(config, closure)
