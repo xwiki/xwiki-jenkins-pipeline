@@ -195,6 +195,8 @@ def call(String name = 'Default', body)
             currentBuild.result = 'SUCCESS'
         }
 
+        echoXWiki "Current build status after withMaven execution: ${currentBuild.result}"
+
         // For each failed test, find if there's a screenshot for it taken by the XWiki selenium tests and if so
         // embed it in the failed test's description.
         if (currentBuild.result != 'SUCCESS') {
