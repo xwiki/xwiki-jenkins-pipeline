@@ -342,7 +342,7 @@ def computeMavenGoals(config)
         // Use "deploy" goal for "master" and "stable-*" branches only and "install" for the rest.
         // This is to avoid having branches with the same version polluting the maven snapshot repo, overwriting one
         // another.
-        if (env['BRANCH_NAME'].equals("master") || env['BRANCH_NAME'].startsWith('stable-)')) {
+        if (env['BRANCH_NAME'].equals("master") || env['BRANCH_NAME'].startsWith('stable-')) {
             goals = "deploy"
         } else {
             goals = "install"
