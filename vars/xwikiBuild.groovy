@@ -254,9 +254,13 @@ Failed tests:
 
 ${FAILED_TESTS}
 
-Last build logs:
+Cause of error:
 
-${BUILD_LOG_REGEX, regex = ".*Finished at:.*", linesBefore = 100, linesAfter = 100}
+${BUILD_LOG_REGEX, regex = ".*FAILURE \\[.* (?:s|min)\\].*", linesBefore = 200, linesAfter = 0}
+
+Maven error reported:
+
+${BUILD_LOG_REGEX, regex = ".*\\[ERROR\\] After correcting the problems.*", linesBefore = 100, linesAfter = 0}
 ''',
         mimeType: 'text/plain',
         recipientProviders: [
@@ -589,13 +593,8 @@ def checkForFlickers()
 
             if (containsAtLeastOneFlicker) {
                 // Only add the badge if none already exist
-                def badgeFound = false
                 def badgeText = 'Contains some flickering tests'
-                currentBuild.getRawBuild().getActions(GroovyPostbuildSummaryAction.class).each() {
-                    if (it.getText().contains(badgeText)) {
-                        found = true
-                    }
-                }
+                def badgeFound = isBadgeFound(currentBuild.getRawBuild().getActions(GroovyPostbuildSummaryAction.class))
                 if (!badgeFound) {
                     manager.addWarningBadge(badgeText)
                     manager.createSummary("warning.gif").appendText("<h1>${badgeText}</h1>", false, false, false, "red")
@@ -605,6 +604,17 @@ def checkForFlickers()
     }
 
     return containsOnlyFlickers
+}
+
+@NonCPS
+def isBadgeFound(def groovyPostbuildSummaryActionItems)
+{
+    groovyPostbuildSummaryActionItems.each() {
+        if (it.getText().contains(badgeText)) {
+            return true
+        }
+    }
+    return false
 }
 
 /**
