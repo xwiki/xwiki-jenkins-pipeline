@@ -20,7 +20,6 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 import hudson.FilePath
-import hudson.tasks.junit.TestResultAction
 import hudson.util.IOUtils
 import javax.xml.bind.DatatypeConverter
 import hudson.tasks.test.AbstractTestResultAction
@@ -124,6 +123,12 @@ def call(String name = 'Default', body)
         def pom = readMavenPom file: 'pom.xml'
         configureJavaTool(config, pom)
 
+        // Initialize an environment variable that will hold all failing tests. We need this because we can't get
+        // access to the failing tests for a given Maven run (we can only get them globally).
+        // See https://groups.google.com/d/msg/jenkinsci-users/dDDPC486JWE/9vtojUOoAwAJ
+        // Note: we save TesResult objects in this list and they are serializable.
+        env.XWIKI_FAILING_TESTS = []
+
         // Display some environmental information that can be useful to debug some failures
         // Note: if the executables don't exist, this won't fail the step thanks to "returnStatus: true".
         sh script: 'ps -ef', returnStatus: true
@@ -200,21 +205,28 @@ def call(String name = 'Default', body)
         // For each failed test, find if there's a screenshot for it taken by the XWiki selenium tests and if so
         // embed it in the failed test's description.
         if (currentBuild.result != 'SUCCESS') {
-            echoXWiki "Attaching screenshots to test result pages (if any)..."
-            attachScreenshotToFailingTests()
+            def failingTests = getFailingTestsSinceLastMavenExecution()
+            echoXWiki "Failing tests: ${failingTests}"
+            if (!failingTests.isEmpty()) {
+                echoXWiki "Attaching screenshots to test result pages (if any)..."
+                attachScreenshotToFailingTests(failingTests)
 
-            // Check for false positives & Flickers.
-            echoXWiki "Checking for false positives and flickers in build results..."
-            def containsFalsePositivesOrOnlyFlickers = checkForFalsePositivesAndFlickers()
+                // Check for false positives & Flickers.
+                echoXWiki "Checking for false positives and flickers in build results..."
+                def containsFalsePositivesOrOnlyFlickers = checkForFalsePositivesAndFlickers(failingTests)
 
-            // Also send a mail notification when the job is not successful.
-            echoXWiki "Checking if email should be sent or not"
-            if (!containsFalsePositivesOrOnlyFlickers) {
-                notifyByMail(currentBuild.result, name)
-            } else {
-                echoXWiki "No email sent even if some tests failed because they contain only flickering tests!"
-                echoXWiki "Considering job as successful!"
-                currentBuild.result = 'SUCCESS'
+                // Also send a mail notification when the job is not successful.
+                echoXWiki "Checking if email should be sent or not"
+                if (!containsFalsePositivesOrOnlyFlickers) {
+                    notifyByMail(currentBuild.result, name)
+                } else {
+                    echoXWiki "No email sent even if some tests failed because they contain only flickering tests!"
+                    echoXWiki "Considering job as successful!"
+                    currentBuild.result = 'SUCCESS'
+                }
+
+                // Add the new tests to the past saved failing tests
+                env.XWIKI_FAILING_TESTS.addAll(failingTests)
             }
         }
     }
@@ -399,20 +411,10 @@ def createFilePath(String path)
  *       (http://<jenkins server ip>/configureSecurity).</li>
  * </ul>
  */
-def attachScreenshotToFailingTests()
+def attachScreenshotToFailingTests(def failingTests)
 {
-    def testResults = manager.build.getAction(TestResultAction.class)
-    if (testResults == null) {
-        // No tests were run in this build, nothing left to do.
-        return
-    }
-
     // Go through each failed test in the current build.
-    def failedTests = testResults.getFailedTests()
-    // Clear potentially problematic non-serializable object reference, after we've used it.
-    // See https://github.com/jenkinsci/pipeline-plugin/blob/master/TUTORIAL.md#serializing-local-variables
-    testResults = null
-    for (def failedTest : failedTests) {
+    for (def failedTest : failingTests) {
         // Compute the test's screenshot file name.
         def testClass = failedTest.getClassName()
         def testSimpleClass = failedTest.getSimpleName()
@@ -476,13 +478,13 @@ def attachScreenshotToFailingTests()
  *
  * @return true if the build has false positives or if there are only flickering tests
  */
-def checkForFalsePositivesAndFlickers()
+def checkForFalsePositivesAndFlickers(def failingTests)
 {
     // Step 1: Check for false positives
     def containsFalsePositives = checkForFalsePositives()
 
     // Step 2: Check for flickers
-    def containsOnlyFlickers = checkForFlickers()
+    def containsOnlyFlickers = checkForFlickers(failingTests)
 
     return containsFalsePositives || containsOnlyFlickers
 }
@@ -540,6 +542,8 @@ def checkForFalsePositives()
             return true
         }
     }
+
+    return false
 }
 
 /**
@@ -549,57 +553,46 @@ def checkForFalsePositives()
  *
  * @return true if the failing tests only contain flickering tests
  */
-def checkForFlickers()
+def checkForFlickers(def failingTests)
 {
-    boolean containsOnlyFlickers = false
-    AbstractTestResultAction testResultAction = currentBuild.rawBuild.getAction(AbstractTestResultAction.class)
-    if (testResultAction != null) {
-        // Find all failed tests
-        def failedTests = testResultAction.getResult().getFailedTests()
-        // Clear potentially problematic non-serializable object reference, after we've used it.
-        // See https://github.com/jenkinsci/pipeline-plugin/blob/master/TUTORIAL.md#serializing-local-variables
-        testResultAction = null
-        if (failedTests.size() > 0) {
-            def knownFlickers = getKnownFlickeringTests()
-            echoXWiki "Known flickering tests: ${knownFlickers}"
+    def knownFlickers = getKnownFlickeringTests()
+    echoXWiki "Known flickering tests: ${knownFlickers}"
 
-            // For each failed test, check if it's in the known flicker list.
-            def containsAtLeastOneFlicker = false
-            containsOnlyFlickers = true
-            failedTests.each() { testResult ->
-                // Format of a Test Result id is "junit/<package name>/<test class name>/<test method name>"
-                // Example: "junit/org.xwiki.test.ui.repository/RepositoryTest/validateAllFeatures"
-                // => testName = "org.xwiki.test.ui.repository.RepositoryTest#validateAllFeatures"
-                def parts = testResult.getId().split('/')
-                def testName = "${parts[1]}.${parts[2]}#${parts[3]}".toString()
-                echoXWiki "Analyzing test [${testName}] for flicker..."
-                if (knownFlickers.contains(testName)) {
-                    // Add the information that the test is a flicker to the test's description. Only display this
-                    // once (a Jenkinsfile can contain several builds and this this code can be called several times
-                    // for the same tests).
-                    def flickeringText = 'This is a flickering test'
-                    if (testResult.getDescription() == null || !testResult.getDescription().contains(flickeringText)) {
-                        testResult.setDescription(
-                            "<h1 style='color:red'>${flickeringText}</h1>${testResult.getDescription() ?: ''}")
-                    }
-                    echo "   It's a flicker"
-                    containsAtLeastOneFlicker = true
-                } else {
-                    echo "   Not a flicker"
-                    // This is a real failing test, thus we'll need to send the notification email...
-                    containsOnlyFlickers = false
-                }
+    // For each failed test, check if it's in the known flicker list.
+    def containsAtLeastOneFlicker = false
+    boolean containsOnlyFlickers = true
+    failingTests.each() { testResult ->
+        // Format of a Test Result id is "junit/<package name>/<test class name>/<test method name>"
+        // Example: "junit/org.xwiki.test.ui.repository/RepositoryTest/validateAllFeatures"
+        // => testName = "org.xwiki.test.ui.repository.RepositoryTest#validateAllFeatures"
+        def parts = testResult.getId().split('/')
+        def testName = "${parts[1]}.${parts[2]}#${parts[3]}".toString()
+        echoXWiki "Analyzing test [${testName}] for flicker..."
+        if (knownFlickers.contains(testName)) {
+            // Add the information that the test is a flicker to the test's description. Only display this
+            // once (a Jenkinsfile can contain several builds and this this code can be called several times
+            // for the same tests).
+            def flickeringText = 'This is a flickering test'
+            if (testResult.getDescription() == null || !testResult.getDescription().contains(flickeringText)) {
+                testResult.setDescription(
+                    "<h1 style='color:red'>${flickeringText}</h1>${testResult.getDescription() ?: ''}")
             }
+            echo "   It's a flicker"
+            containsAtLeastOneFlicker = true
+        } else {
+            echo "   Not a flicker"
+            // This is a real failing test, thus we'll need to send the notification email...
+            containsOnlyFlickers = false
+        }
+    }
 
-            if (containsAtLeastOneFlicker) {
-                // Only add the badge if none already exist
-                def badgeText = 'Contains some flickering tests'
-                def badgeFound = isBadgeFound(currentBuild.getRawBuild().getActions(GroovyPostbuildSummaryAction.class))
-                if (!badgeFound) {
-                    manager.addWarningBadge(badgeText)
-                    manager.createSummary("warning.gif").appendText("<h1>${badgeText}</h1>", false, false, false, "red")
-                }
-            }
+    if (containsAtLeastOneFlicker) {
+        // Only add the badge if none already exist
+        def badgeText = 'Contains some flickering tests'
+        def badgeFound = isBadgeFound(currentBuild.getRawBuild().getActions(GroovyPostbuildSummaryAction.class))
+        if (!badgeFound) {
+            manager.addWarningBadge(badgeText)
+            manager.createSummary("warning.gif").appendText("<h1>${badgeText}</h1>", false, false, false, "red")
         }
     }
 
@@ -650,4 +643,28 @@ def getKnownFlickeringTests()
     }
 
     return knownFlickers
+}
+
+def getFailingTests()
+{
+    def failingTests
+    AbstractTestResultAction testResultAction = currentBuild.rawBuild.getAction(AbstractTestResultAction.class)
+    if (testResultAction != null) {
+        failingTests = testResultAction.getResult().getFailedTests()
+    } else {
+        // No tests were run in this build, nothing left to do.
+        failingTests = []
+    }
+    return failingTests
+}
+
+def getFailingTestsSinceLastMavenExecution()
+{
+    def failingTestsSinceLastExecution = []
+    def pastFailingTests = env.XWIKI_FAILING_TESTS
+    def fullFailingTests = getFailingTests()
+    if (fullFailingTests.size() > pastFailingTests.size()) {
+        failingTestsSinceLastExecution = fullFailingTests[pastFailingTests.size()..fullFailingTests.size()-1]
+    }
+    return failingTestsSinceLastExecution
 }
