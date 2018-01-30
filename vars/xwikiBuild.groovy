@@ -181,7 +181,7 @@ def call(String name = 'Default', body)
                     //   since we're stopping the build!
                     // - Don't send emails for aborts! We discover aborts by checking for exit code 143.
                     if (!e.getMessage().contains('exit code 143')) {
-                        notifyByMail('ERROR')
+                        notifyByMail('ERROR', name)
                     }
                     throw e
                 }
@@ -210,7 +210,7 @@ def call(String name = 'Default', body)
             // Also send a mail notification when the job is not successful.
             echoXWiki "Checking if email should be sent or not"
             if (!containsFalsePositivesOrOnlyFlickers) {
-                notifyByMail(currentBuild.result)
+                notifyByMail(currentBuild.result, name)
             } else {
                 echoXWiki "No email sent even if some tests failed because they contain only flickering tests!"
                 echoXWiki "Considering job as successful!"
@@ -233,7 +233,7 @@ def wrapInXvnc(config, closure)
     }
 }
 
-def notifyByMail(String buildStatus)
+def notifyByMail(String buildStatus, String name)
 {
     echoXWiki "Build has failed, sending mails to concerned parties"
 
@@ -242,7 +242,7 @@ def notifyByMail(String buildStatus)
     // - developers: anyone who checked in code for the last build
     // - requester: whoever triggered the build manually
     emailext (
-        subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - ${buildStatus}",
+        subject: "${env.JOB_NAME} - [${name}] - Build # ${env.BUILD_NUMBER} - ${buildStatus}",
         body: '''
 Check console output at $BUILD_URL to view the results.
 
