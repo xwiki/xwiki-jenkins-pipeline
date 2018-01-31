@@ -110,7 +110,7 @@ def call(String name = 'Default', body)
     // See https://groups.google.com/d/msg/jenkinsci-users/dDDPC486JWE/9vtojUOoAwAJ
     // Note: we save TesResult objects in this list and they are serializable.
     def savedFailingTests = getFailingTests()
-    echoXWiki "Past failing tests: ${savedFailingTests}"
+    echoXWiki "Past failing tests: ${savedFailingTests.collect { it.getName() }}"
 
     def mavenTool
     stage("Preparation for ${name}") {
@@ -207,7 +207,7 @@ def call(String name = 'Default', body)
         // embed it in the failed test's description.
         if (currentBuild.result != 'SUCCESS') {
             def failingTests = getFailingTestsSinceLastMavenExecution(savedFailingTests)
-            echoXWiki "New failing tests: ${failingTests}"
+            echoXWiki "New failing tests: ${failingTests.collect { it.getName() }}"
             if (!failingTests.isEmpty()) {
                 echoXWiki "Attaching screenshots to test result pages (if any)..."
                 attachScreenshotToFailingTests(failingTests)
