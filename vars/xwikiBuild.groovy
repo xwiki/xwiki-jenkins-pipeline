@@ -587,7 +587,8 @@ def checkForFlickers(def failingTests)
     if (containsAtLeastOneFlicker) {
         // Only add the badge if none already exist
         def badgeText = 'Contains some flickering tests'
-        def badgeFound = isBadgeFound(currentBuild.getRawBuild().getActions(GroovyPostbuildSummaryAction.class))
+        def badgeFound = isBadgeFound(
+            currentBuild.getRawBuild().getActions(GroovyPostbuildSummaryAction.class), badgeText)
         if (!badgeFound) {
             manager.addWarningBadge(badgeText)
             manager.createSummary("warning.gif").appendText("<h1>${badgeText}</h1>", false, false, false, "red")
@@ -598,7 +599,7 @@ def checkForFlickers(def failingTests)
 }
 
 @NonCPS
-def isBadgeFound(def groovyPostbuildSummaryActionItems)
+def isBadgeFound(def groovyPostbuildSummaryActionItems, def badgeText)
 {
     groovyPostbuildSummaryActionItems.each() {
         if (it.getText().contains(badgeText)) {
