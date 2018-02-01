@@ -467,6 +467,8 @@ def attachScreenshotToFailingTests(def failingTests)
             // See https://github.com/jenkinsci/pipeline-plugin/blob/master/TUTORIAL.md#serializing-local-variables
             testResultAction = null
             currentBuild.rawBuild.save()
+        } else {
+            echo "No screenshot found for test [${testClass}#${testExample}]"
         }
     }
 }
