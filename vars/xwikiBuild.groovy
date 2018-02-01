@@ -110,7 +110,7 @@ def call(String name = 'Default', body)
     // See https://groups.google.com/d/msg/jenkinsci-users/dDDPC486JWE/9vtojUOoAwAJ
     // Note: we save TesResult objects in this list and they are serializable.
     def savedFailingTests = getFailingTests()
-    echoXWiki "Past failing tests: ${savedFailingTests.collect { it.getName() }}"
+    echoXWiki "Past failing tests: ${savedFailingTests.collect { "${it.getClassName()}#${it.getName()}" }}"
 
     def mavenTool
     stage("Preparation for ${name}") {
@@ -207,7 +207,7 @@ def call(String name = 'Default', body)
         // embed it in the failed test's description.
         if (currentBuild.result != 'SUCCESS') {
             def failingTests = getFailingTestsSinceLastMavenExecution(savedFailingTests)
-            echoXWiki "New failing tests: ${failingTests.collect { it.getName() }}"
+            echoXWiki "New failing tests: ${failingTests.collect { "${it.getClassName()}#${it.getName()}" }}"
             if (!failingTests.isEmpty()) {
                 echoXWiki "Attaching screenshots to test result pages (if any)..."
                 attachScreenshotToFailingTests(failingTests)
@@ -663,9 +663,13 @@ def getFailingTestsSinceLastMavenExecution(savedFailingTests)
 {
     def failingTestsSinceLastExecution = []
     def fullFailingTests = getFailingTests()
-    echo "All failing tests at this point: ${fullFailingTests.collect { it.getName() }}"
-    if (fullFailingTests.size() > savedFailingTests.size()) {
-        failingTestsSinceLastExecution = fullFailingTests[savedFailingTests.size()..fullFailingTests.size()-1]
+    def savedFailingTestsAsStringList = savedFailingTests.collect { "${it.getClassName()}#${it.getName()}" }
+    echo "All failing tests at this point: ${fullFailingTests.collect { "${it.getClassName()}#${it.getName()}" }}"
+    fullFailingTests.each() {
+        def fullTestName = "${it.getClassName()}#${it.getName()}"
+        if (!savedFailingTestsAsStringList.contains(fullTestName)) {
+            failingTestsSinceLastExecution.add(it)
+        }
     }
     return failingTestsSinceLastExecution
 }
