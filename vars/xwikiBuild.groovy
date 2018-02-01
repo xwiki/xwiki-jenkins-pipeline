@@ -663,6 +663,7 @@ def getFailingTestsSinceLastMavenExecution(savedFailingTests)
 {
     def failingTestsSinceLastExecution = []
     def fullFailingTests = getFailingTests()
+    echo "All failing tests at this point: ${fullFailingTests.collect { it.getName() }}"
     if (fullFailingTests.size() > savedFailingTests.size()) {
         failingTestsSinceLastExecution = fullFailingTests[savedFailingTests.size()..fullFailingTests.size()-1]
     }
