@@ -108,7 +108,11 @@ def call(String name = 'Default', body)
     // Initialize a variable that hold past failing tests. We need this because we can't get access to the failing
     // tests for a given Maven run (we can only get them globally).
     // See https://groups.google.com/d/msg/jenkinsci-users/dDDPC486JWE/9vtojUOoAwAJ
-    // Note: we save TesResult objects in this list and they are serializable.
+    // Note1: we save TesResult objects in this list and they are serializable.
+    // Note2: This strategy is not working and cannot work because of parallel() executions, see
+    //        https://issues.jenkins-ci.org/browse/JENKINS-49339. The consequence is that get several emails
+    //        sent for the same test errors (since our builds can execute the same tests several times under different
+    //        profiled and properties).
     def savedFailingTests = getFailingTests()
     echoXWiki "Past failing tests: ${savedFailingTests.collect { "${it.getClassName()}#${it.getName()}" }}"
 
