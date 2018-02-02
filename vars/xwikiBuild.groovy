@@ -260,10 +260,6 @@ def notifyByMail(String buildStatus, String name)
         body: '''
 Check console output at $BUILD_URL to view the results.
 
-Changes since the previous successful build:
-
-${CHANGES_SINCE_LAST_SUCCESS, changesFormat = "[%a] %d %m (rev %r)\\n"}
-
 Failed tests:
 
 ${FAILED_TESTS}
