@@ -266,11 +266,11 @@ ${FAILED_TESTS}
 
 Cause of error:
 
-${BUILD_LOG_REGEX, regex = ".*FAILURE \\[.* (?:s|min)\\].*", linesBefore = 200, linesAfter = 0}
+${BUILD_LOG_REGEX, regex = ".*BUILD FAILURE.*", linesBefore = 250, linesAfter = 0}
 
 Maven error reported:
 
-${BUILD_LOG_REGEX, regex = ".*\\[ERROR\\] After correcting the problems.*", linesBefore = 100, linesAfter = 0}
+${BUILD_LOG_REGEX, regex = ".*Re-run Maven using the -X switch to enable full debug logging*", linesBefore = 100, linesAfter = 0}
 ''',
         mimeType: 'text/plain',
         recipientProviders: [
