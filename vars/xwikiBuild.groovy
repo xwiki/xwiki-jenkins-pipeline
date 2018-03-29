@@ -23,7 +23,7 @@ import hudson.FilePath
 import hudson.util.IOUtils
 import javax.xml.bind.DatatypeConverter
 import hudson.tasks.test.AbstractTestResultAction
-import org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildSummaryAction
+import com.jenkinsci.plugins.badge.action.BadgeAction
 import com.cloudbees.groovy.cps.NonCPS
 
 // Example usage:
@@ -590,7 +590,7 @@ def checkForFlickers(def failingTests)
         // Only add the badge if none already exist
         def badgeText = 'Contains some flickering tests'
         def badgeFound = isBadgeFound(
-            currentBuild.getRawBuild().getActions(GroovyPostbuildSummaryAction.class), badgeText)
+            currentBuild.getRawBuild().getActions(BadgeAction.class), badgeText)
         if (!badgeFound) {
             manager.addWarningBadge(badgeText)
             manager.createSummary("warning.gif").appendText("<h1>${badgeText}</h1>", false, false, false, "red")
@@ -601,9 +601,9 @@ def checkForFlickers(def failingTests)
 }
 
 @NonCPS
-def isBadgeFound(def groovyPostbuildSummaryActionItems, def badgeText)
+def isBadgeFound(def badgeActionItems, def badgeText)
 {
-    groovyPostbuildSummaryActionItems.each() {
+    badgeActionItems.each() {
         if (it.getText().contains(badgeText)) {
             return true
         }
