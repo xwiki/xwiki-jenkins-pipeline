@@ -95,7 +95,9 @@ def call(String name = 'Default', body)
     echoXWiki "Only keep the 10 most recent builds + disable concurrent builds"
     def projectProperties = [
         [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', numToKeepStr: '10']],
-        disableConcurrentBuilds()
+        disableConcurrentBuilds(),
+        // Make sure project are built at least once a month because SNAPSHOT older than one month are deleted by a Nexus scheduler
+        pipelineTriggers([cron('@monthly')])
     ]
     properties(projectProperties)
 
