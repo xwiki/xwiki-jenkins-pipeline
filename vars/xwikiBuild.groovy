@@ -470,7 +470,8 @@ def attachScreenshotToFailingTests(def failingTests)
             testResultAction = null
             currentBuild.rawBuild.save()
         } else {
-            echo "No screenshot found for test [${testClass}#${testExample}]"
+            def locationText = "[${imageAbsolutePath1}], [${imageAbsolutePath2}] or [${imageAbsolutePath3}]"
+            echo "No screenshot found for test [${testClass}#${testExample}] in ${locationText}"
         }
     }
 }
