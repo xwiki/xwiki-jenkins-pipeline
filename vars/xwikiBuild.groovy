@@ -160,7 +160,7 @@ def call(String name = 'Default', body)
             def fingerprintDependencies = config.fingerprintDependencies == null ? true :
                 config.fingerprintDependencies
             echoXWiki "Dependencies fingerprinting: ${fingerprintDependencies}"
-            withMaven(maven: mavenTool, mavenOpts: ${env.MAVEN_OPTS},
+            withMaven(maven: mavenTool, mavenOpts: "${env.MAVEN_OPTS}",
                 options: [artifactsPublisher(disabled: !archiveArtifacts),
                 dependenciesFingerprintPublisher(disabled: !fingerprintDependencies)])
             {
