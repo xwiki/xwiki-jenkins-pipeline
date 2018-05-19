@@ -160,8 +160,8 @@ def call(String name = 'Default', body)
             def fingerprintDependencies = config.fingerprintDependencies == null ? true :
                 config.fingerprintDependencies
             echoXWiki "Dependencies fingerprinting: ${fingerprintDependencies}"
-            // Note: We're not passing "mavenOpts" voluntarily, see configureJavaTool()
-            withMaven(maven: mavenTool, options: [artifactsPublisher(disabled: !archiveArtifacts),
+            withMaven(maven: mavenTool, mavenOpts: ${env.MAVEN_OPTS},
+                options: [artifactsPublisher(disabled: !archiveArtifacts),
                 dependenciesFingerprintPublisher(disabled: !fingerprintDependencies)])
             {
                 try {
@@ -314,9 +314,6 @@ def configureJavaTool(def config, def pom)
             mavenOpts = "${mavenOpts} -XX:MaxPermSize=512m"
         }
     }
-    // Note: withMaven is concatenating any passed "mavenOpts" with env.MAVEN_OPTS. Thus in order to fully
-    // control the maven options used we only set env.MAVEN_OPTS and don't pass "mavenOpts" when using withMaven.
-    // See http://bit.ly/2zwl4IU
     env.MAVEN_OPTS = mavenOpts
 }
 
