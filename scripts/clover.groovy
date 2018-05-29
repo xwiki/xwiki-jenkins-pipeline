@@ -63,8 +63,9 @@ node() {
       def (date, time) = latestReport.tokenize('-')
 
       // Read the Clover XML report and extract data
-        def tpcs1 = scrapeData(
-            "http://maven.xwiki.org/site/clover/${date}/clover-commons+rendering+platform-${latestReport}/clover.xml")
+      def tpcs1 = scrapeData(
+          "http://maven.xwiki.org/site/clover/${date}/clover-commons+rendering+platform-${latestReport}/clover.xml"
+          .toURL())
 
       dir ("xwiki-platform/target/site") {
           // Read the current generated Clover XML report from the file system
@@ -182,7 +183,7 @@ def scrapeData(url)
 {
     def packageMap = [:]
     def moduleMap = [:]
-    def root = new XmlSlurper().parseText(url.toURL().text)
+    def root = new XmlSlurper().parseText(url.text)
     root.project.package.each() { packageElement ->
         def packageName = packageElement.@name.text()
         packageElement.file.each() { fileElement ->
