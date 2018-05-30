@@ -67,7 +67,7 @@ node() {
           "http://maven.xwiki.org/site/clover/${date}/clover-commons+rendering+platform-${latestReport}/clover.xml"
           .toURL())
 
-      dir ("xwiki-platform/target/site") {
+      dir ("xwiki-platform/target/site/clover") {
           // Read the current generated Clover XML report from the file system
           def cloverXMLLocation = new File("clover.xml")
           def tpcs2 = scrapeData(cloverXMLLocation.toURI().toURL())
