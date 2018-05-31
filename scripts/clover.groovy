@@ -67,26 +67,25 @@ node() {
           "http://maven.xwiki.org/site/clover/${date}/clover-commons+rendering+platform-${latestReport}/clover.xml"
           .toURL())
 
-      dir ("xwiki-platform/target/site/clover") {
-          // Read the current generated Clover XML report from the file system
-          def cloverXMLLocation = new File("clover.xml")
-          def tpcs2 = scrapeData(cloverXMLLocation.toURI().toURL())
+      // Read the current generated Clover XML report from the file system
+      def cloverReportLocation = "${workspace}/xwiki-platform/target/site/clover/"
+      def cloverXMLLocation = new File("${cloverReportLocation}/clover.xml")
+      def tpcs2 = scrapeData(cloverXMLLocation.toURI().toURL())
 
-          // Compute the TPCs for each module
-          def map1 = computeTPC(tpcs1.modules).sort()
-          def map2 = computeTPC(tpcs2.modules).sort()
+      // Compute the TPCs for each module
+      def map1 = computeTPC(tpcs1.modules).sort()
+      def map2 = computeTPC(tpcs2.modules).sort()
 
-          // Compute a diff map that we use to both test for TPC failures and for for generating the HTML report in such
-          // a case.
-          def map = computeDiplayMap(map1, map2)
-          if (hasFailures(map)) {
-              // Send the mail to notify about failures
-              sendMail(latestReport, map)
-          } else {
-              // Update the latest.txt file
-              new File("latest.txt") << dateString
-              sh "scp latest.txt maven@maven.xwiki.org:public_html/site/clover/"
-          }
+      // Compute a diff map that we use to both test for TPC failures and for for generating the HTML report in such
+      // a case.
+      def map = computeDiplayMap(map1, map2)
+      if (hasFailures(map)) {
+          // Send the mail to notify about failures
+          sendMail(latestReport, map)
+      } else {
+          // Update the latest.txt file
+          new File("${cloverReportLocation}/latest.txt") << dateString
+          sh "scp ${cloverReportLocation}/latest.txt maven@maven.xwiki.org:public_html/site/clover/"
       }
     }
     stage("Publish Clover Reports") {
