@@ -31,8 +31,8 @@ node() {
     def cloverDir
     def shortDateString = new Date().format("yyyyMMdd")
     def dateString = new Date().format("yyyyMMdd-HHmm")
+    def workspace = pwd()
     stage('Preparation') {
-        def workspace = pwd()
         localRepository = "${workspace}/maven-repository"
         // Make sure that the special Maven local repository exists
         sh "mkdir -p ${localRepository}"
@@ -57,36 +57,38 @@ node() {
         }
     }
     stage("Analyze Results") {
-      // Find the Clover report to compare with. We compare against the latest version in which all modules have
-      // a higher TPC than before.
-      def latestReport = getLatestReport()
-      def (date, time) = latestReport.tokenize('-')
+        // Find the Clover report to compare with. We compare against the latest version in which all modules have
+        // a higher TPC than before.
+        def latestReport = getLatestReport()
+        def (date, time) = latestReport.tokenize('-')
 
-      // Read the Clover XML report and extract data
-      def tpcs1 = scrapeData(
+        // Read the Clover XML report and extract data
+        def tpcs1 = scrapeData(
           "http://maven.xwiki.org/site/clover/${date}/clover-commons+rendering+platform-${latestReport}/clover.xml"
           .toURL())
 
-      // Read the current generated Clover XML report from the file system
-      def cloverReportLocation = "${workspace}/xwiki-platform/target/site/clover/"
-      def cloverXMLLocation = new File("${cloverReportLocation}/clover.xml")
-      def tpcs2 = scrapeData(cloverXMLLocation.toURI().toURL())
+        // Read the current generated Clover XML report from the file system
+        def cloverReportLocation = "${workspace}/xwiki-platform/target/site/clover/"
+        // Important note: using "new File()" will refer to files on the master and not on the slave,
+        // see https://stackoverflow.com/a/50503979/153102
+        def cloverXMLLocation = readFile "${cloverReportLocation}/clover.xml"
+        def tpcs2 = scrapeData(cloverXMLLocation.newReader())
 
-      // Compute the TPCs for each module
-      def map1 = computeTPC(tpcs1.modules).sort()
-      def map2 = computeTPC(tpcs2.modules).sort()
+        // Compute the TPCs for each module
+        def map1 = computeTPC(tpcs1.modules).sort()
+        def map2 = computeTPC(tpcs2.modules).sort()
 
-      // Compute a diff map that we use to both test for TPC failures and for for generating the HTML report in such
-      // a case.
-      def map = computeDiplayMap(map1, map2)
-      if (hasFailures(map)) {
-          // Send the mail to notify about failures
-          sendMail(latestReport, map)
-      } else {
-          // Update the latest.txt file
-          new File("${cloverReportLocation}/latest.txt") << dateString
-          sh "scp ${cloverReportLocation}/latest.txt maven@maven.xwiki.org:public_html/site/clover/"
-      }
+        // Compute a diff map that we use to both test for TPC failures and for for generating the HTML report in such
+        // a case.
+        def map = computeDiplayMap(map1, map2)
+        if (hasFailures(map)) {
+            // Send the mail to notify about failures
+            sendMail(latestReport, map)
+        } else {
+            // Update the latest.txt file
+            new File("${cloverReportLocation}/latest.txt") << dateString
+            sh "scp ${cloverReportLocation}/latest.txt maven@maven.xwiki.org:public_html/site/clover/"
+        }
     }
     stage("Publish Clover Reports") {
         def prefix = "clover-"
@@ -178,27 +180,27 @@ void addMetrics(def metricXMLElement, def map, def key)
     innerMap.statements += metricXMLElement.@statements.toDouble()
     innerMap.methods += metricXMLElement.@methods.toDouble()
 }
-def scrapeData(url)
+def scrapeData(def reader)
 {
     def packageMap = [:]
     def moduleMap = [:]
-    def root = new XmlSlurper().parseText(url.text)
+    def root = new XmlSlurper().parse(reader)
     root.project.package.each() { packageElement ->
-        def packageName = packageElement.@name.text()
-        packageElement.file.each() { fileElement ->
-            def filePath = fileElement.@path.text()
-            // Iterate over all the files to remove test classes in order to harmonize TPC
-            if (!(filePath.contains('/test/') || filePath =~ /xwiki-.*-test/)) {
-                // Save metrics for packages
-                addMetrics(fileElement.metrics, packageMap, packageName)
-                // Save metrics for modules
-                addMetrics(fileElement.metrics, moduleMap, extractModuleName(filePath))
-                if (filePath.contains('test')) {
-                    println "* File that should maybe not be counted: ${filePath}"
-                }
+    def packageName = packageElement.@name.text()
+    packageElement.file.each() { fileElement ->
+        def filePath = fileElement.@path.text()
+        // Iterate over all the files to remove test classes in order to harmonize TPC
+        if (!(filePath.contains('/test/') || filePath =~ /xwiki-.*-test/)) {
+            // Save metrics for packages
+            addMetrics(fileElement.metrics, packageMap, packageName)
+            // Save metrics for modules
+            addMetrics(fileElement.metrics, moduleMap, extractModuleName(filePath))
+            if (filePath.contains('test')) {
+                println "* File that should maybe not be counted: ${filePath}"
             }
         }
     }
+}
     return ['packages' : packageMap, 'modules' : moduleMap]
 }
 def computeTPC(def map)
