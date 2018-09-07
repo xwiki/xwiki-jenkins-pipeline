@@ -173,6 +173,8 @@ def call(String name = 'Default', body)
                     echoXWiki "Using Maven properties: ${properties}"
                     def timeoutThreshold = config.timeout ?: 240
                     echoXWiki "Using timeout: ${timeoutThreshold}"
+                    // Display the java version for information (in case it's useful to debug some specific issue)
+                    sh script: 'java -version', returnStatus: true
                     // Abort the build if it takes more than the timeout threshold (in minutes).
                     timeout(timeoutThreshold) {
                         def pom = config.pom ?: 'pom.xml'
