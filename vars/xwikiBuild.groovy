@@ -641,7 +641,7 @@ def getKnownFlickeringTests()
                     packageName = it.substring(0, pos)
                     fullName = it
                 } else {
-                    fullName = "${packageName}.${it}".toString()
+                    fullName = "${packageName}#${it}".toString()
                 }
                 knownFlickers.add(fullName)
             }
