@@ -65,14 +65,14 @@ node() {
         // Read the Clover XML report and extract data
         def tpcs1 = scrapeData(
           "http://maven.xwiki.org/site/clover/${date}/clover-commons+rendering+platform-${latestReport}/clover.xml"
-          .toURL())
+          .toURL().newReader())
 
         // Read the current generated Clover XML report from the file system
         def cloverReportLocation = "${workspace}/xwiki-platform/target/site/clover/"
         // Important note: using "new File()" will refer to files on the master and not on the slave,
         // see https://stackoverflow.com/a/50503979/153102
         def cloverXMLLocation = readFile "${cloverReportLocation}/clover.xml"
-        def tpcs2 = scrapeData(cloverXMLLocation.newReader())
+        def tpcs2 = scrapeData(new StringReader(cloverXMLLocation))
 
         // Compute the TPCs for each module
         def map1 = computeTPC(tpcs1.modules).sort()
@@ -80,7 +80,7 @@ node() {
 
         // Compute a diff map that we use to both test for TPC failures and for for generating the HTML report in such
         // a case.
-        def map = computeDiplayMap(map1, map2)
+        def map = computeDisplayMap(map1, map2)
         if (hasFailures(map)) {
             // Send the mail to notify about failures
             sendMail(latestReport, map)
@@ -186,21 +186,21 @@ def scrapeData(def reader)
     def moduleMap = [:]
     def root = new XmlSlurper().parse(reader)
     root.project.package.each() { packageElement ->
-    def packageName = packageElement.@name.text()
-    packageElement.file.each() { fileElement ->
-        def filePath = fileElement.@path.text()
-        // Iterate over all the files to remove test classes in order to harmonize TPC
-        if (!(filePath.contains('/test/') || filePath =~ /xwiki-.*-test/)) {
-            // Save metrics for packages
-            addMetrics(fileElement.metrics, packageMap, packageName)
-            // Save metrics for modules
-            addMetrics(fileElement.metrics, moduleMap, extractModuleName(filePath))
-            if (filePath.contains('test')) {
-                println "* File that should maybe not be counted: ${filePath}"
+        def packageName = packageElement.@name.text()
+        packageElement.file.each() { fileElement ->
+            def filePath = fileElement.@path.text()
+            // Iterate over all the files to remove test classes in order to harmonize TPC
+            if (!(filePath.contains('/test/') || filePath =~ /xwiki-.*-test/)) {
+                // Save metrics for packages
+                addMetrics(fileElement.metrics, packageMap, packageName)
+                // Save metrics for modules
+                addMetrics(fileElement.metrics, moduleMap, extractModuleName(filePath))
+                if (filePath.contains('test')) {
+                    echo "File that should maybe not be counted: ${filePath}"
+                }
             }
         }
     }
-}
     return ['packages' : packageMap, 'modules' : moduleMap]
 }
 def computeTPC(def map)
@@ -277,7 +277,7 @@ def round(number)
 {
     return number.toDouble().trunc(2)
 }
-def computeDiplayMap(def map1, def map2)
+def computeDisplayMap(def map1, def map2)
 {
     def newAll = map2.get('ALL')
     def map = [:]
@@ -295,7 +295,7 @@ def computeDiplayMap(def map1, def map2)
             def oldtpc = map1.get(key)?.tpc
             def tpc = metrics.tpc
             if (oldtpc && tpc != oldtpc) {
-                diff = tpc - oldtpc
+                def diff = tpc - oldtpc
                 metrics.put('oldtpc', oldtpc)
                 metrics.put('difftpc', diff)
                 metrics.put('newtpc', tpc)
@@ -315,9 +315,17 @@ def computeDiplayMap(def map1, def map2)
         }
     }
 
-    map = map.sort {it.value.contrib}
+    map = sortMap(map)
 
     return map
+}
+/**
+ * TWe need @NonCPS as otherwise the map sort returns a singe BigDecimal instead of returning a sorted Map.
+ */
+@NonCPS
+def sortMap(def map)
+{
+    return map.sort {it.value.contrib}
 }
 def hasFailures(def map)
 {
@@ -367,4 +375,11 @@ def displayResultsInHTML(def topic, def map)
     }
     content += "</tbody></table>"
     return content
+}
+/**
+ * Echo text with a special character prefix to make it stand out in the pipeline logs.
+ */
+def echoXWiki(string)
+{
+    echo "\u27A1 ${string}"
 }
