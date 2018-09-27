@@ -86,7 +86,7 @@ node() {
             sendMail(latestReport, map)
         } else {
             // Update the latest.txt file
-            new File("${cloverReportLocation}/latest.txt") << dateString
+            writeFile file: "${cloverReportLocation}/latest.txt", text: "${dateString}"
             sh "scp ${cloverReportLocation}/latest.txt maven@maven.xwiki.org:public_html/site/clover/"
         }
     }
