@@ -68,7 +68,7 @@ node() {
           .toURL().newReader())
 
         // Read the current generated Clover XML report from the file system
-        def cloverReportLocation = "${workspace}/xwiki-platform/target/site/clover/"
+        def cloverReportLocation = "${workspace}/xwiki-platform/target/site/clover"
         // Important note: using "new File()" will refer to files on the master and not on the slave,
         // see https://stackoverflow.com/a/50503979/153102
         def cloverXMLLocation = readFile "${cloverReportLocation}/clover.xml"
@@ -87,7 +87,7 @@ node() {
 
         // Save the report
         writeFile file: "${cloverReportLocation}/XWikiReport.html", text: "${htmlContent}"
-        sh "scp ${cloverReportLocation}/XWikiReport.html maven@maven.xwiki.org:public_html/site/clover/${date}/"
+        sh "scp ${cloverReportLocation}/XWikiReport.html maven@maven.xwiki.org:public_html/site/clover/${date}/XWikiReport.html"
 
         // Send mail or update latest.txt file when no failures
         if (hasFailures(map)) {
@@ -96,7 +96,7 @@ node() {
         } else {
             // Update the latest.txt file
             writeFile file: "${cloverReportLocation}/latest.txt", text: "${dateString}"
-            sh "scp ${cloverReportLocation}/latest.txt maven@maven.xwiki.org:public_html/site/clover/"
+            sh "scp ${cloverReportLocation}/latest.txt maven@maven.xwiki.org:public_html/site/clover/latest.txt"
         }
     }
     stage("Publish Clover Reports") {
