@@ -81,9 +81,18 @@ node() {
         // Compute a diff map that we use to both test for TPC failures and for for generating the HTML report in such
         // a case.
         def map = computeDisplayMap(map1, map2)
+
+        // Get the HTML for the report + mail sending (if need be)
+        def htmlContent = displayResultsInHTML("Module", map)
+
+        // Save the report
+        writeFile file: "${cloverReportLocation}/XWikiReport.html", text: "${htmlContent}"
+        sh "scp ${cloverReportLocation}/XWikiReport.html maven@maven.xwiki.org:public_html/site/clover/${date}/"
+
+        // Send mail or update latest.txt file when no failures
         if (hasFailures(map)) {
             // Send the mail to notify about failures
-            sendMail(latestReport, map)
+            sendMail(latestReport, htmlContent)
         } else {
             // Update the latest.txt file
             writeFile file: "${cloverReportLocation}/latest.txt", text: "${dateString}"
@@ -118,7 +127,7 @@ def runCloverAndGenerateReport(def mvnHome, def localRepository, def cloverDir)
         }
     }
 }
-def sendMail(def latestReport, def map)
+def sendMail(def latestReport, def htmlContent)
 {
     def (date, time) = latestReport.tokenize('-')
     def cloverURL =
@@ -130,7 +139,7 @@ At least one module got a TPC lower than in the latest passing Clover report [${
 
 Please fix all elements in red in the report below (see the <a href="${cloverURL}">Clover report</a> for details):
 
-${displayResultsInHTML("Module", map)}
+${htmlContent}
 """,
         mimeType: 'text/html',
         to: 'notifications@xwiki.org'
