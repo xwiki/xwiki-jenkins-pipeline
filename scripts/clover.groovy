@@ -287,7 +287,7 @@ def computeTPCWithout(all, metric1, metric2)
 }
 def round(number)
 {
-    return number.toDouble().trunc(2)
+    return number.toDouble().trunc(3)
 }
 def computeDisplayMap(def map1, def map2)
 {
