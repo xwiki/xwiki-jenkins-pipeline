@@ -271,14 +271,17 @@ def getDiffValue(key, all, metric1, metric2)
 }
 def computeTPCWithout(all, metric1, metric2)
 {
-    def elementsCount = getDiffValue('conditionals', all, metric1, metric2)
-        + getDiffValue('statements', all, metric1, metric2) + getDiffValue('methods', all, metric1, metric2)
+    def conditionalsDiff = getDiffValue('conditionals', all, metric1, metric2)
+    def statementsDiff = getDiffValue('statements', all, metric1, metric2)
+    def methodsDiff = getDiffValue('methods', all, metric1, metric2)
+    def elementsCount = conditionalsDiff + statementsDiff + methodsDiff
     if (elementsCount == 0) {
         return 0
     } else {
-        def coveredElementsCount = getDiffValue('coveredconditionals', all, metric1, metric2)
-            + getDiffValue('coveredstatements', all, metric1, metric2)
-            + getDiffValue('coveredmethods', all, metric1, metric2)
+        def coveredconditionalsDiff = getDiffValue('coveredconditionals', all, metric1, metric2)
+        def coveredstatementsDiff = getDiffValue('coveredstatements', all, metric1, metric2)
+        def coveredmethodsDiff = getDiffValue('coveredmethods', all, metric1, metric2)
+        def coveredElementsCount = coveredconditionalsDiff + coveredstatementsDiff + coveredmethodsDiff
         return (coveredElementsCount/elementsCount) * 100
     }
 }
@@ -329,7 +332,7 @@ def computeDisplayMap(def map1, def map2)
     return map
 }
 /**
- * TWe need @NonCPS as otherwise the map sort returns a singe BigDecimal instead of returning a sorted Map.
+ * We need @NonCPS as otherwise the map sort returns a singe BigDecimal instead of returning a sorted Map.
  */
 @NonCPS
 def sortMap(def map)
