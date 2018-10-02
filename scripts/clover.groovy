@@ -87,7 +87,7 @@ node() {
 
         // Save the report
         writeFile file: "${cloverReportLocation}/XWikiReport.html", text: "${htmlContent}"
-        sh "scp ${cloverReportLocation}/XWikiReport.html maven@maven.xwiki.org:public_html/site/clover/${date}/XWikiReport.html"
+        sh "scp ${cloverReportLocation}/XWikiReport.html maven@maven.xwiki.org:public_html/site/clover/${shortDateString}/XWikiReport-${dateString}.html"
 
         // Send mail or update latest.txt file when no failures
         if (hasFailures(map)) {
