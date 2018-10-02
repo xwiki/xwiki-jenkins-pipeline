@@ -87,6 +87,7 @@ node() {
 
         // Save the report
         writeFile file: "${cloverReportLocation}/XWikiReport.html", text: "${htmlContent}"
+        sh "ssh maven@maven.xwiki.org mkdir -p public_html/site/clover/${shortDateString}"
         sh "scp ${cloverReportLocation}/XWikiReport.html maven@maven.xwiki.org:public_html/site/clover/${shortDateString}/XWikiReport-${dateString}.html"
 
         // Send mail or update latest.txt file when no failures
@@ -110,7 +111,6 @@ node() {
                 }
                 sh "tar cvf ${prefix}-${dateString}.tar clover"
                 sh "gzip ${prefix}-${dateString}.tar"
-                sh "ssh maven@maven.xwiki.org mkdir -p public_html/site/clover/${shortDateString}"
                 sh "scp ${prefix}-${dateString}.tar.gz maven@maven.xwiki.org:public_html/site/clover/${shortDateString}/"
                 sh "rm ${prefix}-${dateString}.tar.gz"
                 sh "ssh maven@maven.xwiki.org 'cd public_html/site/clover/${shortDateString}; gunzip ${prefix}-${dateString}.tar.gz; tar xvf ${prefix}-${dateString}.tar; mv clover ${prefix}-${dateString};rm ${prefix}-${dateString}.tar'"
