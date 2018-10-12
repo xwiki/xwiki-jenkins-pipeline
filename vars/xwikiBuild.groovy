@@ -284,13 +284,13 @@ ${BUILD_LOG_REGEX, regex = ".*Re-run Maven using the -X switch to enable full de
 ''',
         mimeType: 'text/plain',
         recipientProviders: [
-            [$class: 'CulpritsRecipientProvider'],
             // TODO: Put back. FTM it's commented out because sending mail is extra slow and we think it could be
             // caused by Jenkins trying to find all emails of committers since the last successful build and we haven't
             // had a successful build for months because we have flickers, and right now Jenkins doesn't allow us to
             // set the build as successful when we have failing tests made entirely of flickers...
             // To be removed when this is fixed.
-            // [$class: 'DevelopersRecipientProvider'],
+            //[$class: 'CulpritsRecipientProvider'],
+            [$class: 'DevelopersRecipientProvider'],
             [$class: 'RequesterRecipientProvider']
         ]
     )
