@@ -191,7 +191,7 @@ def call(String name = 'Default', body)
                         def fullProperties = "-Dmaven.test.failure.ignore ${properties}"
                         // If the projects property is specified, only build some projects
                         def projects = config.projects ? "--projects ${config.projects} " : ''
-                        sh "mvn ${projects}-f ${pom} ${goals} jacoco:report -P${profiles} -U -e ${fullProperties}"
+                        sh "mvn ${projects}-f ${pom} ${goals} -P${profiles} -U -e ${fullProperties}"
                     }
                 } catch (Exception e) {
                     // - If this line is reached it means the build has failed (other than for failing tests) or has
