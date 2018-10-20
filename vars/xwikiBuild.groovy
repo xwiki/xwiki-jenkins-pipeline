@@ -265,9 +265,16 @@ def notifyByMail(String buildStatus, String name)
     // - culprits: list of users who committed a change since the last non-broken build till now
     // - developers: anyone who checked in code for the last build
     // - requester: whoever triggered the build manually
+
+    // TODO: Sending some simple mail content FTM since it seems that parsing large logs fails and hangs the job.
+    sendSimpleMail(buildStatus, name)
+}
+
+def sendFullMail(String buildStatus, String name)
+{
     emailext (
-        subject: "${env.JOB_NAME} - [${name}] - Build # ${env.BUILD_NUMBER} - ${buildStatus}",
-        body: '''
+            subject: "${env.JOB_NAME} - [${name}] - Build # ${env.BUILD_NUMBER} - ${buildStatus}",
+            body: '''
 Check console output at $BUILD_URL to view the results.
 
 Failed tests:
@@ -282,17 +289,32 @@ Maven error reported:
 
 ${BUILD_LOG_REGEX, regex = ".*Re-run Maven using the -X switch to enable full debug logging*", linesBefore = 100, linesAfter = 0}
 ''',
-        mimeType: 'text/plain',
-        recipientProviders: [
-            // TODO: Put back. FTM it's commented out because sending mail is extra slow and we think it could be
-            // caused by Jenkins trying to find all emails of committers since the last successful build and we haven't
-            // had a successful build for months because we have flickers, and right now Jenkins doesn't allow us to
-            // set the build as successful when we have failing tests made entirely of flickers...
-            // To be removed when this is fixed.
-            //[$class: 'CulpritsRecipientProvider'],
-            [$class: 'DevelopersRecipientProvider'],
-            [$class: 'RequesterRecipientProvider']
-        ]
+            mimeType: 'text/plain',
+            recipientProviders: [
+                    [$class: 'CulpritsRecipientProvider'],
+                    [$class: 'DevelopersRecipientProvider'],
+                    [$class: 'RequesterRecipientProvider']
+            ]
+    )
+}
+
+def sendSimpleMail(String buildStatus, String name)
+{
+    emailext (
+            subject: "${env.JOB_NAME} - [${name}] - Build # ${env.BUILD_NUMBER} - ${buildStatus}",
+            body: '''
+Check console output at $BUILD_URL to view the results.
+
+Failed tests:
+
+${FAILED_TESTS}
+''',
+            mimeType: 'text/plain',
+            recipientProviders: [
+                    [$class: 'CulpritsRecipientProvider'],
+                    [$class: 'DevelopersRecipientProvider'],
+                    [$class: 'RequesterRecipientProvider']
+            ]
     )
 }
 
