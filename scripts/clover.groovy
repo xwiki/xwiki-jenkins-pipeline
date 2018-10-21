@@ -83,12 +83,12 @@ node() {
         def map = computeDisplayMap(map1, map2)
 
         // Get the HTML for the report + mail sending (if need be)
-        def htmlContent = displayResultsInHTML("Module", map)
+        def htmlContent = displayResultsInHTML(latestReport, dateString, "Module", map)
 
         // Save the report
         writeFile file: "${cloverReportLocation}/XWikiReport.html", text: "${htmlContent}"
         sh "ssh maven@maven.xwiki.org mkdir -p public_html/site/clover/${shortDateString}"
-        sh "scp ${cloverReportLocation}/XWikiReport.html maven@maven.xwiki.org:public_html/site/clover/${shortDateString}/XWikiReport-${dateString}.html"
+        sh "scp ${cloverReportLocation}/XWikiReport.html maven@maven.xwiki.org:public_html/site/clover/${shortDateString}/XWikiReport-${latestReport}-${dateString}.html"
 
         // Send mail or update latest.txt file when no failures
         if (hasFailures(map)) {
@@ -367,9 +367,10 @@ def displayResultsInWikiSyntax(def topic, def map)
     }
     return content
 }
-def displayResultsInHTML(def topic, def map)
+def displayResultsInHTML(def oldDateString, def newDateString, def topic, def map)
 {
-    def content = "<table><thead><tr>"
+    def content = "<h1>Report - ${oldDateString} -> ${newDateString}</h1>"
+    content += "<table><thead><tr>"
     content += "<th>${topic}</th><th>TPC Old</th><th>TPC New</th><th>TPC Diff</th><th>Global TPC Contribution</th>"
     content += "</tr></thead><tbody>"
     content += "<tr><td>ALL</td><td>${round(map.ALL.oldtpc)}</td><td>${round(map.ALL.newtpc)}</td>"
