@@ -93,7 +93,7 @@ node() {
         // Send mail or update latest.txt file when no failures
         if (hasFailures(map)) {
             // Send the mail to notify about failures
-            sendMail(latestReport, htmlContent)
+            sendMail(latestReport, dateString, htmlContent)
         } else {
             // Update the latest.txt file
             writeFile file: "${cloverReportLocation}/latest.txt", text: "${dateString}"
@@ -127,17 +127,20 @@ def runCloverAndGenerateReport(def mvnHome, def localRepository, def cloverDir)
         }
     }
 }
-def sendMail(def latestReport, def htmlContent)
+def sendMail(def oldDateString, def newDateString, def htmlContent)
 {
-    def (date, time) = latestReport.tokenize('-')
-    def cloverURL =
-        "http://maven.xwiki.org/site/clover/${date}/clover-commons+rendering+platform-${latestReport}/dashboard.html"
+    def (oldDate, oldTime) = oldReportDateString.tokenize('-')
+    def oldCloverURL =
+        "http://maven.xwiki.org/site/clover/${oldDate}/clover-commons+rendering+platform-${oldReportDateString}/dashboard.html"
+    def (newDate, newTime) = newDateString.tokenize('-')
+    def newCloverURL =
+        "http://maven.xwiki.org/site/clover/${newDate}/clover-commons+rendering+platform-${newDateString}/dashboard.html"
     emailext (
         subject: "Global Coverage Failure - Build # ${env.BUILD_NUMBER}",
         body: """
-At least one module got a TPC lower than in the latest passing Clover report [${latestReport}].
+At least one module got a TPC lower than in the new <a href="${newCloverURL}">${newDateString}</a> report when compared with the old <a href="${oldCloverURL}">${oldDateString}</a> one.
 
-Please fix all elements in red in the report below (see the <a href="${cloverURL}">Clover report</a> for details):
+Please fix all elements in red in the report below.
 
 ${htmlContent}
 """,
