@@ -399,7 +399,7 @@ def computeMavenGoals(config)
         // This is to avoid having branches with the same version polluting the maven snapshot repo, overwriting one
         // another.
         def branchName = env['BRANCH_NAME']
-        if (branchName != null && branchName.equals("master") || branchName.startsWith('stable-')) {
+        if (branchName != null && (branchName.equals("master") || branchName.startsWith('stable-'))) {
             goals = "deploy"
         } else {
             goals = "install"
