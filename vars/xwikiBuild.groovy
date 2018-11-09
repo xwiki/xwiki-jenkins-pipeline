@@ -64,6 +64,9 @@ import com.cloudbees.groovy.cps.NonCPS
 //         Maven projects are built). Comma-delimited list of specified reactor projects to build instead of all
 //         projects. A project can be specified by [groupId]:artifactId or by its relative path. This corresponds to
 //         the maven "--projects" parameter.
+//     skipCheckout = true (default is false). If true then don't perform a SCM checkout by default. This is useful to
+//         be able to use this library for simple pipeline jobs (without a Jenkinsfile). In this case the pipeline
+//         would do the checkout.
 //
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
 //
@@ -134,7 +137,9 @@ def call(String name = 'Default', body)
             error "Aborting build since it's disabled explicitly..."
         }
 
-        checkout scm
+        if (!config.skipCheckout) {
+            checkout scm
+        }
 
         // Configure the version of Java to use
         def pom = readMavenPom file: 'pom.xml'
