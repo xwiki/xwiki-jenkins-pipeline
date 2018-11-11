@@ -52,6 +52,18 @@ node('docker') {
         submoduleCfg: [],
         userRemoteConfigs: [[url: 'https://github.com/xwiki/xwiki-platform.git']]])
 
+    // Build the minimal war module to make sure we have the latest dependencies present in the local maven repo
+    // before we run the docker tests. By default the Docker-based tests resolve the minimal war deps from the local
+    // repo only without going online.
+    build(
+        name: "Minimal WAR Dependencies",
+        profiles: 'distribution',
+        projects: "org.xwiki.platform:xwiki-platform-distribution-war-minimaldependencies",
+        skipCheckout: true,
+        xvnc: false,
+        goals: "clean install"
+    )
+
     // Find all modules named -test-docker to located docker-based tests
     def modules = []
     def dockerModuleFiles = findFiles(glob: '**/*-test-docker/pom.xml')
