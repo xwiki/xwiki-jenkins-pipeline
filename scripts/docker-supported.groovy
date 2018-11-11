@@ -29,7 +29,7 @@ def configurations = [
         'browser' : 'chrome'
     ],
     'PostgreSQL 9.x, Jetty 9.x, Chrome': [
-        'database' : 'postgres',
+        'database' : 'postgresql',
         'databaseTag' : '9',
         'servletEngine' : 'jetty',
         'servletEngineTag' : '9',
