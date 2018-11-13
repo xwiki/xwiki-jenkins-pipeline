@@ -18,21 +18,27 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-// Execute docker functional tests on all supported configurations.
-
+// Execute docker functional tests on all supported configurations, according to:
+// - DBs: https://dev.xwiki.org/xwiki/bin/view/Community/DatabaseSupportStrategy
+// - Servlet containers: https://dev.xwiki.org/xwiki/bin/view/Community/ServletContainerSupportStrategy/
+// - Browsers: https://dev.xwiki.org/xwiki/bin/view/Community/BrowserSupportStrategy
+// Note that for browsers we're constrained to use the version of them supported by the Selenium version we use. Our
+// strategy is to always use the latest released Selenium version in order to use the latest browser versions.
 def configurations = [
-    'MySQL 5.x, Tomcat 8.x, Chrome': [
+    'MySQL 5.7.x, Tomcat 8.x, Chrome': [
         'database' : 'mysql',
-        'databaseTag' : '5',
+        'databaseTag' : '5.7',
+        'jdbcVersion' : '5.1.45',
         'servletEngine' : 'tomcat',
-        'servletEngineTag' : '8',
+        'servletEngineTag' : '8.5',
         'browser' : 'chrome'
     ],
-    'PostgreSQL 9.x, Jetty 9.x, Chrome': [
+    'PostgreSQL 11.x, Jetty 9.x, Chrome': [
         'database' : 'postgresql',
-        'databaseTag' : '9',
+        'databaseTag' : '11',
+        'jdbcVersion' : '42.2.5',
         'servletEngine' : 'jetty',
-        'servletEngineTag' : '9',
+        'servletEngineTag' : '9.2',
         'browser' : 'chrome'
     ],
     'HSQLDB Embedded, Jetty Standalone, Firefox': [
