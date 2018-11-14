@@ -60,13 +60,10 @@ import com.cloudbees.groovy.cps.NonCPS
 //     archiveArtifacts = true (defaults to false since we don't need that as we push to a maven repo)
 //     fingerprintDependencies = false (default to true since it's required by the withMaven dependency graph feature
 //         in order to have builds trigger automatically other builds when dependencies are built)
-//     projects = 'org.xwiki.platform:xwiki-platform-menu-test-docker' (default is to not specify this option and all
-//         Maven projects are built). Comma-delimited list of specified reactor projects to build instead of all
-//         projects. A project can be specified by [groupId]:artifactId or by its relative path. This corresponds to
-//         the maven "--projects" parameter.
 //     skipCheckout = true (default is false). If true then don't perform a SCM checkout by default. This is useful to
 //         be able to use this library for simple pipeline jobs (without a Jenkinsfile). In this case the pipeline
 //         would do the checkout.
+//     mavenFlags = '--projects ... -amd -U -e' (default is '-U -e')
 //
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
 //
@@ -194,9 +191,9 @@ def call(String name = 'Default', body)
                         // unstable when there are failing tests by the JUnit Archiver executed during the
                         // 'Post Build' stage below.
                         def fullProperties = "-Dmaven.test.failure.ignore ${properties}"
-                        // If the projects property is specified, only build some projects
-                        def projects = config.projects ? "--projects ${config.projects} " : ''
-                        sh "mvn ${projects}-f ${pom} ${goals} -P${profiles} -U -e ${fullProperties}"
+                        // Set Maven flags to use
+                        def mavenFlags = config.mavenFlags ?: '-U -e'
+                        sh "mvn -f ${pom} ${goals} -P${profiles} ${mavenFlags} ${fullProperties}"
                     }
                 } catch (Exception e) {
                     // - If this line is reached it means the build has failed (other than for failing tests) or has
