@@ -64,7 +64,7 @@ node('docker') {
     build(
         name: "Minimal WAR Dependencies",
         profiles: 'distribution',
-        projects: "org.xwiki.platform:xwiki-platform-distribution-war-minimaldependencies",
+        mavenFlags: "--projects org.xwiki.platform:xwiki-platform-distribution-war-minimaldependencies -U -e",
         skipCheckout: true,
         xvnc: false,
         goals: "clean install"
@@ -83,17 +83,23 @@ node('docker') {
     }
 
     // Run docker tests on all modules for all supported configurations
-    configurations.each() { configName, parameters ->
+    configurations.eachWithIndex() { config, i ->
         def systemProperties = []
-        parameters.each() { paramName, value ->
+        config.value.each() { paramName, value ->
             systemProperties.add("-Dxwiki.test.ui.${paramName}=${value}")
+        }
+        // Only execute maven with -U for the first Maven builds since XWiki SNAPSHOT dependencies don't change with
+        // configurations.
+        def flags = "-e"
+        if (i == 0) {
+            flags = "${flags} -U"
         }
         modules.each() { modulePath ->
             build(
-                name: "${configName} - ${modulePath.substring(modulePath.lastIndexOf("/") + 1, modulePath.length())}",
+                name: "${config.key} - ${modulePath.substring(modulePath.lastIndexOf("/") + 1, modulePath.length())}",
                 profiles: 'docker,legacy,integration-tests,office-tests,snapshotModules',
-                properties: "-amd -Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dxwiki.revapi.skip=true ${systemProperties.join(' ')}",
-                projects: modulePath,
+                properties: "-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dxwiki.revapi.skip=true ${systemProperties.join(' ')}",
+                mavenFlags: "--projects ${modulePath} -amd ${flags}",
                 skipCheckout: true,
                 xvnc: false,
                 goals: "clean verify"
@@ -118,8 +124,8 @@ def build(map)
         if (map.pom != null) {
             pom = map.pom
         }
-        if (map.projects != null) {
-            projects = map.projects
+        if (map.mavenFlags != null) {
+            mavenFlags = map.mavenFlags
         }
         if (map.skipCheckout != null) {
             skipCheckout = map.skipCheckout
