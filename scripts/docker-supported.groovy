@@ -25,7 +25,8 @@
 // Note that for browsers we're constrained to use the version of them supported by the Selenium version we use. Our
 // strategy is to always use the latest released Selenium version in order to use the latest browser versions.
 //
-// TODO: In the future replace this by Java code located in xwiki-platform-test-docker whe JUnit5 supports this.
+// TODO: In the future replace this by Java code located in xwiki-platform-test-docker when JUnit5 supports this.
+// (somehow related: https://github.com/junit-team/junit5/issues/878).
 // It'll bring the following advantages:
 // - Less reliance on the CI. If we need to get away from Jenkins for ex, it'll make it easier. In general we need to
 //   have the maximum done in the Maven build and the minimum in CI scripts.
