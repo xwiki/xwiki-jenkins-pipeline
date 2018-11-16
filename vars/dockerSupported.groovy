@@ -61,6 +61,7 @@ def configurations = [
     ]
 ]
 
-node('docker') {
+def executeDockerTests()
+{
     executeDockerTests(configurations, null)
 }

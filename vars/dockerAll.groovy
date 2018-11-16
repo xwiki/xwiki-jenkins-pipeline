@@ -68,7 +68,8 @@ def configurations = [
     ]
 ]
 
-node('docker') {
+def executeDockerTests()
+{
     // Smoke test modules.
     def modules = [
         "xwiki-platform-core/xwiki-platform-menu/xwiki-platform-menu-test"
