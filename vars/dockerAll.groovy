@@ -17,6 +17,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
+import org.xwiki.jenkins.DockerTestUtils
 
 // Execute smoke tests on the maximum number of configurations to flush out problems of configurations when XWiki
 // doesn't start or has basic problems.
