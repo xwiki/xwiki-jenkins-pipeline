@@ -101,6 +101,7 @@ node('docker') {
         config.value.each() { paramName, value ->
             systemProperties.add("-Dxwiki.test.ui.${paramName}=${value}")
         }
+        def configurationName = getConfigurationName(config.value)
         // Only execute maven with -U for the first Maven builds since XWiki SNAPSHOT dependencies don't change with
         // configurations.
         def flags = "-e"
@@ -111,7 +112,7 @@ node('docker') {
             build(
                 name: "${config.key} - ${modulePath.substring(modulePath.lastIndexOf("/") + 1, modulePath.length())}",
                 profiles: 'docker,legacy,integration-tests,office-tests,snapshotModules',
-                properties: "-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dxwiki.revapi.skip=true ${systemProperties.join(' ')}",
+                properties: "-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dmaven.build.dir=target/${configurationName} -Dxwiki.revapi.skip=true ${systemProperties.join(' ')}",
                 mavenFlags: "--projects ${modulePath} -amd ${flags}",
                 skipCheckout: true,
                 xvnc: false,
@@ -119,6 +120,11 @@ node('docker') {
             )
         }
     }
+}
+
+def getConfigurationName(def config)
+{
+    return "${config.database}-${config.databaseTag ?: 'default'}-${config.jdbcVersion ?: 'default'}-${config.servletEngine}-${config.servletEngineTag ?: 'default'}-${config.browser}"
 }
 
 def build(map)
