@@ -21,6 +21,19 @@
  */
 package org.xwiki.jenkins
 
+// Example usage:
+//   import org.xwiki.jenkins.DockerTestUtils
+//   def configurations = [
+//       'MySQL 5.7.x, Tomcat 8.x, Chrome': [
+//           'database' : 'mysql',
+//           'databaseTag' : '5.7',
+//           'jdbcVersion' : '5.1.45',
+//           'servletEngine' : 'tomcat',
+//           'servletEngineTag' : '8.5',
+//           'browser' : 'chrome'
+//       ]
+//   new DockerTestUtils().executeDockerTests(configurations, null)
+
 def executeDockerTests(def configurations, def modules)
 {
     // Checkout platform

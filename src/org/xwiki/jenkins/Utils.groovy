@@ -21,6 +21,10 @@
  */
 package org.xwiki.jenkins
 
+// Example usage:
+//   import org.xwiki.jenkins.Utils
+//   new Utils().echoXWiki("test")
+
 /**
  * Echo text with a special character prefix to make it stand out in the pipeline logs.
  */
