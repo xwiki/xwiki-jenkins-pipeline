@@ -64,6 +64,7 @@ import com.cloudbees.groovy.cps.NonCPS
 //         be able to use this library for simple pipeline jobs (without a Jenkinsfile). In this case the pipeline
 //         would do the checkout.
 //     mavenFlags = '--projects ... -amd -U -e' (default is '-U -e')
+//     cron = '@midnight' (default is '@monthly'). Sets the minimal time-based trigger for the job.
 //
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
 //
@@ -99,9 +100,7 @@ def call(String name = 'Default', body)
     echoXWiki "Only keep the 10 most recent builds + disable concurrent builds"
     def projectProperties = [
         [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', daysToKeepStr: '7']],
-        disableConcurrentBuilds(),
-        // Make sure project are built at least once a month because SNAPSHOT older than one month are deleted by a Nexus scheduler
-        pipelineTriggers([cron('@monthly')])
+        disableConcurrentBuilds()
     ]
     properties(projectProperties)
 
@@ -110,6 +109,11 @@ def call(String name = 'Default', body)
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = config
     body()
+
+    // By default make sure projects are built at least once a month because SNAPSHOT older than one month are deleted
+    // by a Nexus scheduler.
+    def cronValue = config.cron ?: '@monthly'
+    properties([pipelineTriggers([cron("${cronValue}")])])
 
     // Initialize a variable that hold past failing tests. We need this because we can't get access to the failing
     // tests for a given Maven run (we can only get them globally).
