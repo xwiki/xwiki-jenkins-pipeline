@@ -19,58 +19,58 @@
  */
 import org.xwiki.jenkins.DockerTestUtils
 
-// Execute smoke tests on the maximum number of configurations to flush out problems of configurations when XWiki
-// doesn't start or has basic problems.
-def configurations = [
-    'MySQL 5.7.x, Tomcat 8.x, Chrome': [
-        'database' : 'mysql',
-        'databaseTag' : '5.7',
-        'jdbcVersion' : '5.1.45',
-        'servletEngine' : 'tomcat',
-        'servletEngineTag' : '8',
-        'browser' : 'chrome'
-    ],
-    'MySQL 5.5.x, Tomcat 8.x, Firefox': [
-        'database' : 'mysql',
-        'databaseTag' : '5.5',
-        'jdbcVersion' : '5.1.45',
-        'servletEngine' : 'tomcat',
-        'servletEngineTag' : '8',
-        'browser' : 'chrome'
-    ],
-    'PostgreSQL 11.x, Jetty 9.x, Chrome': [
-        'database' : 'postgresql',
-        'databaseTag' : '11',
-        'jdbcVersion' : '42.2.5',
-        'servletEngine' : 'jetty',
-        'servletEngineTag' : '9',
-        'browser' : 'chrome'
-    ],
-    'PostgreSQL 9.4.x, Jetty 9.x, Firefox': [
-        'database' : 'postgresql',
-        'databaseTag' : '9.4',
-        'jdbcVersion' : '42.2.5',
-        'servletEngine' : 'jetty',
-        'servletEngineTag' : '9',
-        'browser' : 'chrome'
-    ],
-    'PostgreSQL 9.6.x, Jetty 9.x, Chrome': [
-        'database' : 'postgresql',
-        'databaseTag' : '9.6',
-        'jdbcVersion' : '42.2.5',
-        'servletEngine' : 'jetty',
-        'servletEngineTag' : '9',
-        'browser' : 'chrome'
-    ],
-    'HSQLDB Embedded, Jetty Standalone, Firefox': [
-        'database' : 'hsqldb_embedded',
-        'servletEngine' : 'jetty_standalone',
-        'browser' : 'firefox'
-    ]
-]
-
 def call()
 {
+    // Execute smoke tests on the maximum number of configurations to flush out problems of configurations when XWiki
+    // doesn't start or has basic problems.
+    def configurations = [
+        'MySQL 5.7.x, Tomcat 8.x, Chrome': [
+            'database' : 'mysql',
+            'databaseTag' : '5.7',
+            'jdbcVersion' : '5.1.45',
+            'servletEngine' : 'tomcat',
+            'servletEngineTag' : '8',
+            'browser' : 'chrome'
+        ],
+        'MySQL 5.5.x, Tomcat 8.x, Firefox': [
+            'database' : 'mysql',
+            'databaseTag' : '5.5',
+            'jdbcVersion' : '5.1.45',
+            'servletEngine' : 'tomcat',
+            'servletEngineTag' : '8',
+            'browser' : 'chrome'
+        ],
+        'PostgreSQL 11.x, Jetty 9.x, Chrome': [
+            'database' : 'postgresql',
+            'databaseTag' : '11',
+            'jdbcVersion' : '42.2.5',
+            'servletEngine' : 'jetty',
+            'servletEngineTag' : '9',
+            'browser' : 'chrome'
+        ],
+        'PostgreSQL 9.4.x, Jetty 9.x, Firefox': [
+            'database' : 'postgresql',
+            'databaseTag' : '9.4',
+            'jdbcVersion' : '42.2.5',
+            'servletEngine' : 'jetty',
+            'servletEngineTag' : '9',
+            'browser' : 'chrome'
+        ],
+        'PostgreSQL 9.6.x, Jetty 9.x, Chrome': [
+            'database' : 'postgresql',
+            'databaseTag' : '9.6',
+            'jdbcVersion' : '42.2.5',
+            'servletEngine' : 'jetty',
+            'servletEngineTag' : '9',
+            'browser' : 'chrome'
+        ],
+        'HSQLDB Embedded, Jetty Standalone, Firefox': [
+            'database' : 'hsqldb_embedded',
+            'servletEngine' : 'jetty_standalone',
+            'browser' : 'firefox'
+        ]
+    ]
+
     // Smoke test modules.
     def modules = [
         "xwiki-platform-core/xwiki-platform-menu/xwiki-platform-menu-test"

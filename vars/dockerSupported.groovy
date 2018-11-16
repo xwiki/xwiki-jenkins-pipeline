@@ -38,31 +38,32 @@ import org.xwiki.jenkins.DockerTestUtils
 // - Ability to paralellize, i.e. execute each Maven build on a different CI agent. This is because the withMaven() step
 //   doesn't currently support this feature (which is a pity).
 //   See also https://massol.myxwiki.org/xwiki/bin/view/Blog/Jenkins%20and%20large%20Maven%20projects
-def configurations = [
-    'MySQL 5.7.x, Tomcat 8.x, Chrome': [
-        'database' : 'mysql',
-        'databaseTag' : '5.7',
-        'jdbcVersion' : '5.1.45',
-        'servletEngine' : 'tomcat',
-        'servletEngineTag' : '8.5',
-        'browser' : 'chrome'
-    ],
-    'PostgreSQL 11.x, Jetty 9.x, Chrome': [
-        'database' : 'postgresql',
-        'databaseTag' : '11',
-        'jdbcVersion' : '42.2.5',
-        'servletEngine' : 'jetty',
-        'servletEngineTag' : '9.2',
-        'browser' : 'chrome'
-    ],
-    'HSQLDB Embedded, Jetty Standalone, Firefox': [
-        'database' : 'hsqldb_embedded',
-        'servletEngine' : 'jetty_standalone',
-        'browser' : 'firefox'
-    ]
-]
 
 def call()
 {
+    def configurations = [
+        'MySQL 5.7.x, Tomcat 8.x, Chrome': [
+            'database' : 'mysql',
+            'databaseTag' : '5.7',
+            'jdbcVersion' : '5.1.45',
+            'servletEngine' : 'tomcat',
+            'servletEngineTag' : '8.5',
+            'browser' : 'chrome'
+        ],
+        'PostgreSQL 11.x, Jetty 9.x, Chrome': [
+            'database' : 'postgresql',
+            'databaseTag' : '11',
+            'jdbcVersion' : '42.2.5',
+            'servletEngine' : 'jetty',
+            'servletEngineTag' : '9.2',
+            'browser' : 'chrome'
+        ],
+        'HSQLDB Embedded, Jetty Standalone, Firefox': [
+            'database' : 'hsqldb_embedded',
+            'servletEngine' : 'jetty_standalone',
+            'browser' : 'firefox'
+        ]
+    ]
+
     new DockerTestUtils().executeDockerTests(configurations, null)
 }
