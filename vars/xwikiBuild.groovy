@@ -590,7 +590,7 @@ def checkForFalsePositives()
 /**
  * Check for test flickers, and modify test result descriptions for tests that are identified as flicker. A test is
  * a flicker if there's a JIRA issue having the "Flickering Test" custom field containing the FQN of the test in the
- * format {@code <java package name>#<test name>}.
+ * format "<java package name>#<test name>".
  *
  * @return true if the failing tests only contain flickering tests
  */
