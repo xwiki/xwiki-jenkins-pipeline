@@ -104,9 +104,12 @@ node('docker') {
         def configurationName = getConfigurationName(config.value)
         // Only execute maven with -U for the first Maven builds since XWiki SNAPSHOT dependencies don't change with
         // configurations.
+        // Only clean for the first execution since we don't need to clean more.
         def flags = "-e"
+        def goals = "verify"
         if (i == 0) {
             flags = "${flags} -U"
+            goals = "clean ${goals}"
         }
         modules.each() { modulePath ->
             build(
@@ -116,7 +119,7 @@ node('docker') {
                 mavenFlags: "--projects ${modulePath} -amd ${flags}",
                 skipCheckout: true,
                 xvnc: false,
-                goals: "clean verify"
+                goals: goals
             )
         }
     }
