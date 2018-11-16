@@ -186,7 +186,7 @@ void executeDockerTests(def configurations, def modules)
         mavenFlags: '--projects org.xwiki.platform:xwiki-platform-distribution-war-minimaldependencies -U -e',
         skipCheckout: true,
         xvnc: false,
-        cron: '@midnight',
+        cron: 'none',
         goals: 'clean install'
     )
 
@@ -235,7 +235,7 @@ void executeDockerTests(def configurations, def modules)
                     mavenFlags: "--projects ${modulePath}/${moduleName}-pageobjects ${flags}",
                     skipCheckout: true,
                     xvnc: false,
-                    cron: '@midnight',
+                    cron: 'none',
                     goals: 'clean install'
                 )
             }
@@ -247,7 +247,7 @@ void executeDockerTests(def configurations, def modules)
                 mavenFlags: "--projects ${modulePath}/${moduleName}-docker ${flags}",
                 skipCheckout: true,
                 xvnc: false,
-                cron: '@midnight',
+                cron: 'none',
                 goals: goals
             )
         }
