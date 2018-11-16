@@ -181,12 +181,12 @@ void executeDockerTests(def configurations, def modules)
     // before we run the docker tests. By default the Docker-based tests resolve the minimal war deps from the local
     // repo only without going online.
     build(
-        name: "Minimal WAR Dependencies",
+        name: 'Minimal WAR Dependencies',
         profiles: 'distribution',
-        mavenFlags: "--projects org.xwiki.platform:xwiki-platform-distribution-war-minimaldependencies -U -e",
+        mavenFlags: '--projects org.xwiki.platform:xwiki-platform-distribution-war-minimaldependencies -U -e',
         skipCheckout: true,
         xvnc: false,
-        goals: "clean install"
+        goals: 'clean install'
     )
 
     // If no modules are passed, then find all modules containing docker tests.
@@ -197,8 +197,8 @@ void executeDockerTests(def configurations, def modules)
         dockerModuleFiles.each() {
             if (!it.path.contains('xwiki-platform-test-docker')) {
                 // Find parent module and build it
-                def directory = it.path.substring(0, it.path.lastIndexOf("/"))
-                def parent = directory.substring(0, directory.lastIndexOf("/"))
+                def directory = it.path.substring(0, it.path.lastIndexOf('/'))
+                def parent = directory.substring(0, directory.lastIndexOf('/'))
                 modules.add(parent)
             }
         }
@@ -214,18 +214,35 @@ void executeDockerTests(def configurations, def modules)
         // Only execute maven with -U for the first Maven builds since XWiki SNAPSHOT dependencies don't change with
         // configurations.
         // Only clean for the first execution since we don't need to clean more.
-        def flags = "-e"
-        def goals = "verify"
+        def flags = '-e'
+        def goals = 'verify'
         if (i == 0) {
             flags = "${flags} -U"
             goals = "clean ${goals}"
         }
-        modules.each() { modulePath ->
+        modules.eachWithIndex() { modulePath, j ->
+            def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
+            def profiles = 'docker,legacy,integration-tests,office-tests,snapshotModules'
+            def commonProperties = '-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dxwiki.revapi.skip=true'
+            // On the first execution inside this module, build the pageobjects module.
+            // Note: we don't need to build the POM module since it's the parent of pageobjects and docker submodules.
+            if (i == 0) {
+                build(
+                    name: "Pageobjects module for ${moduleName}",
+                    profiles: profiles,
+                    properties: commonProperties,
+                    mavenFlags: "--projects ${modulePath}/${moduleName}-pageobjects ${flags}",
+                    skipCheckout: true,
+                    xvnc: false,
+                    goals: 'clean install'
+                )
+            }
+            // Then run the tests
             build(
-                name: "${config.key} - ${modulePath.substring(modulePath.lastIndexOf("/") + 1, modulePath.length())}",
-                profiles: 'docker,legacy,integration-tests,office-tests,snapshotModules',
-                properties: "-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dmaven.build.dir=target/${configurationName} -Dxwiki.revapi.skip=true ${systemProperties.join(' ')}",
-                mavenFlags: "--projects ${modulePath} -amd ${flags}",
+                name: "${config.key} - ${moduleName}",
+                profiles: profiles,
+                properties: "${commonProperties} -Dmaven.build.dir=target/${configurationName} ${systemProperties.join(' ')}",
+                mavenFlags: "--projects ${modulePath}/${moduleName}-docker ${flags}",
                 skipCheckout: true,
                 xvnc: false,
                 goals: goals
