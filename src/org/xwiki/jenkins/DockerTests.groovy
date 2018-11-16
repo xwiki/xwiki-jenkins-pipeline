@@ -170,23 +170,23 @@ void executeDockerTests(def configurations, def modules)
 {
     // Checkout platform
     checkout([
-            $class: 'GitSCM',
-            branches: [[name: '*/master']],
-            doGenerateSubmoduleConfigurations: false,
-            extensions: [],
-            submoduleCfg: [],
-            userRemoteConfigs: [[url: 'https://github.com/xwiki/xwiki-platform.git']]])
+        $class: 'GitSCM',
+        branches: [[name: '*/master']],
+        doGenerateSubmoduleConfigurations: false,
+        extensions: [],
+        submoduleCfg: [],
+        userRemoteConfigs: [[url: 'https://github.com/xwiki/xwiki-platform.git']]])
 
     // Build the minimal war module to make sure we have the latest dependencies present in the local maven repo
     // before we run the docker tests. By default the Docker-based tests resolve the minimal war deps from the local
     // repo only without going online.
     build(
-            name: "Minimal WAR Dependencies",
-            profiles: 'distribution',
-            mavenFlags: "--projects org.xwiki.platform:xwiki-platform-distribution-war-minimaldependencies -U -e",
-            skipCheckout: true,
-            xvnc: false,
-            goals: "clean install"
+        name: "Minimal WAR Dependencies",
+        profiles: 'distribution',
+        mavenFlags: "--projects org.xwiki.platform:xwiki-platform-distribution-war-minimaldependencies -U -e",
+        skipCheckout: true,
+        xvnc: false,
+        goals: "clean install"
     )
 
     // If no modules are passed, then find all modules containing docker tests.
@@ -222,13 +222,13 @@ void executeDockerTests(def configurations, def modules)
         }
         modules.each() { modulePath ->
             build(
-                    name: "${config.key} - ${modulePath.substring(modulePath.lastIndexOf("/") + 1, modulePath.length())}",
-                    profiles: 'docker,legacy,integration-tests,office-tests,snapshotModules',
-                    properties: "-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dmaven.build.dir=target/${configurationName} -Dxwiki.revapi.skip=true ${systemProperties.join(' ')}",
-                    mavenFlags: "--projects ${modulePath} -amd ${flags}",
-                    skipCheckout: true,
-                    xvnc: false,
-                    goals: goals
+                name: "${config.key} - ${modulePath.substring(modulePath.lastIndexOf("/") + 1, modulePath.length())}",
+                profiles: 'docker,legacy,integration-tests,office-tests,snapshotModules',
+                properties: "-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dmaven.build.dir=target/${configurationName} -Dxwiki.revapi.skip=true ${systemProperties.join(' ')}",
+                mavenFlags: "--projects ${modulePath} -amd ${flags}",
+                skipCheckout: true,
+                xvnc: false,
+                goals: goals
             )
         }
     }
