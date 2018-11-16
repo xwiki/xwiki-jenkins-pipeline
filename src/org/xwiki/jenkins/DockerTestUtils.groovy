@@ -121,3 +121,5 @@ def build(map)
         }
     }
 }
+
+return this

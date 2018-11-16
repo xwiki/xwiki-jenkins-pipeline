@@ -74,5 +74,5 @@ def executeDockerTests()
     def modules = [
         "xwiki-platform-core/xwiki-platform-menu/xwiki-platform-menu-test"
     ]
-    executeDockerTests(configurations, modules)
+    new DockerTestUtils().executeDockerTests(configurations, modules)
 }

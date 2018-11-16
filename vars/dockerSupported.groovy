@@ -63,5 +63,5 @@ def configurations = [
 
 def executeDockerTests()
 {
-    executeDockerTests(configurations, null)
+    new DockerTestUtils().executeDockerTests(configurations, null)
 }

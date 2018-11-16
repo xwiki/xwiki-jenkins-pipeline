@@ -89,3 +89,5 @@ ${FAILED_TESTS}
         ]
     )
 }
+
+return this
