@@ -68,7 +68,7 @@ def configurations = [
     ]
 ]
 
-def executeDockerTests()
+def call()
 {
     // Smoke test modules.
     def modules = [

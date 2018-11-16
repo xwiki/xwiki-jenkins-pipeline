@@ -61,7 +61,7 @@ def configurations = [
     ]
 ]
 
-def executeDockerTests()
+def call()
 {
     new DockerTestUtils().executeDockerTests(configurations, null)
 }
