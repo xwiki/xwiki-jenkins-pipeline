@@ -146,10 +146,10 @@ void executeDockerAllTests()
 }
 
 /**
- * Execute smoke tests (i.e. only a few tests) on confgiruations that we'll want to support in the future but that
+ * Execute smoke tests (i.e. only a few tests) on configurations that we'll want to support in the future but that
  * are currently not supported or not working.
  */
-void executeDockerNonSupportedTests()
+void executeDockerUnsupportedTests()
 {
     def configurations = [
         'MySQL 8.x, Tomcat 8.x, Chrome': [
