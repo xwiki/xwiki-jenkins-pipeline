@@ -158,7 +158,8 @@ void executeDockerUnsupportedTests()
             'jdbcVersion' : '5.1.45',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8',
-            'browser' : 'chrome'
+            'browser' : 'chrome',
+            'verbose' : 'true'
         ],
         'MySQL 5.x, Tomcat 9.x, Chrome': [
             'database' : 'mysql',
@@ -166,7 +167,8 @@ void executeDockerUnsupportedTests()
             'jdbcVersion' : '5.1.45',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8',
-            'browser' : 'chrome'
+            'browser' : 'chrome',
+            'verbose' : 'true'
         ]
     ]
 
