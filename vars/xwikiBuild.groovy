@@ -66,6 +66,7 @@ import com.cloudbees.groovy.cps.NonCPS
 //     mavenFlags = '--projects ... -amd -U -e' (default is '-U -e')
 //     cron = '@midnight' (default is '@monthly'). Sets the minimal time-based trigger for the job. Use 'none' to
 //         not override the cron setting for the job.
+//     skipMail = true (default is false). If true then don't send emails when the job or tests fail.
 //
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
 //
@@ -209,7 +210,7 @@ def call(String name = 'Default', body)
                     // - Note that withMaven() doesn't set any build result in this case but we don't need to set any
                     //   since we're stopping the build!
                     // - Don't send emails for aborts! We discover aborts by checking for exit code 143.
-                    if (!e.getMessage().contains('exit code 143')) {
+                    if (!e.getMessage().contains('exit code 143') && !config.skipMail) {
                         notifyByMail('ERROR', name)
                     }
                     throw e
@@ -241,7 +242,7 @@ def call(String name = 'Default', body)
 
                 // Also send a mail notification when the job is not successful.
                 echoXWiki "Checking if email should be sent or not"
-                if (!containsFalsePositivesOrOnlyFlickers) {
+                if (!containsFalsePositivesOrOnlyFlickers && !config.skipMail) {
                     notifyByMail(currentBuild.result, name)
                 } else {
                     echoXWiki "No email sent even if some tests failed because they contain only flickering tests!"
@@ -268,6 +269,7 @@ def wrapInXvnc(config, closure)
 
 def notifyByMail(String buildStatus, String name)
 {
+
     echoXWiki "Build has failed, sending mails to concerned parties"
 
     // Sending mails to:

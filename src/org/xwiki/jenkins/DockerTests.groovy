@@ -22,7 +22,7 @@
 package org.xwiki.jenkins
 
 /**
- * Execute all  docker functional tests on all supported configurations, according to:
+ * Execute all docker functional tests on latest versions of supported configurations, according to:
  * <ul>
  * <li>DBs: https://dev.xwiki.org/xwiki/bin/view/Community/DatabaseSupportStrategy</li>
  * <li>Servlet containers: https://dev.xwiki.org/xwiki/bin/view/Community/ServletContainerSupportStrategy/</li>
@@ -81,12 +81,12 @@ void executeDockerSupportedTests()
             'browser' : 'firefox'
         ]
     ]
-    executeDockerTests(configurations, null)
+    executeDockerTests(configurations, null, false)
 }
 
 /**
- * Execute smoke tests on the maximum number of configurations to flush out problems of configurations when XWiki
- * doesn't start or has basic problems.
+ * Execute smoke tests (i.e. only a few tests) on the maximum number of configurations to flush out problems of
+ * configurations when XWiki doesn't start or has basic problems. This includes all supported configurations.
  */
 void executeDockerAllTests()
 {
@@ -142,7 +142,39 @@ void executeDockerAllTests()
     def modules = [
         "xwiki-platform-core/xwiki-platform-menu/xwiki-platform-menu-test"
     ]
-    executeDockerTests(configurations, modules)
+    executeDockerTests(configurations, modules, false)
+}
+
+/**
+ * Execute smoke tests (i.e. only a few tests) on confgiruations that we'll want to support in the future but that
+ * are currently not supported or not working.
+ */
+void executeDockerNonSupportedTests()
+{
+    def configurations = [
+        'MySQL 8.x, Tomcat 8.x, Chrome': [
+            'database' : 'mysql',
+            'databaseTag' : '8',
+            'jdbcVersion' : '5.1.45',
+            'servletEngine' : 'tomcat',
+            'servletEngineTag' : '8',
+            'browser' : 'chrome'
+        ],
+        'MySQL 5.x, Tomcat 9.x, Chrome': [
+            'database' : 'mysql',
+            'databaseTag' : '8',
+            'jdbcVersion' : '5.1.45',
+            'servletEngine' : 'tomcat',
+            'servletEngineTag' : '8',
+            'browser' : 'chrome'
+        ]
+    ]
+
+    // Smoke test modules.
+    def modules = [
+        "xwiki-platform-core/xwiki-platform-menu/xwiki-platform-menu-test"
+    ]
+    executeDockerTests(configurations, modules, true)
 }
 
 /**
@@ -165,8 +197,9 @@ void executeDockerAllTests()
  *
  * @param configurations the configurations for which to execute the functional tests defined in the passed modules
  * @param modules the modules on which to run the tests
+ * @param skipMail if true then don't send emails when builds fail
  */
-void executeDockerTests(def configurations, def modules)
+void executeDockerTests(def configurations, def modules, def skipMail)
 {
     // Checkout platform
     checkout([
@@ -187,7 +220,8 @@ void executeDockerTests(def configurations, def modules)
         skipCheckout: true,
         xvnc: false,
         cron: 'none',
-        goals: 'clean install'
+        goals: 'clean install',
+        skipMail: skipMail
     )
 
     // If no modules are passed, then find all modules containing docker tests.
@@ -236,7 +270,8 @@ void executeDockerTests(def configurations, def modules)
                     skipCheckout: true,
                     xvnc: false,
                     cron: 'none',
-                    goals: 'clean install'
+                    goals: 'clean install',
+                    skipMail: skipMail
                 )
             }
             // Then run the tests
@@ -248,7 +283,8 @@ void executeDockerTests(def configurations, def modules)
                 skipCheckout: true,
                 xvnc: false,
                 cron: 'none',
-                goals: goals
+                goals: goals,
+                skipMail: skipMail
             )
         }
     }
@@ -286,6 +322,9 @@ void build(map)
         }
         if (map.cron != null) {
             cron = map.cron
+        }
+        if (map.skipMail != null) {
+            skipMail = map.skipMail
         }
     }
 }
