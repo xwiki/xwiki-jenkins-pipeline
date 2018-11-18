@@ -59,7 +59,7 @@ package org.xwiki.jenkins
 void executeDockerSupportedTests()
 {
     def configurations = [
-        'MySQL 5.7.x, Tomcat 8.x, Chrome': [
+        'MySQL 5.7.x, Tomcat 8.5.x, Chrome': [
             'database' : 'mysql',
             'databaseTag' : '5.7',
             'jdbcVersion' : '5.1.45',
@@ -67,7 +67,7 @@ void executeDockerSupportedTests()
             'servletEngineTag' : '8.5',
             'browser' : 'chrome'
         ],
-        'PostgreSQL 11.x, Jetty 9.x, Chrome': [
+        'PostgreSQL 11.x, Jetty 9.2.x, Chrome': [
             'database' : 'postgresql',
             'databaseTag' : '11',
             'jdbcVersion' : '42.2.5',
