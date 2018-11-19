@@ -94,6 +94,12 @@ import com.cloudbees.groovy.cps.NonCPS
  */
 def call(String name = 'Default', body)
 {
+    echoXWiki "Calling Jenkinsfile..."
+    def config = [:]
+    body.resolveStrategy = Closure.DELEGATE_FIRST
+    body.delegate = config
+    body()
+
     // Only keep the 10 most recent builds & disable concurrent builds to avoid rebuilding whenever a new commit is
     // made. The commits will accumulate till the previous build is finished before starting a new one.
     // Note 1: this is limiting concurrency per branch only.
@@ -101,23 +107,18 @@ def call(String name = 'Default', body)
     // See https://thepracticalsysadmin.com/limit-jenkins-multibranch-pipeline-builds/ for details.
     echoXWiki "Only keep the 10 most recent builds + disable concurrent builds"
     def projectProperties = [
-        [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', daysToKeepStr: '7']],
-        disableConcurrentBuilds()
+            [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', daysToKeepStr: '7']],
+            disableConcurrentBuilds()
     ]
-    properties(projectProperties)
-
-    echoXWiki "Calling Jenkinsfile..."
-    def config = [:]
-    body.resolveStrategy = Closure.DELEGATE_FIRST
-    body.delegate = config
-    body()
 
     // By default make sure projects are built at least once a month because SNAPSHOT older than one month are deleted
     // by a Nexus scheduler.
     def cronValue = config.cron ?: '@monthly'
     if (cronValue != 'none') {
-        properties([pipelineTriggers([cron("${cronValue}")])])
+        echoXWiki "Setting cron to [${cronvalue}]"
+        projectProperties.add(pipelineTriggers([cron("${cronValue}")]))
     }
+    properties(projectProperties)
 
     // Initialize a variable that hold past failing tests. We need this because we can't get access to the failing
     // tests for a given Maven run (we can only get them globally).
