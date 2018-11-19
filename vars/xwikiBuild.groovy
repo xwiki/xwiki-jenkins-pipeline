@@ -115,7 +115,7 @@ def call(String name = 'Default', body)
     // by a Nexus scheduler.
     def cronValue = config.cron ?: '@monthly'
     if (cronValue != 'none') {
-        echoXWiki "Setting cron to [${cronvalue}]"
+        echoXWiki "Setting cron to [${cronValue}]"
         projectProperties.add(pipelineTriggers([cron("${cronValue}")]))
     }
     properties(projectProperties)
