@@ -55,6 +55,7 @@ package org.xwiki.jenkins
  *   node('docker') {
  *     new DockerTests().executeDockerSupportedTests()
  *   }
+ * </pre></code>
  */
 void executeDockerSupportedTests()
 {

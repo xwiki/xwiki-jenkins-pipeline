@@ -17,15 +17,27 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
+package org.xwiki.jenkins
 
 import org.apache.commons.lang3.StringUtils
 
-// Computes the full Clover TPC for the XWiki project, taking into account all tests located in various repos:
-// xwiki-commons, xwiki-rendering and xwiki-platform.
-// This script should be loaded by a standard Jenkins Pipeline job, using the "Pipeline script from SCM" option.
-// This script also performs an analysis of the repory by comparing it to a previous report and generating an email
-// if some modules have a TPC lower than before.
-node() {
+/**
+ * Computes the full Clover TPC for the XWiki project, taking into account all tests located in various repos:
+ * xwiki-commons, xwiki-rendering and xwiki-platform.
+ * <p>
+ * Also performs an analysis of the report by comparing it to a previous report and generating an email
+ * if some modules have a global TPC contribution lower than before.
+ * <p>
+ * Example usage:
+ * <code><pre>
+ *   import org.xwiki.jenkins.Clover
+ *   node('docker') {
+ *     new Clover().generateGlobalCoverage()
+ *   }
+ * </pre></code>
+ */
+void generateGlobalCoverage()
+{
     def mvnHome
     def localRepository
     def cloverDir
@@ -118,7 +130,7 @@ node() {
         }
     }
 }
-def runCloverAndGenerateReport(def mvnHome, def localRepository, def cloverDir)
+void runCloverAndGenerateReport(def mvnHome, def localRepository, def cloverDir)
 {
     wrap([$class: 'Xvnc']) {
         withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx4096m']) {
@@ -127,7 +139,7 @@ def runCloverAndGenerateReport(def mvnHome, def localRepository, def cloverDir)
         }
     }
 }
-def sendMail(def oldDateString, def newDateString, def htmlContent)
+void sendMail(def oldDateString, def newDateString, def htmlContent)
 {
     def (oldDate, oldTime) = oldReportDateString.tokenize('-')
     def oldCloverURL =
