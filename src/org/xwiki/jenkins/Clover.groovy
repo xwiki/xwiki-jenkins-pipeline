@@ -133,17 +133,17 @@ void generateGlobalCoverage()
 void runCloverAndGenerateReport(def mvnHome, def localRepository, def cloverDir)
 {
     wrap([$class: 'Xvnc']) {
-        withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx4096m']) {
-            sh "mvn -Dmaven.repo.local='${localRepository}' clean clover:setup install -Pclover,integration-tests,flavor-integration-tests,distribution -Dmaven.clover.cloverDatabase=${cloverDir}/clover.db -Dmaven.test.failure.ignore=true -Dxwiki.revapi.skip=true"
+        withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx2048m']) {
+            sh "mvn -Dmaven.repo.local='${localRepository}' clean clover:setup install -Pclover,integration-tests,flavor-integration-tests,distribution,docker -Dmaven.clover.cloverDatabase=${cloverDir}/clover.db -Dmaven.test.failure.ignore=true -Dxwiki.revapi.skip=true"
             sh "mvn -Dmaven.repo.local='${localRepository}' clover:clover -N -Dmaven.clover.cloverDatabase=${cloverDir}/clover.db"
         }
     }
 }
 void sendMail(def oldDateString, def newDateString, def htmlContent)
 {
-    def (oldDate, oldTime) = oldReportDateString.tokenize('-')
+    def (oldDate, oldTime) = oldDateString.tokenize('-')
     def oldCloverURL =
-        "http://maven.xwiki.org/site/clover/${oldDate}/clover-commons+rendering+platform-${oldReportDateString}/dashboard.html"
+        "http://maven.xwiki.org/site/clover/${oldDate}/clover-commons+rendering+platform-${oldDateString}/dashboard.html"
     def (newDate, newTime) = newDateString.tokenize('-')
     def newCloverURL =
         "http://maven.xwiki.org/site/clover/${newDate}/clover-commons+rendering+platform-${newDateString}/dashboard.html"
