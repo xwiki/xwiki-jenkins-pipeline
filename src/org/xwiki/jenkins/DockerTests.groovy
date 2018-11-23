@@ -262,14 +262,18 @@ void executeDockerTests(def configurations, def modules, def skipMail)
             def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
             def profiles = 'docker,legacy,integration-tests,office-tests,snapshotModules'
             def commonProperties = '-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dxwiki.revapi.skip=true'
-            // On the first execution inside this module, build the pageobjects module.
-            // Note: we don't need to build the POM module since it's the parent of pageobjects and docker submodules.
+            // On the first execution inside this module, build the ui module to be sure we get fresh artifacts
+            // downloaded in the local repository. This is needed because when XWikiDockerExtension executes we
+            // only resolve from the local repository to speed up the test execution.
+            // Note 1: we don't need to build the POM module since it's the parent of the -ui and docker submodules.
+            // Note 2: we also don't need to build the pageobjects modules since it's built by the standard platform
+            // jobs.
             if (i == 0) {
                 build(
-                    name: "Pageobjects module for ${moduleName}",
+                    name: "UI module for ${moduleName}",
                     profiles: profiles,
                     properties: commonProperties,
-                    mavenFlags: "--projects ${modulePath}/${moduleName}-pageobjects ${flags}",
+                    mavenFlags: "--projects ${modulePath}/${moduleName}-ui ${flags}",
                     skipCheckout: true,
                     xvnc: false,
                     cron: 'none',
