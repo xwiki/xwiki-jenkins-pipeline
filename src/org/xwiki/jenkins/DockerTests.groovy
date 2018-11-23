@@ -234,8 +234,9 @@ void executeDockerTests(def configurations, def modules, def skipMail)
         def dockerModuleFiles = findFiles(glob: '**/*-test-docker/pom.xml')
         dockerModuleFiles.each() {
             if (!it.path.contains('xwiki-platform-test-docker')) {
-                // Find great parent module
-                modules.add(getParentPath(getParentPath(it.path)))
+                // Find great parent module, e.g. return the path to xwiki-platform-menu when
+                // xwiki-platform-menu-test-docker is found.
+                modules.add(getParentPath(getParentPath(getParentPath(it.path))))
             }
         }
     }
@@ -297,8 +298,7 @@ void executeDockerTests(def configurations, def modules, def skipMail)
 
 def getParentPath(def path)
 {
-    def directory = path.substring(0, path.lastIndexOf('/'))
-    return directory.substring(0, directory.lastIndexOf('/'))
+    return path.substring(0, path.lastIndexOf('/'))
 }
 
 def getConfigurationName(def config)
