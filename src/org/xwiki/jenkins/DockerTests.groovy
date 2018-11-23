@@ -273,7 +273,7 @@ void executeDockerTests(def configurations, def modules, def skipMail)
                     name: "UI module for ${moduleName}",
                     profiles: profiles,
                     properties: commonProperties,
-                    mavenFlags: "--projects ${modulePath}/${moduleName}-ui ${flags}",
+                    mavenFlags: "--projects ${modulePath}/../${moduleName}-ui ${flags}",
                     skipCheckout: true,
                     xvnc: false,
                     cron: 'none',
