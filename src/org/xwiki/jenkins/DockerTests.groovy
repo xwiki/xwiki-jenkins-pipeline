@@ -145,7 +145,7 @@ void executeDockerAllTests(def branch)
 
     // Smoke test modules.
     def modules = [
-        "xwiki-platform-core/xwiki-platform-menu/xwiki-platform-menu-test"
+        "xwiki-platform-core/xwiki-platform-menu"
     ]
     executeDockerTests(branch, configurations, modules, false)
 }
@@ -181,7 +181,7 @@ void executeDockerUnsupportedTests(def branch)
 
     // Smoke test modules.
     def modules = [
-        "xwiki-platform-core/xwiki-platform-menu/xwiki-platform-menu-test"
+        "xwiki-platform-core/xwiki-platform-menu"
     ]
     executeDockerTests(branch, configurations, modules, true)
 }
