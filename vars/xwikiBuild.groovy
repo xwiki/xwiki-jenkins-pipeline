@@ -58,8 +58,8 @@ import com.cloudbees.groovy.cps.NonCPS
 //     xvnc = false (disable running xvnc, useful when running on a local Jenkins, defaults to true)
 //     pom = 'some/other/pom.xml' (defaults to 'pom.xml')
 //     archiveArtifacts = true (defaults to false since we don't need that as we push to a maven repo)
-//     fingerprintDependencies = false (default to true since it's required by the withMaven dependency graph feature
-//         in order to have builds trigger automatically other builds when dependencies are built)
+//     fingerprintDependencies = true (default to false since it's time consuming and is not required for the Maven
+//         plugin's ability to trigger downstream jobs)
 //     skipCheckout = true (default is false). If true then don't perform a SCM checkout by default. This is useful to
 //         be able to use this library for simple pipeline jobs (without a Jenkinsfile). In this case the pipeline
 //         would do the checkout.
@@ -172,7 +172,7 @@ def call(String name = 'Default', body)
             echoXWiki "Using Maven options: ${env.MAVEN_OPTS}"
             def archiveArtifacts = config.archiveArtifacts == null ? false : config.archiveArtifacts
             echoXWiki "Artifact archiving: ${archiveArtifacts}"
-            def fingerprintDependencies = config.fingerprintDependencies == null ? true :
+            def fingerprintDependencies = config.fingerprintDependencies == null ? false :
                 config.fingerprintDependencies
             echoXWiki "Dependencies fingerprinting: ${fingerprintDependencies}"
             // Note: We're not passing "mavenOpts" voluntarily, see configureJavaTool()
