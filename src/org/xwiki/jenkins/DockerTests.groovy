@@ -234,10 +234,8 @@ void executeDockerTests(def configurations, def modules, def skipMail)
         def dockerModuleFiles = findFiles(glob: '**/*-test-docker/pom.xml')
         dockerModuleFiles.each() {
             if (!it.path.contains('xwiki-platform-test-docker')) {
-                // Find parent module and build it
-                def directory = it.path.substring(0, it.path.lastIndexOf('/'))
-                def parent = directory.substring(0, directory.lastIndexOf('/'))
-                modules.add(parent)
+                // Find great parent module
+                modules.add(getParentPath(getParentPath(it.path)))
             }
         }
     }
@@ -273,7 +271,7 @@ void executeDockerTests(def configurations, def modules, def skipMail)
                     name: "UI module for ${moduleName}",
                     profiles: profiles,
                     properties: commonProperties,
-                    mavenFlags: "--projects ${modulePath}/../${moduleName}-ui ${flags}",
+                    mavenFlags: "--projects ${modulePath}/${moduleName}-ui ${flags}",
                     skipCheckout: true,
                     xvnc: false,
                     cron: 'none',
@@ -283,10 +281,10 @@ void executeDockerTests(def configurations, def modules, def skipMail)
             }
             // Then run the tests
             build(
-                name: "${config.key} - ${moduleName}",
+                name: "${config.key} - Docker tests for ${moduleName}",
                 profiles: profiles,
                 properties: "${commonProperties} -Dmaven.build.dir=target/${configurationName} ${systemProperties.join(' ')}",
-                mavenFlags: "--projects ${modulePath}/${moduleName}-docker ${flags}",
+                mavenFlags: "--projects ${modulePath}/${moduleName}-test/${moduleName}-test-docker ${flags}",
                 skipCheckout: true,
                 xvnc: false,
                 cron: 'none',
@@ -295,6 +293,12 @@ void executeDockerTests(def configurations, def modules, def skipMail)
             )
         }
     }
+}
+
+def getParentPath(def path)
+{
+    def directory = path.substring(0, path.lastIndexOf('/'))
+    return directory.substring(0, directory.lastIndexOf('/'))
 }
 
 def getConfigurationName(def config)
