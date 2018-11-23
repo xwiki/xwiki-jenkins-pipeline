@@ -56,8 +56,10 @@ package org.xwiki.jenkins
  *     new DockerTests().executeDockerSupportedTests()
  *   }
  * </pre></code>
+ *
+ * @param branch the branch to build (e.g. "master", "stable-10.10.x")
  */
-void executeDockerSupportedTests()
+void executeDockerSupportedTests(def branch)
 {
     def configurations = [
         'MySQL 5.7.x, Tomcat 8.5.x, Chrome': [
@@ -82,14 +84,16 @@ void executeDockerSupportedTests()
             'browser' : 'firefox'
         ]
     ]
-    executeDockerTests(configurations, null, false)
+    executeDockerTests(branch, configurations, null, false)
 }
 
 /**
  * Execute smoke tests (i.e. only a few tests) on the maximum number of configurations to flush out problems of
  * configurations when XWiki doesn't start or has basic problems. This includes all supported configurations.
+ *
+ * @param branch the branch to build (e.g. "master", "stable-10.10.x")
  */
-void executeDockerAllTests()
+void executeDockerAllTests(def branch)
 {
     def configurations = [
         'MySQL 5.7.x, Tomcat 8.x, Chrome': [
@@ -143,14 +147,16 @@ void executeDockerAllTests()
     def modules = [
         "xwiki-platform-core/xwiki-platform-menu/xwiki-platform-menu-test"
     ]
-    executeDockerTests(configurations, modules, false)
+    executeDockerTests(branch, configurations, modules, false)
 }
 
 /**
  * Execute smoke tests (i.e. only a few tests) on configurations that we'll want to support in the future but that
  * are currently not supported or not working.
+ *
+ * @param branch the branch to build (e.g. "master", "stable-10.10.x")
  */
-void executeDockerUnsupportedTests()
+void executeDockerUnsupportedTests(def branch)
 {
     def configurations = [
         'MySQL 8.x, Tomcat 8.x, Chrome': [
@@ -177,7 +183,7 @@ void executeDockerUnsupportedTests()
     def modules = [
         "xwiki-platform-core/xwiki-platform-menu/xwiki-platform-menu-test"
     ]
-    executeDockerTests(configurations, modules, true)
+    executeDockerTests(branch, configurations, modules, true)
 }
 
 /**
@@ -198,21 +204,29 @@ void executeDockerUnsupportedTests()
  *   }
  * </pre></code>
  *
+ * @param branch the branch to build (e.g. "master", "stable-10.10.x")
  * @param configurations the configurations for which to execute the functional tests defined in the passed modules
  * @param modules the modules on which to run the tests
  * @param skipMail if true then don't send emails when builds fail
  */
-void executeDockerTests(def configurations, def modules, def skipMail)
+void executeDockerTests(def branch, def configurations, def modules, def skipMail)
 {
     // Checkout platform
     checkout([
         $class: 'GitSCM',
-        branches: [[name: '*/master']],
+        branches: [[name: "*/${branch}"]],
         doGenerateSubmoduleConfigurations: false,
-        extensions: [],
+        extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: branch]],
         submoduleCfg: [],
         userRemoteConfigs: [[url: 'https://github.com/xwiki/xwiki-platform.git']]])
 
+    dir(branch) {
+        buildAndExecuteDockerTest(configurations, modules, skipMail)
+    }
+}
+
+private void buildAndExecuteDockerTest(def configurations, def modules, def skipMail)
+{
     // Build the minimal war module to make sure we have the latest dependencies present in the local maven repo
     // before we run the docker tests. By default the Docker-based tests resolve the minimal war deps from the local
     // repo only without going online.
@@ -260,7 +274,8 @@ void executeDockerTests(def configurations, def modules, def skipMail)
         modules.eachWithIndex() { modulePath, j ->
             def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
             def profiles = 'docker,legacy,integration-tests,office-tests,snapshotModules'
-            def commonProperties = '-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dxwiki.revapi.skip=true'
+            def commonProperties =
+                    '-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dxwiki.revapi.skip=true'
             // On the first execution inside this module, build the ui module to be sure we get fresh artifacts
             // downloaded in the local repository. This is needed because when XWikiDockerExtension executes we
             // only resolve from the local repository to speed up the test execution.
@@ -284,7 +299,8 @@ void executeDockerTests(def configurations, def modules, def skipMail)
             build(
                 name: "${config.key} - Docker tests for ${moduleName}",
                 profiles: profiles,
-                properties: "${commonProperties} -Dmaven.build.dir=target/${configurationName} ${systemProperties.join(' ')}",
+                properties:
+                    "${commonProperties} -Dmaven.build.dir=target/${configurationName} ${systemProperties.join(' ')}",
                 mavenFlags: "--projects ${modulePath}/${moduleName}-test/${moduleName}-test-docker ${flags}",
                 skipCheckout: true,
                 xvnc: false,
@@ -296,17 +312,20 @@ void executeDockerTests(def configurations, def modules, def skipMail)
     }
 }
 
-def getParentPath(def path)
+private def getParentPath(def path)
 {
     return path.substring(0, path.lastIndexOf('/'))
 }
 
-def getConfigurationName(def config)
+private def getConfigurationName(def config)
 {
-    return "${config.database}-${config.databaseTag ?: 'default'}-${config.jdbcVersion ?: 'default'}-${config.servletEngine}-${config.servletEngineTag ?: 'default'}-${config.browser}"
+    def databasePart = "${config.database}-${config.databaseTag ?: 'default'}-${config.jdbcVersion ?: 'default'}"
+    def servletEnginePart = "${config.servletEngine}-${config.servletEngineTag ?: 'default'}"
+    def browserPart = "${config.browser}"
+    return "${databasePart}-${servletEnginePart}-${browserPart}"
 }
 
-void build(map)
+private void build(map)
 {
     xwikiBuild(map.name) {
         mavenOpts = map.mavenOpts ?: "-Xmx2048m -Xms512m"
