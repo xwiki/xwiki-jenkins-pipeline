@@ -69,6 +69,37 @@ void generateGlobalCoverage()
             }
         }
     }
+    // Note 1: We run this stage before the Analyze results stage so that even if the later fails, we will still have
+    // the Clover reports published.
+    // Note 2: We upload the Clover reports only after having built all the repositories with Maven since we only want
+    // to get a new directory created at http://maven.xwiki.org/site/clover/ if we've been able to generate Clover
+    // reports for all repositories (otherwise it would just clutter the hard drive for no value).
+    stage("Publish Clover Reports") {
+        sh "ssh maven@maven.xwiki.org mkdir -p public_html/site/clover/${shortDateString}"
+        def prefix = "clover-"
+        ["commons", "rendering", "platform"].each() { repoName ->
+            dir("xwiki-${repoName}/target/site") {
+                if (repoName != 'commons') {
+                    prefix = "${prefix}+${repoName}"
+                } else {
+                    prefix = "${prefix}${repoName}"
+                }
+                sh "tar cvf ${prefix}-${dateString}.tar clover"
+                sh "gzip ${prefix}-${dateString}.tar"
+                def cloverTarget = "maven@maven.xwiki.org:public_html/site/clover"
+                sh "scp ${prefix}-${dateString}.tar.gz ${cloverTarget}/${shortDateString}/"
+                sh "rm ${prefix}-${dateString}.tar.gz"
+
+                def cdCommand = "cd public_html/site/clover/${shortDateString}"
+                def gunzipCommand = "gunzip ${prefix}-${dateString}.tar.gz"
+                def tarCommand = "tar xvf ${prefix}-${dateString}.tar"
+                def mvCommand = "mv clover ${prefix}-${dateString}"
+                def rmCommand = "rm ${prefix}-${dateString}.tar"
+                def commands = "${cdCommand}; ${gunzipCommand}; ${tarCommand}; ${mvCommand}; ${rmCommand}"
+                sh "ssh maven@maven.xwiki.org '${commands}'"
+            }
+        }
+    }
     stage("Analyze Results") {
         // Find the Clover report to compare with. We compare against the latest version in which all modules have
         // a higher TPC than before.
@@ -115,8 +146,7 @@ void generateGlobalCoverage()
         }
     }
 }
-private void runCloverAndGenerateReport(def repoName, def shortDateString, def dateString, def mvnHome,
-    def localRepository, def cloverDir)
+private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cloverDir)
 {
     // Generate Clover Report locally
     wrap([$class: 'Xvnc']) {
@@ -140,38 +170,6 @@ private void runCloverAndGenerateReport(def repoName, def shortDateString, def d
             sh "nice -n 5 mvn clean clover:setup install ${profiles} ${commonPropertiesString} ${propertiesString}"
             sh "nice -n 5 mvn clover:clover -N ${commonPropertiesString}"
         }
-    }
-
-    // Publish the Clover report. We do this at this stage and before all the repos have built so that even if a
-    // build fails, we'll still get the reports till this point.
-    // It also allows to fail fast if there's a problem to publish.
-    publishCloverReport(repoName, shortDateString, dateString)
-}
-/**
- * Assumption: the current directory is at the top level of the repository being built (top level POM).
- */
-private void publishCloverReport(def repoName, def shortDateString, def dateString)
-{
-    def prefixes = [
-        'xwiki-commons' : 'clover-commons',
-        'xwiki-rendering' : 'clover-commons+rendering',
-        'xwiki-platform' : 'clover-commons+rendering+platform'
-    ]
-    dir ("target/site") {
-        def prefix = prefixes."${repoName}"
-        sh "ssh maven@maven.xwiki.org mkdir -p public_html/site/clover/${shortDateString}"
-        sh "tar cvf ${prefix}-${dateString}.tar clover"
-        sh "gzip ${prefix}-${dateString}.tar"
-        sh "scp ${prefix}-${dateString}.tar.gz maven@maven.xwiki.org:public_html/site/clover/${shortDateString}/"
-        sh "rm ${prefix}-${dateString}.tar.gz"
-
-        def cdCommand = "cd public_html/site/clover/${shortDateString}"
-        def gunzipCommand = "gunzip ${prefix}-${dateString}.tar.gz"
-        def tarCommand = "tar xvf ${prefix}-${dateString}.tar"
-        def mvCommand = "mv clover ${prefix}-${dateString}"
-        def rmCommand = "rm ${prefix}-${dateString}.tar"
-        def commands = "${cdCommand}; ${gunzipCommand}; ${tarCommand}; ${mvCommand}; ${rmCommand}"
-        sh "ssh maven@maven.xwiki.org '${commands}'"
     }
 }
 private def getSystemPropertiesAsString(def systemPropertiesAsMap)
