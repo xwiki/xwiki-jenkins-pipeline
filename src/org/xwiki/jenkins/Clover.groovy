@@ -44,6 +44,7 @@ void generateGlobalCoverage()
     def shortDateString = new Date().format("yyyyMMdd")
     def dateString = new Date().format("yyyyMMdd-HHmm")
     def workspace = pwd()
+
     stage('Preparation') {
         localRepository = "${workspace}/maven-repository"
         // Make sure that the special Maven local repository exists
@@ -61,10 +62,10 @@ void generateGlobalCoverage()
         mvnHome = tool 'Maven'
     }
     ["xwiki-commons", "xwiki-rendering", "xwiki-platform"].each() { repoName ->
-        stage("Cloverify ${repoName}") {
+        stage("Clover for ${repoName}") {
             dir (repoName) {
                 git "https://github.com/xwiki/${repoName}.git"
-                runCloverAndGenerateReport(mvnHome, localRepository, cloverDir)
+                runCloverAndGenerateReport(repoName, shortDateString, dateString, mvnHome, localRepository, cloverDir)
             }
         }
     }
@@ -112,26 +113,11 @@ void generateGlobalCoverage()
             sh "scp ${cloverReportLocation}/latest.txt maven@maven.xwiki.org:public_html/site/clover/latest.txt"
         }
     }
-    stage("Publish Clover Reports") {
-        def prefix = "clover-"
-        ["commons", "rendering", "platform"].each() { repoName ->
-            dir ("xwiki-${repoName}/target/site") {
-                if (repoName != 'commons') {
-                    prefix = "${prefix}+${repoName}"
-                } else {
-                    prefix = "${prefix}${repoName}"
-                }
-                sh "tar cvf ${prefix}-${dateString}.tar clover"
-                sh "gzip ${prefix}-${dateString}.tar"
-                sh "scp ${prefix}-${dateString}.tar.gz maven@maven.xwiki.org:public_html/site/clover/${shortDateString}/"
-                sh "rm ${prefix}-${dateString}.tar.gz"
-                sh "ssh maven@maven.xwiki.org 'cd public_html/site/clover/${shortDateString}; gunzip ${prefix}-${dateString}.tar.gz; tar xvf ${prefix}-${dateString}.tar; mv clover ${prefix}-${dateString};rm ${prefix}-${dateString}.tar'"
-            }
-        }
-    }
 }
-void runCloverAndGenerateReport(def mvnHome, def localRepository, def cloverDir)
+private void runCloverAndGenerateReport(def repoName, def shortDateString, def dateString, def mvnHome,
+    def localRepository, def cloverDir)
 {
+    // Generate Clover Report locally
     wrap([$class: 'Xvnc']) {
         // Note: With 2048m we got a OOM.
         withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx4096m']) {
@@ -139,8 +125,32 @@ void runCloverAndGenerateReport(def mvnHome, def localRepository, def cloverDir)
             sh "mvn -Dmaven.repo.local='${localRepository}' clover:clover -N -Dmaven.clover.cloverDatabase=${cloverDir}/clover.db"
         }
     }
+
+    // Publish the Clover report. We do this at this stage and before all the repos have built so that even if a
+    // build fails, we'll still get the reports till this point.
+    // It also allows to fail fast if there's a problem to publish.
+    publishCloverReport(repoName, shortDateString, dateString)
 }
-void sendMail(def oldDateString, def newDateString, def htmlContent)
+/**
+ * Assumption: the current directory is at the top level of the repository being built (top level POM).
+ */
+private void publishCloverReport(def repoName, def shortDateString, def dateString)
+{
+    def prefixes = [
+        'commons' : 'clover-commons',
+        'rendering' : 'clover-commons+rendering',
+        'platform' : 'clover-commons+rendering+platform'
+    ]
+    dir ("target/site") {
+        def prefix = prefixes."${repoName}"
+        sh "tar cvf ${prefix}-${dateString}.tar clover"
+        sh "gzip ${prefix}-${dateString}.tar"
+        sh "scp ${prefix}-${dateString}.tar.gz maven@maven.xwiki.org:public_html/site/clover/${shortDateString}/"
+        sh "rm ${prefix}-${dateString}.tar.gz"
+        sh "ssh maven@maven.xwiki.org 'cd public_html/site/clover/${shortDateString}; gunzip ${prefix}-${dateString}.tar.gz; tar xvf ${prefix}-${dateString}.tar; mv clover ${prefix}-${dateString};rm ${prefix}-${dateString}.tar'"
+    }
+}
+private void sendMail(def oldDateString, def newDateString, def htmlContent)
 {
     def (oldDate, oldTime) = oldDateString.tokenize('-')
     def oldCloverURL =
@@ -161,7 +171,7 @@ ${htmlContent}
         to: 'notifications@xwiki.org'
     )
 }
-def getLatestReport()
+private def getLatestReport()
 {
     try {
         return new URL ("http://maven.xwiki.org/site/clover/latest.txt").getText()
@@ -173,12 +183,12 @@ def getLatestReport()
 // Example input: "/home/hudsonagent/jenkins_root/workspace/Clover/xwiki-commons/xwiki-commons-core/
 //   xwiki-commons-stability/src/main/java/org/xwiki/stability/Unstable.java"
 // Returns "xwiki-commons-stability"
-def extractModuleName(def path)
+private def extractModuleName(def path)
 {
     def before = StringUtils.substringBefore(path, '/src/')
     return StringUtils.substringAfterLast(before, '/')
 }
-def emptyMetrics()
+private def emptyMetrics()
 {
     def map = [:]
     map.coveredconditionals = 0
@@ -190,7 +200,7 @@ def emptyMetrics()
     map.coveredelements = 0
     return map
 }
-void addMetrics(def metricXMLElement, def map, def key)
+private void addMetrics(def metricXMLElement, def map, def key)
 {
     def innerMap = map.get(key)
     if (!innerMap) {
@@ -205,7 +215,7 @@ void addMetrics(def metricXMLElement, def map, def key)
     innerMap.statements += metricXMLElement.@statements.toDouble()
     innerMap.methods += metricXMLElement.@methods.toDouble()
 }
-def scrapeData(def reader)
+private def scrapeData(def reader)
 {
     def packageMap = [:]
     def moduleMap = [:]
@@ -228,7 +238,7 @@ def scrapeData(def reader)
     }
     return ['packages' : packageMap, 'modules' : moduleMap]
 }
-def computeTPC(def map)
+private def computeTPC(def map)
 {
     def totalcoveredconditionals = 0
     def totalcoveredstatements = 0
@@ -275,7 +285,7 @@ def computeTPC(def map)
     ])
     return map
 }
-def getDiffValue(key, all, metric1, metric2)
+private def getDiffValue(key, all, metric1, metric2)
 {
     def value = all.get(key)
     if (metric2) {
@@ -285,7 +295,7 @@ def getDiffValue(key, all, metric1, metric2)
     }
     return value
 }
-def computeTPCWithout(all, metric1, metric2)
+private def computeTPCWithout(all, metric1, metric2)
 {
     def conditionalsDiff = getDiffValue('conditionals', all, metric1, metric2)
     def statementsDiff = getDiffValue('statements', all, metric1, metric2)
@@ -301,11 +311,11 @@ def computeTPCWithout(all, metric1, metric2)
         return (coveredElementsCount/elementsCount) * 100
     }
 }
-def round(number)
+private def round(number)
 {
     return number.toDouble().trunc(4)
 }
-def computeDisplayMap(def map1, def map2)
+private def computeDisplayMap(def map1, def map2)
 {
     def newAll = map2.get('ALL')
     def map = [:]
@@ -351,11 +361,11 @@ def computeDisplayMap(def map1, def map2)
  * We need @NonCPS as otherwise the map sort returns a singe BigDecimal instead of returning a sorted Map.
  */
 @NonCPS
-def sortMap(def map)
+private def sortMap(def map)
 {
     return map.sort {it.value.contrib}
 }
-def hasFailures(def map)
+private def hasFailures(def map)
 {
     // Using a for so that we can exit the loop.
     for (e in map) {
@@ -366,7 +376,7 @@ def hasFailures(def map)
     return false
 }
 // Note: Not used but leaving as an example FTM. Useful if we want to run the code in a wiki page in XWiki.
-def displayResultsInWikiSyntax(def topic, def map)
+private def displayResultsInWikiSyntax(def topic, def map)
 {
     def content = ""
     content += "|=${topic}|=TPC Old|=TPC New|=TPC Diff|=Global TPC Contribution\n"
@@ -383,7 +393,7 @@ def displayResultsInWikiSyntax(def topic, def map)
     }
     return content
 }
-def displayResultsInHTML(def oldDateString, def newDateString, def topic, def map)
+private def displayResultsInHTML(def oldDateString, def newDateString, def topic, def map)
 {
     def content = "<h1>Report - ${oldDateString} -> ${newDateString}</h1>"
     content += "<table><thead><tr>"
@@ -408,7 +418,7 @@ def displayResultsInHTML(def oldDateString, def newDateString, def topic, def ma
 /**
  * Echo text with a special character prefix to make it stand out in the pipeline logs.
  */
-def echoXWiki(string)
+private def echoXWiki(string)
 {
     echo "\u27A1 ${string}"
 }
