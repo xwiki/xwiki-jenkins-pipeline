@@ -101,7 +101,9 @@ void generateGlobalCoverage()
         // Save the report
         writeFile file: "${cloverReportLocation}/XWikiReport.html", text: "${htmlContent}"
         sh "ssh maven@maven.xwiki.org mkdir -p public_html/site/clover/${shortDateString}"
-        sh "scp ${cloverReportLocation}/XWikiReport.html maven@maven.xwiki.org:public_html/site/clover/${shortDateString}/XWikiReport-${latestReport}-${dateString}.html"
+        def targetCloverDir = "maven@maven.xwiki.org:public_html/site/clover"
+        def targetFile = "${targetCloverDir}/${shortDateString}/XWikiReport-${latestReport}-${dateString}.html"
+        sh "scp ${cloverReportLocation}/XWikiReport.html ${targetFile}"
 
         // Send mail or update latest.txt file when no failures
         if (hasFailures(map)) {
@@ -121,9 +123,29 @@ private void runCloverAndGenerateReport(def repoName, def shortDateString, def d
     wrap([$class: 'Xvnc']) {
         // Note: With 2048m we got a OOM.
         withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx4096m']) {
-            // Reduce priority of the Maven process so that Jenkins stay as responsive as possible during the build
-            sh "nice -n 5 mvn -Dmaven.repo.local='${localRepository}' clean clover:setup install -Pclover,integration-tests,flavor-integration-tests,distribution,docker -Dmaven.clover.cloverDatabase=${cloverDir}/clover.db -Dmaven.test.failure.ignore=true -Dxwiki.revapi.skip=true"
-            sh "nice -n 5 mvn -Dmaven.repo.local='${localRepository}' clover:clover -N -Dmaven.clover.cloverDatabase=${cloverDir}/clover.db"
+            def commonSystemProperties = [
+                'maven.repo.local' : "'${localRepository}'",
+                'maven.clover.cloverDatabase' : "${cloverDir}/clover.db"
+            ]
+            def commonPropertiesString = commonSystemProperties.inject([]) { result, entry ->
+                result << "-D${entry.key}=${entry.value}"
+            }.join(' ')
+            // Skip the maximum number of checks to speed up the build
+            def systemProperties = [
+                'xwiki.revapi.skip' : 'true',
+                'xwiki.checkstyle.skip' : 'true',
+                'xwiki.enforcer.skip' : 'true',
+                'xwiki.license.skip' : 'true',
+                'maven.test.failure.ignore' : 'true'
+            ]
+            def propertiesString = systemProperties.inject([]) { result, entry ->
+                result << "-D${entry.key}=${entry.value}"
+            }.join(' ')
+            def profiles = "-Pclover,integration-tests,flavor-integration-tests,distribution,docker"
+            //Use "nice" to reduce priority of the Maven process so that Jenkins stays as responsive as possible during
+            // the build.
+            sh "nice -n 5 mvn clean clover:setup install ${profiles} ${commonPropertiesString} ${propertiesString}"
+            sh "nice -n 5 mvn clover:clover -N ${commonPropertiesString}"
         }
     }
 
@@ -148,21 +170,29 @@ private void publishCloverReport(def repoName, def shortDateString, def dateStri
         sh "gzip ${prefix}-${dateString}.tar"
         sh "scp ${prefix}-${dateString}.tar.gz maven@maven.xwiki.org:public_html/site/clover/${shortDateString}/"
         sh "rm ${prefix}-${dateString}.tar.gz"
-        sh "ssh maven@maven.xwiki.org 'cd public_html/site/clover/${shortDateString}; gunzip ${prefix}-${dateString}.tar.gz; tar xvf ${prefix}-${dateString}.tar; mv clover ${prefix}-${dateString};rm ${prefix}-${dateString}.tar'"
+
+        def cdCommand = "cd public_html/site/clover/${shortDateString}"
+        def gunzipCommand = "gunzip ${prefix}-${dateString}.tar.gz"
+        def tarCommand = "tar xvf ${prefix}-${dateString}.tar"
+        def mvCommand = "mv clover ${prefix}-${dateString}"
+        def rmCommand = "rm ${prefix}-${dateString}.tar"
+        def commands = "${cdCommand}; ${gunzipCommand}; ${tarCommand}; ${mvCommand}; ${rmCommand}"
+        sh "ssh maven@maven.xwiki.org '${commands}'"
     }
 }
 private void sendMail(def oldDateString, def newDateString, def htmlContent)
 {
     def (oldDate, oldTime) = oldDateString.tokenize('-')
-    def oldCloverURL =
-        "http://maven.xwiki.org/site/clover/${oldDate}/clover-commons+rendering+platform-${oldDateString}/dashboard.html"
+    def cloverURLPrefix = "http://maven.xwiki.org/site/clover"
+    def oldCloverURL = "${cloverURLPrefix}/${oldDate}/clover-commons+rendering+platform-${oldDateString}/dashboard.html"
     def (newDate, newTime) = newDateString.tokenize('-')
-    def newCloverURL =
-        "http://maven.xwiki.org/site/clover/${newDate}/clover-commons+rendering+platform-${newDateString}/dashboard.html"
+    def newCloverURL = "${cloverURLPrefix}/${newDate}/clover-commons+rendering+platform-${newDateString}/dashboard.html"
+    def anchorContent1 = "new <a href=\"${newCloverURL}\">${newDateString}</a>"
+    def anchorContent2 = "old <a href=\"${oldCloverURL}\">${oldDateString}</a>"
     emailext (
         subject: "Global Coverage Failure - Build # ${env.BUILD_NUMBER}",
         body: """
-At least one module got a TPC lower than in the new <a href="${newCloverURL}">${newDateString}</a> report when compared with the old <a href="${oldCloverURL}">${oldDateString}</a> one.
+At least one module got a TPC lower than in the ${anchorContent1} report when compared with the ${anchorContent2} one.
 
 Please fix all elements in red in the report below.
 
