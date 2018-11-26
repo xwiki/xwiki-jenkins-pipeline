@@ -100,7 +100,6 @@ void generateGlobalCoverage()
 
         // Save the report
         writeFile file: "${cloverReportLocation}/XWikiReport.html", text: "${htmlContent}"
-        sh "ssh maven@maven.xwiki.org mkdir -p public_html/site/clover/${shortDateString}"
         def targetCloverDir = "maven@maven.xwiki.org:public_html/site/clover"
         def targetFile = "${targetCloverDir}/${shortDateString}/XWikiReport-${latestReport}-${dateString}.html"
         sh "scp ${cloverReportLocation}/XWikiReport.html ${targetFile}"
@@ -160,6 +159,7 @@ private void publishCloverReport(def repoName, def shortDateString, def dateStri
     ]
     dir ("target/site") {
         def prefix = prefixes."${repoName}"
+        sh "ssh maven@maven.xwiki.org mkdir -p public_html/site/clover/${shortDateString}"
         sh "tar cvf ${prefix}-${dateString}.tar clover"
         sh "gzip ${prefix}-${dateString}.tar"
         sh "scp ${prefix}-${dateString}.tar.gz maven@maven.xwiki.org:public_html/site/clover/${shortDateString}/"
