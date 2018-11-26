@@ -123,26 +123,20 @@ private void runCloverAndGenerateReport(def repoName, def shortDateString, def d
     wrap([$class: 'Xvnc']) {
         // Note: With 2048m we got a OOM.
         withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx4096m']) {
-            def commonSystemProperties = [
+            def commonPropertiesString = getSystemPropertiesAsString([
                 'maven.repo.local' : "'${localRepository}'",
                 'maven.clover.cloverDatabase' : "${cloverDir}/clover.db"
-            ]
-            def commonPropertiesString = commonSystemProperties.inject([]) { result, entry ->
-                result << "-D${entry.key}=${entry.value}"
-            }.join(' ')
+            ])
             // Skip the maximum number of checks to speed up the build
-            def systemProperties = [
+            def propertiesString = getSystemPropertiesAsString([
                 'xwiki.revapi.skip' : 'true',
                 'xwiki.checkstyle.skip' : 'true',
                 'xwiki.enforcer.skip' : 'true',
                 'xwiki.license.skip' : 'true',
                 'maven.test.failure.ignore' : 'true'
-            ]
-            def propertiesString = systemProperties.inject([]) { result, entry ->
-                result << "-D${entry.key}=${entry.value}"
-            }.join(' ')
+            ])
             def profiles = "-Pclover,integration-tests,flavor-integration-tests,distribution,docker"
-            //Use "nice" to reduce priority of the Maven process so that Jenkins stays as responsive as possible during
+            // Use "nice" to reduce priority of the Maven process so that Jenkins stays as responsive as possible during
             // the build.
             sh "nice -n 5 mvn clean clover:setup install ${profiles} ${commonPropertiesString} ${propertiesString}"
             sh "nice -n 5 mvn clover:clover -N ${commonPropertiesString}"
@@ -179,6 +173,12 @@ private void publishCloverReport(def repoName, def shortDateString, def dateStri
         def commands = "${cdCommand}; ${gunzipCommand}; ${tarCommand}; ${mvCommand}; ${rmCommand}"
         sh "ssh maven@maven.xwiki.org '${commands}'"
     }
+}
+private def getSystemPropertiesAsString(def systemPropertiesAsMap)
+{
+    return systemPropertiesAsMap.inject([]) { result, entry ->
+        result << "-D${entry.key}=${entry.value}"
+    }.join(' ')
 }
 private void sendMail(def oldDateString, def newDateString, def htmlContent)
 {
