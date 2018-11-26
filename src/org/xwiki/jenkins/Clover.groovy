@@ -137,9 +137,9 @@ private void runCloverAndGenerateReport(def repoName, def shortDateString, def d
 private void publishCloverReport(def repoName, def shortDateString, def dateString)
 {
     def prefixes = [
-        'commons' : 'clover-commons',
-        'rendering' : 'clover-commons+rendering',
-        'platform' : 'clover-commons+rendering+platform'
+        'xwiki-commons' : 'clover-commons',
+        'xwiki-rendering' : 'clover-commons+rendering',
+        'xwiki-platform' : 'clover-commons+rendering+platform'
     ]
     dir ("target/site") {
         def prefix = prefixes."${repoName}"
