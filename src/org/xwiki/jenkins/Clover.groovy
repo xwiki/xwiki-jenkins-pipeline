@@ -121,7 +121,7 @@ private void runCloverAndGenerateReport(def repoName, def shortDateString, def d
     wrap([$class: 'Xvnc']) {
         // Note: With 2048m we got a OOM.
         withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx4096m']) {
-            // Reduce priority of the Maven command so that Jenkins stay as responsive as possible during the build
+            // Reduce priority of the Maven process so that Jenkins stay as responsive as possible during the build
             sh "nice -n 5 mvn -Dmaven.repo.local='${localRepository}' clean clover:setup install -Pclover,integration-tests,flavor-integration-tests,distribution,docker -Dmaven.clover.cloverDatabase=${cloverDir}/clover.db -Dmaven.test.failure.ignore=true -Dxwiki.revapi.skip=true"
             sh "nice -n 5 mvn -Dmaven.repo.local='${localRepository}' clover:clover -N -Dmaven.clover.cloverDatabase=${cloverDir}/clover.db"
         }
