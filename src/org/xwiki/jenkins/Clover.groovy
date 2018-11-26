@@ -133,7 +133,7 @@ void generateGlobalCoverage()
 void runCloverAndGenerateReport(def mvnHome, def localRepository, def cloverDir)
 {
     wrap([$class: 'Xvnc']) {
-        withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx2048m']) {
+        withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx4096m']) {
             sh "mvn -Dmaven.repo.local='${localRepository}' clean clover:setup install -Pclover,integration-tests,flavor-integration-tests,distribution,docker -Dmaven.clover.cloverDatabase=${cloverDir}/clover.db -Dmaven.test.failure.ignore=true -Dxwiki.revapi.skip=true"
             sh "mvn -Dmaven.repo.local='${localRepository}' clover:clover -N -Dmaven.clover.cloverDatabase=${cloverDir}/clover.db"
         }
