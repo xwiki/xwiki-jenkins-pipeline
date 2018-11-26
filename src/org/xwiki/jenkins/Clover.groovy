@@ -65,7 +65,7 @@ void generateGlobalCoverage()
         stage("Clover for ${repoName}") {
             dir (repoName) {
                 git "https://github.com/xwiki/${repoName}.git"
-                runCloverAndGenerateReport(repoName, shortDateString, dateString, mvnHome, localRepository, cloverDir)
+                runCloverAndGenerateReport(mvnHome, localRepository, cloverDir)
             }
         }
     }
@@ -119,7 +119,7 @@ void generateGlobalCoverage()
     // the publishing of clover reports fail (The custom XWiki report is the most important).
     // Note 2: We upload the Clover reports only after having built all the repositories with Maven since we only want
     // to get a new directory created at http://maven.xwiki.org/site/clover/ if we've been able to generate Clover
-    // reports for all repositories (otherwise it would just clutter the hard drive for no value).
+    // reports for all repositorirunCloverAndGenerateReportes (otherwise it would just clutter the hard drive for no value).
     stage("Publish Clover Reports") {
         def prefix = "clover-"
         ["commons", "rendering", "platform"].each() { repoName ->
