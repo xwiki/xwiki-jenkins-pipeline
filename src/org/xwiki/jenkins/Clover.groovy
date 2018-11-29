@@ -20,6 +20,7 @@
 package org.xwiki.jenkins
 
 import org.apache.commons.lang3.StringUtils
+import com.cloudbees.groovy.cps.NonCPS
 
 /**
  * Computes the full Clover TPC for the XWiki project, taking into account all tests located in various repos:
@@ -168,7 +169,9 @@ private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cl
             // Use "nice" to reduce priority of the Maven process so that Jenkins stays as responsive as possible during
             // the build.
             sh "nice -n 5 mvn clean clover:setup install ${profiles} ${commonPropertiesString} ${propertiesString}"
-            sh "nice -n 5 mvn clover:clover -N ${commonPropertiesString}"
+            // Note: Clover reporting requires a display. Even though we're inside XVNC and thus have a display, let's
+            // still configure the execution to be headless.
+            sh "nice -n 5 mvn clover:clover -N ${commonPropertiesString} -Djava.awt.headless=true"
         }
     }
 }
