@@ -266,10 +266,8 @@ private void buildAndExecuteDockerTest(def configurations, def modules, def skip
         // configurations.
         // Only clean for the first execution since we don't need to clean more.
         def flags = '-e'
-        def goals = 'verify'
         if (i == 0) {
             flags = "${flags} -U"
-            goals = "clean ${goals}"
         }
         modules.eachWithIndex() { modulePath, j ->
             def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
@@ -296,6 +294,8 @@ private void buildAndExecuteDockerTest(def configurations, def modules, def skip
                 )
             }
             // Then run the tests
+            // Note: We clean every time since we set the maven.build.dir and specify a directory that depends on the
+            // configuration (each config has its own target dir).
             build(
                 name: "${config.key} - Docker tests for ${moduleName}",
                 profiles: profiles,
@@ -305,7 +305,7 @@ private void buildAndExecuteDockerTest(def configurations, def modules, def skip
                 skipCheckout: true,
                 xvnc: false,
                 cron: 'none',
-                goals: goals,
+                goals: 'clean verify',
                 skipMail: skipMail
             )
         }
