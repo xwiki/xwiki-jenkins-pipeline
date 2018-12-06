@@ -88,7 +88,9 @@ void generateGlobalCoverage()
             'diffReportOutputDirectory': cloverReportDirectory
         ])
         dir ("xwiki-platform") {
-            sh "nice -n 5 mvn -N org.xwiki.clover:xwiki-clover-maven:0.9:report ${reportProperties}"
+            withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx2048m']) {
+                sh "nice -n 5 mvn -N org.xwiki.clover:xwiki-clover-maven:0.9:report ${reportProperties}"
+            }
         }
 
         // Publish the report remotely
