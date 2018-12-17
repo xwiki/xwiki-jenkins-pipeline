@@ -227,6 +227,21 @@ void executeDockerTests(def branch, def configurations, def modules, def skipMai
 
 private void buildAndExecuteDockerTest(def configurations, def modules, def skipMail)
 {
+    // Build xwiki-platform-docker test framework since we use it and we happen to make changes to it often and thus
+    // if we don't build it here, we have to wait for the full xwiki-platform to be built before being able to run
+    // the docker tests again. It can also lead to build failures since this method is called during scheduled jobs
+    // which could be triggered before xwiki-platform-docker has been rebuilt.
+    build(
+        name: 'Docker Test Framework',
+        profiles: 'docker,integration-tests',
+        mavenFlags: '--projects org.xwiki.platform:xwiki-platform-test-docker -U -e',
+        skipCheckout: true,
+        xvnc: false,
+        cron: 'none',
+        goals: 'clean install',
+        skipMail: skipMail
+    )
+
     // Build the minimal war module to make sure we have the latest dependencies present in the local maven repo
     // before we run the docker tests. By default the Docker-based tests resolve the minimal war deps from the local
     // repo only without going online.
