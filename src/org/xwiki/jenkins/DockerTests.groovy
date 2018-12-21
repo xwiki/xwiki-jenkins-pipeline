@@ -247,8 +247,7 @@ private void buildAndExecuteDockerTest(def configurations, def modules, def skip
     // repo only without going online.
     build(
         name: 'Minimal WAR Dependencies',
-        profiles: 'distribution',
-        mavenFlags: '--projects org.xwiki.platform:xwiki-platform-distribution-war-minimaldependencies -U -e',
+        mavenFlags: '--projects org.xwiki.platform:xwiki-platform-minimaldependencies -U -e',
         skipCheckout: true,
         xvnc: false,
         cron: 'none',
