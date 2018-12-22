@@ -221,11 +221,11 @@ void executeDockerTests(def branch, def configurations, def modules, def skipMai
         userRemoteConfigs: [[url: 'https://github.com/xwiki/xwiki-platform.git']]])
 
     dir(branch) {
-        buildAndExecuteDockerTest(configurations, modules, skipMail)
+        buildAndExecuteDockerTest(configurations, modules, skipMail, branch)
     }
 }
 
-private void buildAndExecuteDockerTest(def configurations, def modules, def skipMail)
+private void buildAndExecuteDockerTest(def configurations, def modules, def skipMail, def branch)
 {
     // Build xwiki-platform-docker test framework since we use it and we happen to make changes to it often and thus
     // if we don't build it here, we have to wait for the full xwiki-platform to be built before being able to run
@@ -245,8 +245,7 @@ private void buildAndExecuteDockerTest(def configurations, def modules, def skip
     // Build the minimal war module to make sure we have the latest dependencies present in the local maven repo
     // before we run the docker tests. By default the Docker-based tests resolve the minimal war deps from the local
     // repo only without going online.
-    def branchName = env['BRANCH_NAME']
-    if (branchName.equals("master")) {
+    if (branch.equals("master")) {
         build(
             name: 'Minimal WAR Dependencies',
             mavenFlags: '--projects org.xwiki.platform:xwiki-platform-minimaldependencies -U -e',
