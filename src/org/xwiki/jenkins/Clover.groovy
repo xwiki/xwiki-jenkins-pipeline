@@ -19,6 +19,8 @@
  */
 package org.xwiki.jenkins
 
+import org.xwiki.jenkins.Utils
+
 /**
  * Computes the full Clover TPC for the XWiki project, taking into account all tests located in various repos:
  * xwiki-commons, xwiki-rendering and xwiki-platform.
@@ -165,6 +167,14 @@ private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cl
             // Use "nice" to reduce priority of the Maven process so that Jenkins stays as responsive as possible during
             // the build.
             sh "nice -n 5 mvn clean clover:setup install ${profiles} ${commonPropertiesString} ${propertiesString}"
+
+            // Check that there are no false positives. If there are then stop the build.
+            def containsFalsePositives = new Utils().checkForFalsePositives()
+            if (containsFalsePositives) {
+                throw new RuntimeException(
+                    "The build contains at least one false positive which can skew the global TPC result, stopping job")
+            }
+
             // Note: Clover reporting requires a display. Even though we're inside XVNC and thus have a display, let's
             // still configure the execution to be headless.
             sh "nice -n 5 mvn clover:clover -N ${commonPropertiesString} -Djava.awt.headless=true"
