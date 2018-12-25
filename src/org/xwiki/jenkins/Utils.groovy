@@ -140,17 +140,18 @@ def checkForFalsePositives()
             "Error connecting to FF browser"]
     ]
 
+    def hasFalsePositives = false
     messages.each { message ->
         if (manager.logContains(message.get(0))) {
             manager.addWarningBadge(message.get(1))
             manager.createSummary("warning.gif").appendText("<h1>${message.get(2)}</h1>", false, false, false, "red")
             manager.buildUnstable()
             echoXWiki "False positive detected [${message.get(2)}] ..."
-            return true
+            hasFalsePositives = true
         }
     }
 
-    return false
+    return hasFalsePositives
 }
 
 return this
