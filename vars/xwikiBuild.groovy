@@ -113,24 +113,13 @@ def call(String name = 'Default', body)
     ]
 
     // By default make sure projects are built at least once a month because SNAPSHOT older than one month are deleted
-    // by a Nexus scheduler.
+@    // by the Nexus scheduler.
     def cronValue = config.cron ?: '@monthly'
     if (cronValue != 'none') {
         echoXWiki "Setting cron to [${cronValue}]"
         projectProperties.add(pipelineTriggers([cron("${cronValue}")]))
     }
     properties(projectProperties)
-
-    // Initialize a variable that hold past failing tests. We need this because we can't get access to the failing
-    // tests for a given Maven run (we can only get them globally).
-    // See https://groups.google.com/d/msg/jenkinsci-users/dDDPC486JWE/9vtojUOoAwAJ
-    // Note1: we save TesResult objects in this list and they are serializable.
-    // Note2: This strategy is not working and cannot work because of parallel() executions, see
-    //        https://issues.jenkins-ci.org/browse/JENKINS-49339. The consequence is that we can get several emails
-    //        sent for the same test errors (no past failing test when the various maven build start in // and as
-    //        soon as one has a failing test they'll all report is as a new failing test).
-    def savedFailingTests = getFailingTests()
-    echoXWiki "Past failing tests: ${savedFailingTests.collect { "${it.getClassName()}#${it.getName()}" }}"
 
     def mavenTool
     stage("Preparation for ${name}") {
@@ -230,9 +219,14 @@ def call(String name = 'Default', body)
         echoXWiki "Current build status after withMaven execution: ${currentBuild.result}"
 
         // For each failed test, find if there's a screenshot for it taken by the XWiki selenium tests and if so
-        // embed it in the failed test's description.
+        // embed it in the failed test's description. Also check if failing tests are flickers.
+        // Note that getFailingTests() returns all failing tests for the job (and not the Maven build). We haven't
+        // found a way to get only the Maven tests. We execute the code below after each build in the job so that
+        // we can attach screenshots as early as possible and similarly for marking tests as flickers, instead of
+        // waiting for all builds to finish which would take a lot of time. It has some costs (like getting the
+        // flickering tests from JIRA several times) but we find it worth it.
         if (currentBuild.result != 'SUCCESS') {
-            def failingTests = getFailingTestsSinceLastMavenExecution(savedFailingTests)
+            def failingTests = getFailingTests()
             echoXWiki "New failing tests: ${failingTests.collect { "${it.getClassName()}#${it.getName()}" }}"
             if (!failingTests.isEmpty()) {
                 echoXWiki "Attaching screenshots to test result pages (if any)..."
@@ -447,7 +441,7 @@ def createFilePath(String path)
 }
 
 /**
- * Attach the screenshot of a failing XWiki Selenium test to the failed test's description.
+ * Attach the screenshot of failing XWiki Selenium tests to failed test descriptions.
  * The screenshot is preserved after the workspace gets cleared by a new build.
  *
  * To make this script works the following needs to be setup on the Jenkins instance:
@@ -512,12 +506,15 @@ def attachScreenshotToFailingTests(def failingTests)
             def imgText = """<img style="width: 800px" src="${imageDataString}" />"""
             def description = """<h3>Screenshot</h3><a href="${imageDataString}">${imgText}</a>"""
 
-            // Set the description to the failing test and save it to disk.
-            testResultAction.setDescription(failedTest, description)
-            // Clear potentially problematic non-serializable object reference, after we've used it.
-            // See https://github.com/jenkinsci/pipeline-plugin/blob/master/TUTORIAL.md#serializing-local-variables
-            testResultAction = null
-            currentBuild.rawBuild.save()
+            // Only modify the description if the test page hasn't been modified already
+            if (!description.equals(testResultAction.getDescription(failedTest))) {
+                // Set the description to the failing test and save it to disk.
+                testResultAction.setDescription(failedTest, description)
+                // Clear potentially problematic non-serializable object reference, after we've used it.
+                // See https://github.com/jenkinsci/pipeline-plugin/blob/master/TUTORIAL.md#serializing-local-variables
+                testResultAction = null
+                currentBuild.rawBuild.save()
+            }
         } else {
             def locationText = "[${imageAbsolutePath1}], [${imageAbsolutePath2}] or [${imageAbsolutePath3}]"
             echo "No screenshot found for test [${testClass}#${testExample}] in ${locationText}"
@@ -556,6 +553,7 @@ def checkForFlickers(def failingTests)
     // For each failed test, check if it's in the known flicker list.
     def containsAtLeastOneFlicker = false
     boolean containsOnlyFlickers = true
+    boolean isModified = false
     failingTests.each() { testResult ->
         // Format of a Test Result id is "junit/<package name>/<test class name>/<test method name>"
         // Example: "junit/org.xwiki.test.ui.repository/RepositoryTest/validateAllFeatures"
@@ -565,12 +563,13 @@ def checkForFlickers(def failingTests)
         echoXWiki "Analyzing test [${testName}] for flicker..."
         if (knownFlickers.contains(testName)) {
             // Add the information that the test is a flicker to the test's description. Only display this
-            // once (a Jenkinsfile can contain several builds and this this code can be called several times
+            // once (a Jenkinsfile can contain several builds and thus this code can be called several times
             // for the same tests).
             def flickeringText = 'This is a flickering test'
             if (testResult.getDescription() == null || !testResult.getDescription().contains(flickeringText)) {
                 testResult.setDescription(
                     "<h1 style='color:red'>${flickeringText}</h1>${testResult.getDescription() ?: ''}")
+                isModified = true
             }
             echo "   It's a flicker"
             containsAtLeastOneFlicker = true
@@ -584,12 +583,17 @@ def checkForFlickers(def failingTests)
     if (containsAtLeastOneFlicker) {
         // Only add the badge if none already exist
         def badgeText = 'Contains some flickering tests'
-        def badgeFound = isBadgeFound(
-            currentBuild.getRawBuild().getActions(BadgeAction.class), badgeText)
+        def badgeFound = isBadgeFound(currentBuild.getRawBuild().getActions(BadgeAction.class), badgeText)
         if (!badgeFound) {
             manager.addWarningBadge(badgeText)
-            manager.createSummary("warning.gif").appendText("<h1>${badgeText}</h1>", false, false, false, "red")
+            manager.createSummary('warning.gif').appendText("<h1>${badgeText}</h1>", false, false, false, 'red')
+            isModified = true
         }
+    }
+
+    if (isModified) {
+        // Persist changes
+        currentBuild.rawBuild.save()
     }
 
     return containsOnlyFlickers
@@ -598,12 +602,14 @@ def checkForFlickers(def failingTests)
 @NonCPS
 def isBadgeFound(def badgeActionItems, def badgeText)
 {
+    def badgeFound = false
     badgeActionItems.each() {
         if (it.getText().contains(badgeText)) {
-            return true
+            badgeFound = true
+            return
         }
     }
-    return false
+    return badgeFound
 }
 
 /**
@@ -652,19 +658,4 @@ def getFailingTests()
         failingTests = []
     }
     return failingTests
-}
-
-def getFailingTestsSinceLastMavenExecution(savedFailingTests)
-{
-    def failingTestsSinceLastExecution = []
-    def fullFailingTests = getFailingTests()
-    def savedFailingTestsAsStringList = savedFailingTests.collect { "${it.getClassName()}#${it.getName()}" }
-    echo "All failing tests at this point: ${fullFailingTests.collect { "${it.getClassName()}#${it.getName()}" }}"
-    fullFailingTests.each() {
-        def fullTestName = "${it.getClassName()}#${it.getName()}"
-        if (!savedFailingTestsAsStringList.contains(fullTestName)) {
-            failingTestsSinceLastExecution.add(it)
-        }
-    }
-    return failingTestsSinceLastExecution
 }
