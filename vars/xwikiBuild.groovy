@@ -113,7 +113,7 @@ def call(String name = 'Default', body)
     ]
 
     // By default make sure projects are built at least once a month because SNAPSHOT older than one month are deleted
-@    // by the Nexus scheduler.
+    // by the Nexus scheduler.
     def cronValue = config.cron ?: '@monthly'
     if (cronValue != 'none') {
         echoXWiki "Setting cron to [${cronValue}]"
