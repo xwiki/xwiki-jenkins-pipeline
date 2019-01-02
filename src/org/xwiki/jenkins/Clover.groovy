@@ -91,7 +91,7 @@ void generateGlobalCoverage()
         ])
         dir ("xwiki-platform") {
             withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx2048m']) {
-                sh "nice -n 5 mvn -N org.xwiki.clover:xwiki-clover-maven:0.9:report ${reportProperties}"
+                sh "nice -n 5 mvn -N org.xwiki.clover:xwiki-clover-maven:1.0:report ${reportProperties}"
             }
         }
 
