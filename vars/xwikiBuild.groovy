@@ -196,15 +196,14 @@ def call(String name = 'Default', body)
                         // Set Maven flags to use
                         def mavenFlags = config.mavenFlags ?: '-U -e'
                         // Should we update the parent version before running the build?
-                        def updateParent = config.updateParent
-                        if (updateParent) {
+                        if (config.updateParent) {
                             echoXWiki 'Upgrading parent version to latest'
                             sh "mvn -f ${pom} versions:update-parent -P${profiles} ${mavenFlags} ${fullProperties}"
                         }
                         try {
                             sh "mvn -f ${pom} ${goals} -P${profiles} ${mavenFlags} ${fullProperties}"
                         } finally {
-                            if (updateParent) {
+                            if (config.updateParent) {
                                 // Remove parent version changes
                                 sh "mvn -f ${pom} versions:revert -P${profiles} ${mavenFlags} ${fullProperties}"
                             }
