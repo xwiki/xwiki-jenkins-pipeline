@@ -198,6 +198,7 @@ def call(String name = 'Default', body)
                         // Should we update the parent version before running the build?
                         def updateParent = config.updateParent
                         if (updateParent) {
+                            echoXWiki 'Upgrading parent version to latest'
                             sh "mvn -f ${pom} versions:update-parent -P${profiles} ${mavenFlags} ${fullProperties}"
                         }
                         try {
