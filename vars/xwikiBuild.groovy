@@ -68,9 +68,6 @@ import org.xwiki.jenkins.Utils
 //     cron = '@midnight' (default is '@monthly'). Sets the minimal time-based trigger for the job. Use 'none' to
 //         not override the cron setting for the job.
 //     skipMail = true (default is false). If true then don't send emails when the job or tests fail.
-//     updateParent = true (default is false). If true then the version of the parent entry in the pom.xml will be
-//         updated to use the latest parent. For example this allows testing a Contrib Extension with the latest
-//         version of XWiki.
 //
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
 //
@@ -195,19 +192,7 @@ def call(String name = 'Default', body)
                         def fullProperties = "-Dmaven.test.failure.ignore ${properties}"
                         // Set Maven flags to use
                         def mavenFlags = config.mavenFlags ?: '-U -e'
-                        // Should we update the parent version before running the build?
-                        if (config.updateParent) {
-                            echoXWiki 'Upgrading parent version to latest'
-                            sh "mvn -f ${pom} versions:update-parent -P${profiles} ${mavenFlags} ${fullProperties}"
-                        }
-                        try {
-                            sh "mvn -f ${pom} ${goals} -P${profiles} ${mavenFlags} ${fullProperties}"
-                        } finally {
-                            if (config.updateParent) {
-                                // Remove parent version changes
-                                sh "mvn -f ${pom} versions:revert -P${profiles} ${mavenFlags} ${fullProperties}"
-                            }
-                        }
+                        sh "mvn -f ${pom} ${goals} -P${profiles} ${mavenFlags} ${fullProperties}"
                     }
                 } catch (Exception e) {
                     // - If this line is reached it means the build has failed (other than for failing tests) or has
