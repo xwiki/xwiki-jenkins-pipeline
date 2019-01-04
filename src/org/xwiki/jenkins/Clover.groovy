@@ -35,8 +35,12 @@ import org.xwiki.jenkins.Utils
  *     new Clover().generateGlobalCoverage()
  *   }
  * </pre></code>
+ *
+ * @param baselineList list of values corresponding to existing report directories at http://maven.xwiki.org/site/clover
+ *        against which the new report will be compared against. Also specify if errors in each diff report should
+ *        result in an email and failing the job or not. Example: [{baseline: "20171222-1835", fail: false}].
  */
-void generateGlobalCoverage()
+void generateGlobalCoverage(def baselineDefinitions)
 {
     def mvnHome
     def localRepository
@@ -70,55 +74,53 @@ void generateGlobalCoverage()
         }
     }
     stage("Analyze Results") {
-        // Find the Clover report to compare with. We compare against the latest version in which all modules have
-        // a higher TPC than before.
-        def latestReport = getLatestReport()
-        def (date, time) = latestReport.tokenize('-')
+        // for each baseline definition, generate a report
+        baselineDefinitions.each() { baselineDefinition ->
+            def baseline = baselineDefinition.baseline
+            def failReport = baselineDefinition.fail
+            def (date, time) = baseline.tokenize('-')
 
-        // Location of the new clover XML file from the file system.
-        def cloverReportDirectory = "${workspace}/xwiki-platform/target/site/clover"
-        def cloverXMLReport = "${cloverReportDirectory}/clover.xml"
+            // Location of the new clover XML file from the file system.
+            def cloverReportDirectory = "${workspace}/xwiki-platform/target/site/clover"
+            def cloverXMLReport = "${cloverReportDirectory}/clover.xml"
 
-        // Generate the Diff Report using Maven
-        def oldReport =
-            "http://maven.xwiki.org/site/clover/${date}/clover-commons+rendering+platform-${latestReport}/clover.xml"
-        def reportProperties = getSystemPropertiesAsString([
-            'oldCloverXMLReport' : oldReport,
-            'oldReportId' : latestReport,
-            'newCloverXMLReport' : cloverXMLReport,
-            'newReportId' : dateString,
-            'diffReportOutputDirectory': cloverReportDirectory
-        ])
-        dir ("xwiki-platform") {
-            withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx2048m']) {
-                sh "nice -n 5 mvn -N org.xwiki.clover:xwiki-clover-maven:1.0:report ${reportProperties}"
+            // Generate the Diff Report using Maven
+            def oldReport =
+                "http://maven.xwiki.org/site/clover/${date}/clover-commons+rendering+platform-${baseline}/clover.xml"
+            def reportProperties = getSystemPropertiesAsString([
+                'oldCloverXMLReport' : oldReport,
+                'oldReportId' : baseline,
+                'newCloverXMLReport' : cloverXMLReport,
+                'newReportId' : dateString,
+                'diffReportOutputDirectory': cloverReportDirectory
+            ])
+            dir ("xwiki-platform") {
+                withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx2048m']) {
+                    sh "nice -n 5 mvn -N org.xwiki.clover:xwiki-clover-maven:1.0:report ${reportProperties}"
+                }
             }
-        }
 
-        // Publish the report remotely
-        sh "ssh maven@maven.xwiki.org mkdir -p public_html/site/clover/${shortDateString}"
-        def diffHTMLReportName = "XWikiReport-${latestReport}-${dateString}.html"
-        def diffHTMLReport = "${cloverReportDirectory}/${diffHTMLReportName}"
-        def targetCloverDir = "maven@maven.xwiki.org:public_html/site/clover"
-        def targetFile = "${targetCloverDir}/${shortDateString}/${diffHTMLReportName}"
-        sh "scp ${diffHTMLReport} ${targetFile}"
+            // Publish the report remotely
+            sh "ssh maven@maven.xwiki.org mkdir -p public_html/site/clover/${shortDateString}"
+            def diffHTMLReportName = "XWikiReport-${baseline}-${dateString}.html"
+            def diffHTMLReport = "${cloverReportDirectory}/${diffHTMLReportName}"
+            def targetCloverDir = "maven@maven.xwiki.org:public_html/site/clover"
+            def targetFile = "${targetCloverDir}/${shortDateString}/${diffHTMLReportName}"
+            sh "scp ${diffHTMLReport} ${targetFile}"
 
-        // Find if there are failures in the Diff Report and if so, send the HTML by email
-        def htmlContent = readFile diffHTMLReport
-        if (htmlContent.contains('FAILURE')) {
-            // Send the mail to notify about failures
-            sendMail(htmlContent)
-        } else {
-            // Update the latest.txt file
-            writeFile file: "${cloverReportDirectory}/latest.txt", text: "${dateString}"
-            sh "scp ${cloverReportDirectory}/latest.txt maven@maven.xwiki.org:public_html/site/clover/latest.txt"
+            // Find if there are failures in the Diff Report and if so, send the HTML by email
+            def htmlContent = readFile diffHTMLReport
+            if (failReport && htmlContent.contains('FAILURE')) {
+                // Send the mail to notify about failures
+                sendMail(htmlContent)
+            }
         }
     }
     // Note 1: We run this stage after the Analyze results stage so that we can have the custom XWiki report even if
     // the publishing of clover reports fail (The custom XWiki report is the most important).
     // Note 2: We upload the Clover reports only after having built all the repositories with Maven since we only want
     // to get a new directory created at http://maven.xwiki.org/site/clover/ if we've been able to generate Clover
-    // reports for all repositorirunCloverAndGenerateReportes (otherwise it would just clutter the hard drive for no value).
+    // reports for all repositories (otherwise it would just clutter the hard drive for no value).
     stage("Publish Clover Reports") {
         def prefix = "clover-"
         ["commons", "rendering", "platform"].each() { repoName ->
@@ -145,6 +147,7 @@ void generateGlobalCoverage()
         }
     }
 }
+
 private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cloverDir)
 {
     // Generate Clover Report locally
@@ -181,12 +184,14 @@ private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cl
         }
     }
 }
+
 private def getSystemPropertiesAsString(def systemPropertiesAsMap)
 {
     return systemPropertiesAsMap.inject([]) { result, entry ->
         result << "-D${entry.key}=${entry.value}"
     }.join(' ')
 }
+
 private void sendMail(def htmlContent)
 {
     emailext (
@@ -195,13 +200,4 @@ private void sendMail(def htmlContent)
         mimeType: 'text/html',
         to: 'notifications@xwiki.org'
     )
-}
-private def getLatestReport()
-{
-    try {
-        return new URL ("http://maven.xwiki.org/site/clover/latest.txt").getText()
-    } catch (all) {
-        // When no file exist, default to a fixed value we define.
-        return "20171222-1835"
-    }
 }
