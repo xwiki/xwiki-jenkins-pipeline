@@ -38,7 +38,7 @@ import org.xwiki.jenkins.Utils
  *
  * @param baselineList list of values corresponding to existing report directories at http://maven.xwiki.org/site/clover
  *        against which the new report will be compared against. Also specify if errors in each diff report should
- *        result in an email and failing the job or not. Example: [{baseline: "20171222-1835", fail: false}].
+ *        result in an email and failing the job or not. Example: [[baseline: "20171222-1835", fail: false]].
  */
 void generateGlobalCoverage(def baselineDefinitions)
 {
