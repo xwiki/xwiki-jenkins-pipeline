@@ -68,8 +68,8 @@ import org.xwiki.jenkins.Utils
 //     cron = '@midnight' (default is '@monthly'). Sets the minimal time-based trigger for the job. Use 'none' to
 //         not override the cron setting for the job.
 //     skipMail = true (default is false). If true then don't send emails when the job or tests fail.
-//     sonar = 'sonarcloud.io' (by default it's not defined). If  defined then wrap the Maven build with the Sonar
-//         config to deploy the result of sonar:sonar to the defined configuration.
+//     sonar = true (by default it's false). If true then deploy the result of sonar:sonar to the defined 'sonar'
+//         configuration in Jenkins.
 //
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
 //
@@ -270,7 +270,7 @@ def wrapInXvnc(config, closure)
 def wrapInSonarQube(config, closure)
 {
     if (config.sonar) {
-        withSonarQubeEnv(config.sonar) {
+        withSonarQubeEnv('sonar') {
             closure()
         }
     } else {
