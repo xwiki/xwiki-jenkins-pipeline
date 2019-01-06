@@ -68,6 +68,8 @@ import org.xwiki.jenkins.Utils
 //     cron = '@midnight' (default is '@monthly'). Sets the minimal time-based trigger for the job. Use 'none' to
 //         not override the cron setting for the job.
 //     skipMail = true (default is false). If true then don't send emails when the job or tests fail.
+//     sonar = 'sonarcloud.io' (by default it's not defined). If  defined then wrap the Maven build with the Sonar
+//         config to deploy the result of sonar:sonar to the defined configuration.
 //
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
 //
@@ -192,7 +194,9 @@ def call(String name = 'Default', body)
                         def fullProperties = "-Dmaven.test.failure.ignore ${properties}"
                         // Set Maven flags to use
                         def mavenFlags = config.mavenFlags ?: '-U -e'
-                        sh "mvn -f ${pom} ${goals} -P${profiles} ${mavenFlags} ${fullProperties}"
+                        wrapInSonarQube(config) {
+                            sh "mvn -f ${pom} ${goals} -P${profiles} ${mavenFlags} ${fullProperties}"
+                        }
                     }
                 } catch (Exception e) {
                     // - If this line is reached it means the build has failed (other than for failing tests) or has
@@ -259,6 +263,17 @@ def wrapInXvnc(config, closure)
         }
     } else {
         echoXWiki "Xvnc disabled, building without it!"
+        closure()
+    }
+}
+
+def wrapInSonarQube(config, closure)
+{
+    if (config.sonar) {
+        withSonarQubeEnv(config.sonar) {
+            closure()
+        }
+    } else {
         closure()
     }
 }
