@@ -245,28 +245,15 @@ private void buildAndExecuteDockerTest(def configurations, def modules, def skip
     // Build the minimal war module to make sure we have the latest dependencies present in the local maven repo
     // before we run the docker tests. By default the Docker-based tests resolve the minimal war deps from the local
     // repo only without going online.
-    if (branch.equals("master")) {
-        build(
-            name: 'Minimal WAR Dependencies',
-            mavenFlags: '--projects org.xwiki.platform:xwiki-platform-minimaldependencies -U -e',
-            skipCheckout: true,
-            xvnc: false,
-            cron: 'none',
-            goals: 'clean install',
-            skipMail: skipMail
-        )
-    } else {
-        build(
-            name: 'Minimal WAR Dependencies',
-            profiles: 'distribution',
-            mavenFlags: '--projects org.xwiki.platform:xwiki-platform-distribution-war-minimaldependencies -U -e',
-            skipCheckout: true,
-            xvnc: false,
-            cron: 'none',
-            goals: 'clean install',
-            skipMail: skipMail
-        )
-    }
+    build(
+        name: 'Minimal WAR Dependencies',
+        mavenFlags: '--projects org.xwiki.platform:xwiki-platform-minimaldependencies -U -e',
+        skipCheckout: true,
+        xvnc: false,
+        cron: 'none',
+        goals: 'clean install',
+        skipMail: skipMail
+    )
 
     // If no modules are passed, then find all modules containing docker tests.
     // Find all modules named -test-docker to located docker-based tests
