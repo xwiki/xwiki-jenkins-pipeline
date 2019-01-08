@@ -205,7 +205,7 @@ def call(String name = 'Default', body)
                     // - Note that withMaven() doesn't set any build result in this case but we don't need to set any
                     //   since we're stopping the build!
                     // - Don't send emails for aborts! We discover aborts by checking for exit code 143.
-                    if (!e.getMessage().contains('exit code 143') && !config.skipMail) {
+                    if (!e.getMessage()?.contains('exit code 143') && !config.skipMail) {
                         notifyByMail('ERROR', name)
                     }
                     throw e
