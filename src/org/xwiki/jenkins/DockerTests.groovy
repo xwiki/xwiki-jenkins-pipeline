@@ -285,7 +285,7 @@ private void buildAndExecuteDockerTest(def configurations, def modules, def skip
         }
         modules.eachWithIndex() { modulePath, j ->
             def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
-            def profiles = 'docker,legacy,integration-tests,office-tests,snapshotModules'
+            def profiles = 'docker,legacy,integration-tests,snapshotModules'
             def commonProperties =
                     '-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dxwiki.revapi.skip=true'
             // On the first execution inside this module, build the ui module to be sure we get fresh artifacts
