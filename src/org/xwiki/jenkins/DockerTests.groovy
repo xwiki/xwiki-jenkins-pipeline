@@ -231,6 +231,7 @@ private void buildAndExecuteDockerTest(def configurations, def modules, def skip
     // if we don't build it here, we have to wait for the full xwiki-platform to be built before being able to run
     // the docker tests again. It can also lead to build failures since this method is called during scheduled jobs
     // which could be triggered before xwiki-platform-docker has been rebuilt.
+/*
     build(
         name: 'Docker Test Framework',
         profiles: 'docker,integration-tests',
@@ -254,14 +255,14 @@ private void buildAndExecuteDockerTest(def configurations, def modules, def skip
         goals: 'clean install',
         skipMail: skipMail
     )
-
+*/
     // If no modules are passed, then find all modules containing docker tests.
     // Find all modules named -test-docker to located docker-based tests
     if (!modules || modules.isEmpty()) {
         modules = []
         def dockerModuleFiles = findFiles(glob: '**/*-test-docker/pom.xml')
         dockerModuleFiles.each() {
-            if (!it.path.contains('xwiki-platform-test-docker')) {
+            if (!it.path.contains('xwiki-platform-test-docker') && it.path.contains('office')) {
                 // Find great parent module, e.g. return the path to xwiki-platform-menu when
                 // xwiki-platform-menu-test-docker is found.
                 modules.add(getParentPath(getParentPath(getParentPath(it.path))))
@@ -342,7 +343,7 @@ private def getConfigurationName(def config)
 private void build(map)
 {
     xwikiBuild(map.name) {
-        mavenOpts = map.mavenOpts ?: "-Xmx2048m -Xms512m"
+        mavenOpts = map.mavenOpts ?: "-Xmx2048m -Xms512m -X"
         if (map.goals != null) {
             goals = map.goals
         }
