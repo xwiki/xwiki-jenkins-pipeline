@@ -168,7 +168,7 @@ void executeDockerUnsupportedTests(def branch)
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'MySQL 5.x, Tomcat 9.x, Chrome': [
+        'MySQL 8.x, Tomcat 9.x, Chrome': [
             'database' : 'mysql',
             'databaseTag' : '8',
             'jdbcVersion' : '5.1.45',
