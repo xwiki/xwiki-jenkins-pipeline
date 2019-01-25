@@ -280,7 +280,7 @@ private void buildAndExecuteDockerTest(def configurations, def modules, def skip
         // Only execute maven with -U for the first Maven builds since XWiki SNAPSHOT dependencies don't change with
         // configurations.
         // Only clean for the first execution since we don't need to clean more.
-        def flags = '-e'
+        def flags = '-e -X'
         if (i == 0) {
             flags = "${flags} -U"
         }
@@ -343,7 +343,7 @@ private def getConfigurationName(def config)
 private void build(map)
 {
     xwikiBuild(map.name) {
-        mavenOpts = map.mavenOpts ?: "-Xmx2048m -Xms512m -X"
+        mavenOpts = map.mavenOpts ?: "-Xmx2048m -Xms512m"
         if (map.goals != null) {
             goals = map.goals
         }
