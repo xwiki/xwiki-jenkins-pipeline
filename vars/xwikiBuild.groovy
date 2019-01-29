@@ -224,14 +224,9 @@ def call(String name = 'Default', body)
 
         // For each failed test, find if there's a screenshot for it taken by the XWiki selenium tests and if so
         // embed it in the failed test's description. Also check if failing tests are flickers.
-        // Note that getFailingTests() returns all failing tests for the job (and not the Maven build). We haven't
-        // found a way to get only the Maven tests. We execute the code below after each build in the job so that
-        // we can attach screenshots as early as possible and similarly for marking tests as flickers, instead of
-        // waiting for all builds to finish which would take a lot of time. It has some costs (like getting the
-        // flickering tests from JIRA several times) but we find it worth it.
         if (currentBuild.result != 'SUCCESS') {
             def failingTests = getFailingTests()
-            echoXWiki "New failing tests: ${failingTests.collect { "${it.getClassName()}#${it.getName()}" }}"
+            echoXWiki "Failing tests: ${failingTests.collect { "${it.getClassName()}#${it.getName()}" }}"
             if (!failingTests.isEmpty()) {
                 echoXWiki "Attaching screenshots to test result pages (if any)..."
                 attachScreenshotToFailingTests(failingTests)
@@ -662,12 +657,15 @@ def getKnownFlickeringTests()
     return knownFlickers
 }
 
+/**
+ * @return the failing tests for the current build
+ */
 def getFailingTests()
 {
     def failingTests
     AbstractTestResultAction testResultAction = currentBuild.rawBuild.getAction(AbstractTestResultAction.class)
     if (testResultAction != null) {
-        failingTests = testResultAction.getResult().getFailedTests()
+        failingTests = testResultAction.getResult().getResultInRun(currentBuild.rawBuild).getFailedTests()
     } else {
         // No tests were run in this build, nothing left to do.
         failingTests = []
