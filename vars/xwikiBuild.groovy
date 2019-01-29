@@ -486,7 +486,7 @@ def attachScreenshotToFailingTests(def failingTests)
         // Example of target folder path:
         //   /Users/vmassol/.jenkins/workspace/blog/application-blog-test/application-blog-test-tests/target
         def targetFolderPath = createFilePath(suiteResultFile).getParent().getParent()
-        // The screenshot can have 2 possible file names and locations, we have to look for both.
+        // The screenshot can have several possible file names and locations, we check all.
         // Selenium 1 test screenshots.
         def imageAbsolutePath1 = new FilePath(targetFolderPath, "selenium-screenshots/${testClass}-${testExample}.png")
         // Selenium 2 test screenshots.
@@ -528,6 +528,7 @@ def attachScreenshotToFailingTests(def failingTests)
         } else {
             def locationText = "[${imageAbsolutePath1}], [${imageAbsolutePath2}] or [${imageAbsolutePath3}]"
             echo "No screenshot found for test [${testClass}#${testExample}] in ${locationText}"
+            sh "ls -alg ${targetFolderPath}"
         }
     }
 }
