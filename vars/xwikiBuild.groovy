@@ -159,7 +159,7 @@ def call(String name = 'Default', body)
             // - Publish Findbugs reports (if the Jenkins FindBugs Plugin is installed)
             // - Publish a report of the tasks ("FIXME" and "TODO") found in the java source code
             //   (if the Jenkins Tasks Scanner Plugin is installed)
-            echoXWiki "Using Java: ${env.JAVA_HOME}"
+            echoXWiki "JAVA_HOME: ${env.JAVA_HOME}"
             echoXWiki "Using Maven tool: ${mavenTool}"
             echoXWiki "Using Maven options: ${env.MAVEN_OPTS}"
             def archiveArtifacts = config.archiveArtifacts == null ? false : config.archiveArtifacts
@@ -181,7 +181,11 @@ def call(String name = 'Default', body)
                     def timeoutThreshold = config.timeout ?: 240
                     echoXWiki "Using timeout: ${timeoutThreshold}"
                     // Display the java version for information (in case it's useful to debug some specific issue)
+                    echoXWiki 'Java version used:'
                     sh script: 'java -version', returnStatus: true
+                    // Display the current logged in user used
+                    echoXWiki 'Current user:'
+                    sh script: 'whoami', returnStatus: true
                     // Abort the build if it takes more than the timeout threshold (in minutes).
                     timeout(timeoutThreshold) {
                         def pom = config.pom ?: 'pom.xml'
