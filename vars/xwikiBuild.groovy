@@ -183,9 +183,6 @@ def call(String name = 'Default', body)
                     // Display the java version for information (in case it's useful to debug some specific issue)
                     echoXWiki 'Java version used:'
                     sh script: 'java -version', returnStatus: true
-                    // Display the current logged in user used
-                    echoXWiki 'Current user:'
-                    sh script: 'whoami', returnStatus: true
                     // Abort the build if it takes more than the timeout threshold (in minutes).
                     timeout(timeoutThreshold) {
                         def pom = config.pom ?: 'pom.xml'
