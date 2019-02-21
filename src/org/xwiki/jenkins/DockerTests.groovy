@@ -297,17 +297,20 @@ private void buildAndExecuteDockerTest(def configurations, def modules, def skip
             // Note 2: we also don't need to build the pageobjects modules since it's built by the standard platform
             // jobs.
             if (i == 0) {
-                build(
-                    name: "UI module for ${moduleName}",
-                    profiles: profiles,
-                    properties: commonProperties,
-                    mavenFlags: "--projects ${modulePath}/${moduleName}-ui ${flags}",
-                    skipCheckout: true,
-                    xvnc: false,
-                    cron: 'none',
-                    goals: 'clean install',
-                    skipMail: skipMail
-                )
+                def exists = fileExists "${modulePath}/${moduleName}-ui/pom.xml"
+                if (exists) {
+                    build(
+                        name: "UI module for ${moduleName}",
+                        profiles: profiles,
+                        properties: commonProperties,
+                        mavenFlags: "--projects ${modulePath}/${moduleName}-ui ${flags}",
+                        skipCheckout: true,
+                        xvnc: false,
+                        cron: 'none',
+                        goals: 'clean install',
+                        skipMail: skipMail
+                    )
+                }
             }
             // Then run the tests
             // Note: We clean every time since we set the maven.build.dir and specify a directory that depends on the
