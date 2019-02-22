@@ -176,6 +176,17 @@ void executeDockerUnsupportedTests(def branch)
             'servletEngineTag' : '8',
             'browser' : 'chrome',
             'verbose' : 'true'
+        ],
+        'MySQL 5.7.x (utf8mb4), Tomcat 8.x, Chrome': [
+            'database' : 'mysql',
+            'database.commands.character-set-server' : 'utf8mb4',
+            'database.commands.collation-server' : 'utf8mb4_uni',
+            'databaseTag' : '5.7',
+            'jdbcVersion' : '5.1.45',
+            'servletEngine' : 'tomcat',
+            'servletEngineTag' : '8',
+            'browser' : 'chrome',
+            'verbose' : 'true'
         ]
     ]
 
