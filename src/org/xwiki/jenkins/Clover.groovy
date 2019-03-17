@@ -30,10 +30,13 @@ import org.xwiki.jenkins.Utils
  * <p>
  * Example usage:
  * <code><pre>
- *   import org.xwiki.jenkins.Clover
- *   node('docker') {
- *     new Clover().generateGlobalCoverage()
- *   }
+ * import org.xwiki.jenkins.Clover
+ * node('docker') {
+ *   new Clover().generateGlobalCoverage([
+ *     [baseline: "20171222-1835", fail: false],
+ *     [baseline: "20190101-2330", fail: true]
+ *   ])
+ * }
  * </pre></code>
  *
  * @param baselineDefinitions list of values corresponding to existing report directories at
