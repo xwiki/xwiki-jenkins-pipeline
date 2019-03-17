@@ -36,11 +36,14 @@ import org.xwiki.jenkins.Utils
  *   }
  * </pre></code>
  *
- * @param baselineList list of values corresponding to existing report directories at http://maven.xwiki.org/site/clover
- *        against which the new report will be compared against. Also specify if errors in each diff report should
- *        result in an email and failing the job or not. Example: [[baseline: "20171222-1835", fail: false]].
+ * @param baselineDefinitions list of values corresponding to existing report directories at
+ *        http://maven.xwiki.org/site/clover against which the new report will be compared against. Also specify if
+ *        errors in each diff report should result in an email and failing the job or not.
+ *        Example: [[baseline: "20171222-1835", fail: false]].
+ * @param extraSystemPropertiesMap if specified then these System properties will be added when executing the Maven
+ *        builds. Can be null or empty. Example: ["xwiki.test.ui.servletEngine": "jetty_standalone"]
  */
-void generateGlobalCoverage(def baselineDefinitions)
+void generateGlobalCoverage(def baselineDefinitions, def extraSystemPropertiesMap)
 {
     def mvnHome
     def localRepository
@@ -69,7 +72,7 @@ void generateGlobalCoverage(def baselineDefinitions)
         stage("Clover for ${repoName}") {
             dir (repoName) {
                 git "https://github.com/xwiki/${repoName}.git"
-                runCloverAndGenerateReport(mvnHome, localRepository, cloverDir)
+                runCloverAndGenerateReport(mvnHome, localRepository, cloverDir, extraSystemPropertiesMap)
             }
         }
     }
@@ -148,7 +151,7 @@ void generateGlobalCoverage(def baselineDefinitions)
     }
 }
 
-private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cloverDir)
+private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cloverDir, def extraSystemPropertiesMap)
 {
     // Generate Clover Report locally
     wrap([$class: 'Xvnc']) {
@@ -166,10 +169,13 @@ private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cl
                 'xwiki.license.skip' : 'true',
                 'maven.test.failure.ignore' : 'true'
             ])
+            def extraPropertiesString = extraSystemPropertiesMap ?
+                getSystemPropertiesAsString(extraSystemPropertiesMap) : ""
+            def allpropertiesString = "${commonPropertiesString} ${propertiesString} ${extraPropertiesString}"
             def profiles = "-Pclover,integration-tests,flavor-integration-tests,distribution,docker"
             // Use "nice" to reduce priority of the Maven process so that Jenkins stays as responsive as possible during
             // the build.
-            sh "nice -n 5 mvn clean clover:setup install ${profiles} ${commonPropertiesString} ${propertiesString}"
+            sh "nice -n 5 mvn clean clover:setup install ${profiles} ${allpropertiesString}"
 
             // Check that there are no false positives. If there are then stop the build.
             def containsFalsePositives = new Utils().checkForFalsePositives()
