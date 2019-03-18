@@ -159,6 +159,7 @@ void executeDockerAllTests(def branch)
 void executeDockerUnsupportedTests(def branch)
 {
     def configurations = [
+        // Test on latest MySQL 8.x.
         'MySQL 8.x, Tomcat 8.x, Chrome': [
             'database' : 'mysql',
             'databaseTag' : '8',
@@ -168,15 +169,18 @@ void executeDockerUnsupportedTests(def branch)
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'MySQL 8.x, Tomcat 9.x, Chrome': [
+        // Test on latest MySQL 5.x & Tomcat 9.x.
+        'MySQL 5.x, Tomcat 9.x, Chrome': [
             'database' : 'mysql',
-            'databaseTag' : '8',
+            'databaseTag' : '5',
             'jdbcVersion' : '5.1.45',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : '8',
+            'servletEngineTag' : '9',
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
+        // Prove that https://jira.xwiki.org/browse/XWIKI-13418 is not currently supported. Move to
+        // executeDockerAllTests() when it is and when we officially support it.
         'MySQL 5.7.x (utf8mb4), Tomcat 8.x, Chrome': [
             'database' : 'mysql',
             'database.commands.character-set-server' : 'utf8mb4',
@@ -186,6 +190,16 @@ void executeDockerUnsupportedTests(def branch)
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8',
             'browser' : 'chrome',
+            'verbose' : 'true'
+        ],
+        // Test on Java 11 & latest Tomcat 8.x.
+        'MySQL 5.7.x, Tomcat 8.5.x, Chrome': [
+            'database' : 'mysql',
+            'databaseTag' : '5.7',
+            'jdbcVersion' : '5.1.45',
+            'servletEngine' : 'tomcat',
+            'servletEngineTag' : '8-jre11',
+            'browser' : 'firefox',
             'verbose' : 'true'
         ]
     ]
