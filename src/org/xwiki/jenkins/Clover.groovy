@@ -20,6 +20,7 @@
 package org.xwiki.jenkins
 
 import org.xwiki.jenkins.Utils
+import groovy.json.*
 
 /**
  * Computes the full Clover TPC for the XWiki project, taking into account all tests located in various repos:
@@ -52,6 +53,9 @@ void generateGlobalCoverage(def baselineDefinitions)
     def shortDateString = new Date().format("yyyyMMdd")
     def dateString = new Date().format("yyyyMMdd-HHmm")
     def workspace = pwd()
+    def currentPOMVersion
+    def utils = new Utils()
+    def cloverReportPrefixURL = "http://maven.xwiki.org/site/clover"
 
     stage('Preparation') {
         localRepository = "${workspace}/maven-repository"
@@ -69,10 +73,15 @@ void generateGlobalCoverage(def baselineDefinitions)
         // NOTE: Needs to be configured in the global configuration.
         mvnHome = tool 'Maven'
     }
-    ["xwiki-commons", "xwiki-rendering", "xwiki-platform"].each() { repoName ->
+    ['xwiki-commons', 'xwiki-rendering', 'xwiki-platform'].each() { repoName ->
         stage("Clover for ${repoName}") {
+            git "https://github.com/xwiki/${repoName}.git"
             dir (repoName) {
-                git "https://github.com/xwiki/${repoName}.git"
+                if (repoName == 'xwiki-commons') {
+                    def pom = readMavenPom file: 'pom.xml'
+                    currentPOMVersion = pom.version
+                    utils.echoXWiki("Current version = ${currentPOMVersion}")
+                }
                 runCloverAndGenerateReport(mvnHome, localRepository, cloverDir)
             }
         }
@@ -80,7 +89,7 @@ void generateGlobalCoverage(def baselineDefinitions)
     stage("Analyze Results") {
         // for each baseline definition, generate a report
         baselineDefinitions.each() { baselineDefinition ->
-            def baseline = baselineDefinition.baseline
+            def (baseline, version) = extractBaselineAndVersion(baselineDefinition.baseline, cloverReportPrefixURL)
             def failReport = baselineDefinition.fail
             def (date, time) = baseline.tokenize('-')
 
@@ -89,8 +98,7 @@ void generateGlobalCoverage(def baselineDefinitions)
             def cloverXMLReport = "${cloverReportDirectory}/clover.xml"
 
             // Generate the Diff Report using Maven
-            def oldReport =
-                "http://maven.xwiki.org/site/clover/${date}/clover-commons+rendering+platform-${baseline}/clover.xml"
+            def oldReport = "${cloverReportPrefixURL}/${date}/clover-commons+rendering+platform-${baseline}/clover.xml"
             def reportProperties = getSystemPropertiesAsString([
                 'oldCloverXMLReport' : oldReport,
                 'oldReportId' : baseline,
@@ -117,6 +125,17 @@ void generateGlobalCoverage(def baselineDefinitions)
             if (failReport && htmlContent.contains('FAILURE')) {
                 // Send the mail to notify about failures
                 sendMail(htmlContent)
+            }
+
+            // Update the latest.json file if the version has changed and a version was specified.
+            if (version && currentPOMVersion != version) {
+                // Generate new JSON file in the local workspace
+                def newData = [:]
+                newData.baseline = dateString
+                newData.version = currentPOMVersion
+                writeFile file: "latest.json", text: JsonOutput.toJson(newData)
+                // Upload it and overwrite any previous one
+                sh "scp latest.json maven@maven.xwiki.org:public_html/site/clover/latest.json"
             }
         }
     }
@@ -204,4 +223,35 @@ private void sendMail(def htmlContent)
         mimeType: 'text/html',
         to: 'notifications@xwiki.org'
     )
+}
+
+/**
+ * @param originalBaseline can be either a date and time value representing the last report id
+ *        (e.g. {@code 20190101-2330}) at http://maven.xwiki.org/site/clover, or {@code latest}, in which case the data
+ *        is read from a {@code latest.json} file at http://maven.xwiki.org/site/clover/latest.json. In the former case
+ *        no version is returned. The version is used to perform a check to decide whether to  update the
+ *        {@code latest.json} file or not.
+ *
+ * Example of latest.json content:
+ * <code><pre>
+ *     {
+ *         'baseline' : '20190101-2330',
+ *         'version' : '11.2-SNAPSHOT'
+ *     }
+ * </pre></code>
+ */
+private def extractBaselineAndVersion(def originalBaseline, def cloverReportPrefixURL)
+{
+    def result
+    if (originalBaseline == 'latest') {
+        // Read it from the file named latest.json on maven.xwiki.org
+        result = new JsonSlurper().parse("${cloverReportPrefixURL}/latest.json".toURL())
+        if (!result) {
+            // No latest.json file exist, fill with default data
+            result = [ baseline: '20190101-2330', version: '11.0-SNAPSHOT' ]
+        }
+    } else {
+        result = [ baseline: originalBaseline ]
+    }
+    return result
 }
