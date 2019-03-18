@@ -193,7 +193,7 @@ void executeDockerUnsupportedTests(def branch)
             'verbose' : 'true'
         ],
         // Test on Java 11 & latest Tomcat 8.x.
-        'MySQL 5.7.x, Tomcat 8.5.x, Chrome': [
+        'MySQL 5.7.x, Tomcat 8.x (Java 11), Firefox': [
             'database' : 'mysql',
             'databaseTag' : '5.7',
             'jdbcVersion' : '5.1.45',
