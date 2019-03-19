@@ -89,7 +89,9 @@ void generateGlobalCoverage(def baselineDefinitions)
     stage("Analyze Results") {
         // for each baseline definition, generate a report
         baselineDefinitions.each() { baselineDefinition ->
-            def (baseline, version) = extractBaselineAndVersion(baselineDefinition.baseline, cloverReportPrefixURL)
+            def baselineDefinitionData = getBaselineDefinitionData(baselineDefinition.baseline, cloverReportPrefixURL)
+            def baseline = baselineDefinitionData.baseline
+            def version = baselineDefinitionData.version
             def failReport = baselineDefinition.fail
             def (date, time) = baseline.tokenize('-')
 
@@ -240,13 +242,14 @@ private void sendMail(def htmlContent)
  *     }
  * </pre></code>
  */
-private def extractBaselineAndVersion(def originalBaseline, def cloverReportPrefixURL)
+private def getBaselineDefinitionData(def originalBaseline, def cloverReportPrefixURL)
 {
     def result
     if (originalBaseline == 'latest') {
-        // Read it from the file named latest.json on maven.xwiki.org
-        result = new JsonSlurper().parse("${cloverReportPrefixURL}/latest.json".toURL())
-        if (!result) {
+        try {
+            // Read it from the file named latest.json on maven.xwiki.org
+            result = new JsonSlurper().parse("${cloverReportPrefixURL}/latest.json".toURL())
+        } catch(all) {
             // No latest.json file exist, fill with default data
             result = [ baseline: '20190101-2330', version: '11.0-SNAPSHOT' ]
         }
