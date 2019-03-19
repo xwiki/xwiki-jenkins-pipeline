@@ -179,8 +179,8 @@ void executeDockerUnsupportedTests(def branch)
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        // Prove that https://jira.xwiki.org/browse/XWIKI-13418 is not currently supported. Move to
-        // executeDockerAllTests() when it is and when we officially support it.
+        // Test on latest MySQL 5.x with utf8mb4 & Tomcat 8.x.
+        // TODO: move to executeDockerAllTests when it's possible to setup a specific branch (master)
         'MySQL 5.7.x (utf8mb4), Tomcat 8.x, Chrome': [
             'database' : 'mysql',
             'database.commands.character-set-server' : 'utf8mb4',
@@ -193,6 +193,7 @@ void executeDockerUnsupportedTests(def branch)
             'verbose' : 'true'
         ],
         // Test on Java 11 & latest Tomcat 8.x.
+        // TODO: move to executeDockerAllTests when it's possible to setup a specific branch (master)
         'MySQL 5.7.x, Tomcat 8.x (Java 11), Firefox': [
             'database' : 'mysql',
             'databaseTag' : '5.7',
