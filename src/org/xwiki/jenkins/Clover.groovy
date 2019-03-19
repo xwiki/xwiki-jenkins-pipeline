@@ -108,7 +108,7 @@ void generateGlobalCoverage(def baselineDefinitions)
             ])
             dir ("xwiki-platform") {
                 withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx2048m']) {
-                    sh "nice -n 5 mvn -N org.xwiki.clover:xwiki-clover-maven:1.0:report ${reportProperties}"
+                    sh "nice -n 5 mvn -N org.xwiki.clover:xwiki-clover-maven:1.1:report ${reportProperties}"
                 }
             }
 
@@ -120,9 +120,9 @@ void generateGlobalCoverage(def baselineDefinitions)
             def targetFile = "${targetCloverDir}/${shortDateString}/${diffHTMLReportName}"
             sh "scp ${diffHTMLReport} ${targetFile}"
 
-            // Find if there are failures in the Diff Report and if so, send the HTML by email
+            // Find if the global TPC has been lowered in the Diff Report and if so, send the HTML by email
             def htmlContent = readFile diffHTMLReport
-            if (failReport && htmlContent.contains('FAILURE')) {
+            if (failReport && htmlContent.contains('ERROR')) {
                 // Send the mail to notify about failures
                 sendMail(htmlContent)
             }
