@@ -68,7 +68,8 @@ void executeDockerSupportedTests(def branch)
             'jdbcVersion' : '5.1.45',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8.5',
-            'browser' : 'chrome'
+            'browser' : 'chrome',
+            'verbose' : 'true'
         ],
         'PostgreSQL 11.x, Jetty 9.2.x, Chrome': [
             'database' : 'postgresql',
@@ -76,12 +77,14 @@ void executeDockerSupportedTests(def branch)
             'jdbcVersion' : '42.2.5',
             'servletEngine' : 'jetty',
             'servletEngineTag' : '9.2',
-            'browser' : 'chrome'
+            'browser' : 'chrome',
+            'verbose' : 'true'
         ],
         'HSQLDB Embedded, Jetty Standalone, Firefox': [
             'database' : 'hsqldb_embedded',
             'servletEngine' : 'jetty_standalone',
-            'browser' : 'firefox'
+            'browser' : 'firefox',
+            'verbose' : 'true'
         ]
     ]
     executeDockerTests(branch, configurations, null, false)
@@ -102,7 +105,8 @@ void executeDockerAllTests(def branch)
             'jdbcVersion' : '5.1.45',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8',
-            'browser' : 'chrome'
+            'browser' : 'chrome',
+            'verbose' : 'true'
         ],
         'MySQL 5.5.x, Tomcat 8.x, Firefox': [
             'database' : 'mysql',
@@ -110,7 +114,8 @@ void executeDockerAllTests(def branch)
             'jdbcVersion' : '5.1.45',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8',
-            'browser' : 'chrome'
+            'browser' : 'chrome',
+            'verbose' : 'true'
         ],
         'PostgreSQL 11.x, Jetty 9.x, Chrome': [
             'database' : 'postgresql',
@@ -118,7 +123,8 @@ void executeDockerAllTests(def branch)
             'jdbcVersion' : '42.2.5',
             'servletEngine' : 'jetty',
             'servletEngineTag' : '9',
-            'browser' : 'chrome'
+            'browser' : 'chrome',
+            'verbose' : 'true'
         ],
         'PostgreSQL 9.4.x, Jetty 9.x, Firefox': [
             'database' : 'postgresql',
@@ -126,7 +132,8 @@ void executeDockerAllTests(def branch)
             'jdbcVersion' : '42.2.5',
             'servletEngine' : 'jetty',
             'servletEngineTag' : '9',
-            'browser' : 'chrome'
+            'browser' : 'chrome',
+            'verbose' : 'true'
         ],
         'PostgreSQL 9.6.x, Jetty 9.x, Chrome': [
             'database' : 'postgresql',
@@ -134,12 +141,14 @@ void executeDockerAllTests(def branch)
             'jdbcVersion' : '42.2.5',
             'servletEngine' : 'jetty',
             'servletEngineTag' : '9',
-            'browser' : 'chrome'
+            'browser' : 'chrome',
+            'verbose' : 'true'
         ],
         'HSQLDB Embedded, Jetty Standalone, Firefox': [
             'database' : 'hsqldb_embedded',
             'servletEngine' : 'jetty_standalone',
-            'browser' : 'firefox'
+            'browser' : 'firefox',
+            'verbose' : 'true'
         ]
     ]
 
@@ -155,7 +164,8 @@ void executeDockerAllTests(def branch)
             'jdbcVersion' : '5.1.45',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8',
-            'browser' : 'chrome'
+            'browser' : 'chrome',
+            'verbose' : 'true'
         ]
         configurations.'MySQL 5.7.x, Tomcat 8.x (Java 11), Firefox' = [
             'database' : 'mysql',
@@ -163,7 +173,8 @@ void executeDockerAllTests(def branch)
             'jdbcVersion' : '5.1.45',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8-jre11',
-            'browser' : 'firefox'
+            'browser' : 'firefox',
+            'verbose' : 'true'
         ]
     }
 
