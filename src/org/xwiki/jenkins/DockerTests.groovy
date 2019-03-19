@@ -143,6 +143,30 @@ void executeDockerAllTests(def branch)
         ]
     ]
 
+    // The LTS branch currently doesn't support the following configurations which is why they're only active for the
+    // master branch.
+    // TODO: Merge with config above when LTS becomes 11.x
+    if (branch == 'master') {
+        configurations.'MySQL 5.7.x (utf8mb4), Tomcat 8.x, Chrome' = [
+            'database' : 'mysql',
+            'database.commands.character-set-server' : 'utf8mb4',
+            'database.commands.collation-server' : 'utf8mb4_unicode_ci',
+            'databaseTag' : '5.7',
+            'jdbcVersion' : '5.1.45',
+            'servletEngine' : 'tomcat',
+            'servletEngineTag' : '8',
+            'browser' : 'chrome'
+        ]
+        configurations.'MySQL 5.7.x, Tomcat 8.x (Java 11), Firefox' = [
+            'database' : 'mysql',
+            'databaseTag' : '5.7',
+            'jdbcVersion' : '5.1.45',
+            'servletEngine' : 'tomcat',
+            'servletEngineTag' : '8-jre11',
+            'browser' : 'firefox'
+        ]
+    }
+
     // Smoke test modules.
     def modules = [
         "xwiki-platform-core/xwiki-platform-menu"
@@ -177,30 +201,6 @@ void executeDockerUnsupportedTests(def branch)
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '9',
             'browser' : 'chrome',
-            'verbose' : 'true'
-        ],
-        // Test on latest MySQL 5.x with utf8mb4 & Tomcat 8.x.
-        // TODO: move to executeDockerAllTests when it's possible to setup a specific branch (master)
-        'MySQL 5.7.x (utf8mb4), Tomcat 8.x, Chrome': [
-            'database' : 'mysql',
-            'database.commands.character-set-server' : 'utf8mb4',
-            'database.commands.collation-server' : 'utf8mb4_unicode_ci',
-            'databaseTag' : '5.7',
-            'jdbcVersion' : '5.1.45',
-            'servletEngine' : 'tomcat',
-            'servletEngineTag' : '8',
-            'browser' : 'chrome',
-            'verbose' : 'true'
-        ],
-        // Test on Java 11 & latest Tomcat 8.x.
-        // TODO: move to executeDockerAllTests when it's possible to setup a specific branch (master)
-        'MySQL 5.7.x, Tomcat 8.x (Java 11), Firefox': [
-            'database' : 'mysql',
-            'databaseTag' : '5.7',
-            'jdbcVersion' : '5.1.45',
-            'servletEngine' : 'tomcat',
-            'servletEngineTag' : '8-jre11',
-            'browser' : 'firefox',
             'verbose' : 'true'
         ]
     ]
