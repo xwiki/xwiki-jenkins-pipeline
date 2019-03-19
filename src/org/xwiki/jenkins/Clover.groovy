@@ -75,8 +75,8 @@ void generateGlobalCoverage(def baselineDefinitions)
     }
     ['xwiki-commons', 'xwiki-rendering', 'xwiki-platform'].each() { repoName ->
         stage("Clover for ${repoName}") {
-            git "https://github.com/xwiki/${repoName}.git"
             dir (repoName) {
+                git "https://github.com/xwiki/${repoName}.git"
                 if (repoName == 'xwiki-commons') {
                     def pom = readMavenPom file: 'pom.xml'
                     currentPOMVersion = pom.version
