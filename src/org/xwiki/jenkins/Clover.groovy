@@ -127,6 +127,17 @@ void generateGlobalCoverage(def baselineDefinitions)
             if (failReport && htmlContent.contains('ERROR')) {
                 // Send the mail to notify about failures
                 sendMail(htmlContent)
+                // Mark the build as failed so that we notice it!
+                currentBuild.result = 'FAILURE'
+                // Add a badge to indicate the reason of the failure
+                def badgeText = 'Global test coverage has been reduced!'
+                manager.addErrorBadge(badgeText)
+                // Add some HTML to link to the report showing the failure
+                def cloverReporsURL = "${cloverReportPrefixURL}/${shortDateString}"
+                def summaryText = "<h1>${badgeText}. See <a href='${cloverReporsURL}'>report</a></h1>"
+                manager.createSummary('red.gif').appendText(summaryText, false, false, false, 'red')
+                // Persist changes
+                currentBuild.rawBuild.save()
             }
 
             // Update the latest.json file if the version has changed and a version was specified.
