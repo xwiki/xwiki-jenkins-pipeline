@@ -248,7 +248,7 @@ private def getBaselineDefinitionData(def originalBaseline, def cloverReportPref
     if (originalBaseline == 'latest') {
         try {
             // Read it from the file named latest.json on maven.xwiki.org
-            result = new JsonSlurper().parse("${cloverReportPrefixURL}/latest.json".toURL())
+            result = new JsonSlurperClassic().parse("${cloverReportPrefixURL}/latest.json".toURL())
         } catch(all) {
             // No latest.json file exist, fill with default data
             result = [ baseline: '20190101-2330', version: '11.0-SNAPSHOT' ]
