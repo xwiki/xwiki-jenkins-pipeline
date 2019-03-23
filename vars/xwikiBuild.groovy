@@ -230,7 +230,7 @@ def call(String name = 'Default', body)
         // Note: We use the "find" shell command since there's some limitation currently with archiveArtifacts,
         // see https://issues.jenkins-ci.org/browse/JENKINS-51913
         echoXWiki "Looking for test videos in ${pwd()}"
-        def findCommand = "find . -path '*/target/*' -type f -name '*.flv' -exec cp {} tmp-jenkins-flv/ \\;"
+        def findCommand = "find . -path '*/target/*' -type f -name '*.flv' -exec rsync -R {} tmp-jenkins-flv/ \\;"
         sh "mkdir -p tmp-jenkins-flv; ${findCommand}"
         archiveArtifacts artifacts: "tmp-jenkins-flv/*.flv", allowEmptyArchive: true
 
@@ -238,7 +238,7 @@ def call(String name = 'Default', body)
         // Note: We use the "find" shell command since there's some limitation currently with archiveArtifacts,
         // see https://issues.jenkins-ci.org/browse/JENKINS-51913
         echoXWiki "Looking for test failure images in ${pwd()}"
-        findCommand = "find . -path '*/target/screenshots' -type f -name '*.png' -exec cp {} tmp-jenkins-png/ \\;"
+        findCommand = "find . -path '*/target/screenshots' -type f -name '*.png' -exec rsync -R {} tmp-jenkins-png/ \\;"
         sh "mkdir -p tmp-jenkins-png; ${findCommand}"
         archiveArtifacts artifacts: "tmp-jenkins-png/*.png", allowEmptyArchive: true
 
