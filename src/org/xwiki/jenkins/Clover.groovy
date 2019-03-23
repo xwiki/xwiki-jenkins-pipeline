@@ -123,6 +123,7 @@ void generateGlobalCoverage(def baselineDefinitions)
             sh "scp ${diffHTMLReport} ${targetFile}"
 
             // Find if the global TPC has been lowered in the Diff Report and if so, send the HTML by email
+            def cloverReportsURL = "${cloverReportPrefixURL}/${shortDateString}"
             def htmlContent = readFile diffHTMLReport
             if (failReport && htmlContent.contains('ERROR')) {
                 // Send the mail to notify about failures
@@ -133,9 +134,17 @@ void generateGlobalCoverage(def baselineDefinitions)
                 def badgeText = 'Global test coverage has been reduced!'
                 manager.addErrorBadge(badgeText)
                 // Add some HTML to link to the report showing the failure
-                def cloverReporsURL = "${cloverReportPrefixURL}/${shortDateString}"
-                def summaryText = "<h1>${badgeText}. See <a href='${cloverReporsURL}'>report</a></h1>"
+                def summaryText = "<h1>${badgeText}. See <a href='${cloverReportsURL}'>report</a></h1>"
                 manager.createSummary('red.gif').appendText(summaryText, false, false, false, 'red')
+                // Persist changes
+                currentBuild.rawBuild.save()
+            } else {
+                // Add a badge to indicate all ok
+                def badgeText = 'Global test coverage is similar or increased!'
+                manager.addInfoBadge(badgeText)
+                // Add some HTML to link to the report
+                def summaryText = "<h1>${badgeText}. See <a href='${cloverReportsURL}'>report</a></h1>"
+                manager.createSummary('green.gif').appendText(summaryText, false, false, false, 'green')
                 // Persist changes
                 currentBuild.rawBuild.save()
             }
