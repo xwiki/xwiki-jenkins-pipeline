@@ -108,7 +108,7 @@ def call(String name = 'Default', body)
     // Note 1: this is limiting concurrency per branch only.
     // Note 2: This needs to be one of the first code executed which is why it's the first step we execute.
     // See https://thepracticalsysadmin.com/limit-jenkins-multibranch-pipeline-builds/ for details.
-    echoXWiki "Only keep the 10 most recent builds + disable concurrent builds"
+    echoXWiki "Only keep the builds for the last 7 days + disable concurrent builds"
     def projectProperties = [
             [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', daysToKeepStr: '7']],
             disableConcurrentBuilds()
