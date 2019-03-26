@@ -103,7 +103,7 @@ def call(String name = 'Default', body)
     body.delegate = config
     body()
 
-    // Only keep the 10 most recent builds & disable concurrent builds to avoid rebuilding whenever a new commit is
+    // Only keep builds for the last 7 days & disable concurrent builds to avoid rebuilding whenever a new commit is
     // made. The commits will accumulate till the previous build is finished before starting a new one.
     // Note 1: this is limiting concurrency per branch only.
     // Note 2: This needs to be one of the first code executed which is why it's the first step we execute.
