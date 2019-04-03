@@ -22,209 +22,7 @@
 package org.xwiki.jenkins
 
 /**
- * Execute all docker functional tests on latest versions of supported configurations, according to:
- * <ul>
- * <li>DBs: https://dev.xwiki.org/xwiki/bin/view/Community/DatabaseSupportStrategy</li>
- * <li>Servlet containers: https://dev.xwiki.org/xwiki/bin/view/Community/ServletContainerSupportStrategy/</li>
- * <li>Browsers: https://dev.xwiki.org/xwiki/bin/view/Community/BrowserSupportStrategy</li>
- * </ul>
- * <p>
- * Note that for browsers we're constrained to use the version of them supported by the Selenium version we use. Our
- * strategy is to always use the latest released Selenium version in order to use the latest browser versions.
- * <p>
- * TODO: In the future replace this by Java code located in xwiki-platform-test-docker when JUnit5 supports this.
- * (see https://github.com/junit-team/junit5/issues/871).
- * It'll bring the following advantages:
- * <ul>
- * <li>Less reliance on the CI. If we need to get away from Jenkins for ex, it'll make it easier. In general we need to
- *   have the maximum done in the Maven build and the minimum in CI scripts.</li>
- * <li>Ability to run several configs at once on developer's machines.</li>
- * <li>Ability to have a single Maven build executed in the CI and thus not get tons of mails whenever a test fails
- *   (which is the current situation).</li>
- * </ul>
- * Disadvantages:
- * <ul>
- * <li>Ability to paralellize, i.e. execute each Maven build on a different CI agent. This is because the withMaven()
- *   step doesn't currently support this feature (which is a pity). See also
- *   https://massol.myxwiki.org/xwiki/bin/view/Blog/Jenkins%20and%20large%20Maven%20projects<li>
- * </ul>
- * <p>
- * Example usage:
- * <code><pre>
- *   import org.xwiki.jenkins.DockerTests
- *   node('docker') {
- *     new DockerTests().executeDockerSupportedTests()
- *   }
- * </pre></code>
- *
- * @param branch the branch to build (e.g. "master", "stable-10.10.x")
- */
-void executeDockerSupportedTests(def branch)
-{
-    def configurations = [
-        'MySQL 5.7.x, Tomcat 8.5.x, Chrome': [
-            'database' : 'mysql',
-            'databaseTag' : '5.7',
-            'jdbcVersion' : '5.1.45',
-            'servletEngine' : 'tomcat',
-            'servletEngineTag' : '8.5',
-            'browser' : 'chrome',
-            'verbose' : 'true'
-        ],
-        'PostgreSQL 11.x, Jetty 9.2.x, Chrome': [
-            'database' : 'postgresql',
-            'databaseTag' : '11',
-            'jdbcVersion' : '42.2.5',
-            'servletEngine' : 'jetty',
-            'servletEngineTag' : '9.2',
-            'browser' : 'chrome',
-            'verbose' : 'true'
-        ],
-        'HSQLDB Embedded, Jetty Standalone, Firefox': [
-            'database' : 'hsqldb_embedded',
-            'servletEngine' : 'jetty_standalone',
-            'browser' : 'firefox',
-            'verbose' : 'true'
-        ]
-    ]
-    executeDockerTests(branch, configurations, null, false)
-}
-
-/**
- * Execute smoke tests (i.e. only a few tests) on the maximum number of configurations to flush out problems of
- * configurations when XWiki doesn't start or has basic problems. This includes all supported configurations.
- *
- * @param branch the branch to build (e.g. "master", "stable-10.10.x")
- */
-void executeDockerAllTests(def branch)
-{
-    def configurations = [
-        'MySQL 5.7.x, Tomcat 8.x, Chrome': [
-            'database' : 'mysql',
-            'databaseTag' : '5.7',
-            'jdbcVersion' : '5.1.45',
-            'servletEngine' : 'tomcat',
-            'servletEngineTag' : '8',
-            'browser' : 'chrome',
-            'verbose' : 'true'
-        ],
-        'MySQL 5.5.x, Tomcat 8.x, Firefox': [
-            'database' : 'mysql',
-            'databaseTag' : '5.5',
-            'jdbcVersion' : '5.1.45',
-            'servletEngine' : 'tomcat',
-            'servletEngineTag' : '8',
-            'browser' : 'chrome',
-            'verbose' : 'true'
-        ],
-        'PostgreSQL 11.x, Jetty 9.x, Chrome': [
-            'database' : 'postgresql',
-            'databaseTag' : '11',
-            'jdbcVersion' : '42.2.5',
-            'servletEngine' : 'jetty',
-            'servletEngineTag' : '9',
-            'browser' : 'chrome',
-            'verbose' : 'true'
-        ],
-        'PostgreSQL 9.4.x, Jetty 9.x, Firefox': [
-            'database' : 'postgresql',
-            'databaseTag' : '9.4',
-            'jdbcVersion' : '42.2.5',
-            'servletEngine' : 'jetty',
-            'servletEngineTag' : '9',
-            'browser' : 'chrome',
-            'verbose' : 'true'
-        ],
-        'PostgreSQL 9.6.x, Jetty 9.x, Chrome': [
-            'database' : 'postgresql',
-            'databaseTag' : '9.6',
-            'jdbcVersion' : '42.2.5',
-            'servletEngine' : 'jetty',
-            'servletEngineTag' : '9',
-            'browser' : 'chrome',
-            'verbose' : 'true'
-        ],
-        'HSQLDB Embedded, Jetty Standalone, Firefox': [
-            'database' : 'hsqldb_embedded',
-            'servletEngine' : 'jetty_standalone',
-            'browser' : 'firefox',
-            'verbose' : 'true'
-        ]
-    ]
-
-    // The LTS branch currently doesn't support the following configurations which is why they're only active for the
-    // master branch.
-    // TODO: Merge with config above when LTS becomes 11.x
-    if (branch == 'master') {
-        configurations.'MySQL 5.7.x (utf8mb4), Tomcat 8.x, Chrome' = [
-            'database' : 'mysql',
-            'database.commands.character-set-server' : 'utf8mb4',
-            'database.commands.collation-server' : 'utf8mb4_bin',
-            'databaseTag' : '5.7',
-            'jdbcVersion' : '5.1.45',
-            'servletEngine' : 'tomcat',
-            'servletEngineTag' : '8',
-            'browser' : 'chrome',
-            'verbose' : 'true'
-        ]
-        configurations.'MySQL 5.7.x, Tomcat 8.x (Java 11), Firefox' = [
-            'database' : 'mysql',
-            'databaseTag' : '5.7',
-            'jdbcVersion' : '5.1.45',
-            'servletEngine' : 'tomcat',
-            'servletEngineTag' : '8-jre11',
-            'browser' : 'firefox',
-            'verbose' : 'true'
-        ]
-    }
-
-    // Smoke test modules.
-    def modules = [
-        "xwiki-platform-core/xwiki-platform-menu"
-    ]
-    executeDockerTests(branch, configurations, modules, false)
-}
-
-/**
- * Execute smoke tests (i.e. only a few tests) on configurations that we'll want to support in the future but that
- * are currently not supported or not working.
- *
- * @param branch the branch to build (e.g. "master", "stable-10.10.x")
- */
-void executeDockerUnsupportedTests(def branch)
-{
-    def configurations = [
-        // Test on latest MySQL 8.x.
-        'MySQL 8.x, Tomcat 8.x, Chrome': [
-            'database' : 'mysql',
-            'databaseTag' : '8',
-            'jdbcVersion' : '5.1.45',
-            'servletEngine' : 'tomcat',
-            'servletEngineTag' : '8',
-            'browser' : 'chrome',
-            'verbose' : 'true'
-        ],
-        // Test on latest MySQL 5.x & Tomcat 9.x.
-        'MySQL 5.x, Tomcat 9.x, Chrome': [
-            'database' : 'mysql',
-            'databaseTag' : '5',
-            'jdbcVersion' : '5.1.45',
-            'servletEngine' : 'tomcat',
-            'servletEngineTag' : '9',
-            'browser' : 'chrome',
-            'verbose' : 'true'
-        ]
-    ]
-
-    // Smoke test modules.
-    def modules = [
-        "xwiki-platform-core/xwiki-platform-menu"
-    ]
-    executeDockerTests(branch, configurations, modules, true)
-}
-
-/**
- * Example usage:
+ * Example usage 1:
  * <code><pre>
  *   import org.xwiki.jenkins.DockerTests
  *   def configurations = [
@@ -237,35 +35,27 @@ void executeDockerUnsupportedTests(def branch)
  *           'browser' : 'chrome'
  *       ]
  *   node('docker') {
- *     new DockerTests().executeDockerTests(configurations, null)
+ *     checkout scm
+ *     new DockerTests().executeDockerTests(configurations, null, true)
  *   }
  * </pre></code>
  *
- * @param branch the branch to build (e.g. "master", "stable-10.10.x")
+ * Example usage 2:
+ * <code><pre>
+ *   import org.xwiki.jenkins.*
+ *   node('docker') {
+ *     checkout scm
+ *     def configs = new DockerConfigurations().getLatestConfigurations('master')
+ *     new DockerTests().execute(configs, null, true)
+ *   }
+ * </pre></code>
+ *
  * @param configurations the configurations for which to execute the functional tests defined in the passed modules
  * @param modules the modules on which to run the tests
  * @param skipMail if true then don't send emails when builds fail
  */
-void executeDockerTests(def branch, def configurations, def modules, def skipMail)
+void execute(def configurations, def modules, def skipMail)
 {
-    // Checkout platform
-    checkout([
-        $class: 'GitSCM',
-        branches: [[name: "*/${branch}"]],
-        doGenerateSubmoduleConfigurations: false,
-        extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: branch]],
-        submoduleCfg: [],
-        userRemoteConfigs: [[url: 'https://github.com/xwiki/xwiki-platform.git']]])
-
-    dir(branch) {
-        buildAndExecuteDockerTest(configurations, modules, skipMail, branch)
-    }
-}
-
-private void buildAndExecuteDockerTest(def configurations, def modules, def skipMail, def branch)
-{
-    sh script: 'locale', returnStatus: true
-
     // Build xwiki-platform-docker test framework since we use it and we happen to make changes to it often and thus
     // if we don't build it here, we have to wait for the full xwiki-platform to be built before being able to run
     // the docker tests again. It can also lead to build failures since this method is called during scheduled jobs
@@ -300,8 +90,9 @@ private void buildAndExecuteDockerTest(def configurations, def modules, def skip
         modules = []
         def dockerModuleFiles = findFiles(glob: '**/*-test-docker/pom.xml')
         dockerModuleFiles.each() {
+            // Skip 'xwiki-platform-test-docker' since it matches the glob pattern but isn't a test module.
             if (!it.path.contains('xwiki-platform-test-docker')) {
-                // Find great parent module, e.g. return the path to xwiki-platform-menu when
+                // Find grand parent module, e.g. return the path to xwiki-platform-menu when
                 // xwiki-platform-menu-test-docker is found.
                 modules.add(getParentPath(getParentPath(getParentPath(it.path))))
             }
@@ -332,7 +123,7 @@ private void buildAndExecuteDockerTest(def configurations, def modules, def skip
             // only resolve from the local repository to speed up the test execution.
             // Note 1: we don't need to build the POM module since it's the parent of the -ui and docker submodules.
             // Note 2: we also don't need to build the pageobjects modules since it's built by the standard platform
-            // jobs.
+            // jobs (i.e. built by -Pintegration-tests).
             if (i == 0) {
                 def exists = fileExists "${modulePath}/${moduleName}-ui/pom.xml"
                 if (exists) {
