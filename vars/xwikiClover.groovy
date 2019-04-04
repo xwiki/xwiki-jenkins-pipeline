@@ -1,3 +1,5 @@
+#!/usr/bin/env groovy
+
 /*
  * See the NOTICE file distributed with this work for additional
  * information regarding copyright ownership.
@@ -17,35 +19,9 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.jenkins
-
-import org.xwiki.jenkins.Utils
 import groovy.json.*
 
-/**
- * Computes the full Clover TPC for the XWiki project, taking into account all tests located in various repos:
- * xwiki-commons, xwiki-rendering and xwiki-platform.
- * <p>
- * Also performs an analysis of the report by comparing it to a previous report and generating an email
- * if some modules have a global TPC contribution lower than before.
- * <p>
- * Example usage:
- * <code><pre>
- * import org.xwiki.jenkins.Clover
- * node('docker') {
- *   new Clover().generateGlobalCoverage([
- *     [baseline: "20171222-1835", fail: false],
- *     [baseline: "20190101-2330", fail: true]
- *   ])
- * }
- * </pre></code>
- *
- * @param baselineDefinitions list of values corresponding to existing report directories at
- *        http://maven.xwiki.org/site/clover against which the new report will be compared against. Also specify if
- *        errors in each diff report should result in an email and failing the job or not.
- *        Example: [[baseline: "20171222-1835", fail: false]].
- */
-void generateGlobalCoverage(def baselineDefinitions)
+void call(baselineDefinitions)
 {
     def mvnHome
     def localRepository
@@ -54,7 +30,6 @@ void generateGlobalCoverage(def baselineDefinitions)
     def dateString = new Date().format("yyyyMMdd-HHmm")
     def workspace = pwd()
     def currentPOMVersion
-    def utils = new Utils()
     def cloverReportPrefixURL = "http://maven.xwiki.org/site/clover"
 
     stage('Preparation') {
@@ -80,7 +55,7 @@ void generateGlobalCoverage(def baselineDefinitions)
                 if (repoName == 'xwiki-commons') {
                     def pom = readMavenPom file: 'pom.xml'
                     currentPOMVersion = pom.version
-                    utils.echoXWiki("Current version = ${currentPOMVersion}")
+                    echoXWiki("Current version = ${currentPOMVersion}")
                 }
                 runCloverAndGenerateReport(mvnHome, localRepository, cloverDir)
             }
@@ -102,11 +77,11 @@ void generateGlobalCoverage(def baselineDefinitions)
             // Generate the Diff Report using Maven
             def oldReport = "${cloverReportPrefixURL}/${date}/clover-commons+rendering+platform-${baseline}/clover.xml"
             def reportProperties = getSystemPropertiesAsString([
-                'oldCloverXMLReport' : oldReport,
-                'oldReportId' : baseline,
-                'newCloverXMLReport' : cloverXMLReport,
-                'newReportId' : dateString,
-                'diffReportOutputDirectory': cloverReportDirectory
+                    'oldCloverXMLReport' : oldReport,
+                    'oldReportId' : baseline,
+                    'newCloverXMLReport' : cloverXMLReport,
+                    'newReportId' : dateString,
+                    'diffReportOutputDirectory': cloverReportDirectory
             ])
             dir ("xwiki-platform") {
                 withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx2048m']) {
@@ -134,7 +109,7 @@ void generateGlobalCoverage(def baselineDefinitions)
                 def badgeText = 'Global test coverage has been reduced!'
                 manager.addErrorBadge(badgeText)
                 // Add some HTML to link to the report showing the failure
-                def summaryText = "<h1>${badgeText}. See <a href='${cloverReportsURL}'>report</a></h1>"
+                def summaryText = "<h1>${badgeText} See <a href='${cloverReportsURL}'>report</a></h1>"
                 manager.createSummary('red.gif').appendText(summaryText, false, false, false, 'red')
                 // Persist changes
                 currentBuild.rawBuild.save()
@@ -143,7 +118,7 @@ void generateGlobalCoverage(def baselineDefinitions)
                 def badgeText = 'Global test coverage is similar or increased!'
                 manager.addInfoBadge(badgeText)
                 // Add some HTML to link to the report
-                def summaryText = "<h1>${badgeText}. See <a href='${cloverReportsURL}'>report</a></h1>"
+                def summaryText = "<h1>${badgeText} See <a href='${cloverReportsURL}'>report</a></h1>"
                 manager.createSummary('green.gif').appendText(summaryText, false, false, false, 'green')
                 // Persist changes
                 currentBuild.rawBuild.save()
@@ -200,16 +175,16 @@ private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cl
         // Note: With 2048m we got a OOM.
         withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx4096m']) {
             def commonPropertiesString = getSystemPropertiesAsString([
-                'maven.repo.local' : "'${localRepository}'",
-                'maven.clover.cloverDatabase' : "${cloverDir}/clover.db"
+                    'maven.repo.local' : "'${localRepository}'",
+                    'maven.clover.cloverDatabase' : "${cloverDir}/clover.db"
             ])
             // Skip the maximum number of checks to speed up the build
             def propertiesString = getSystemPropertiesAsString([
-                'xwiki.revapi.skip' : 'true',
-                'xwiki.checkstyle.skip' : 'true',
-                'xwiki.enforcer.skip' : 'true',
-                'xwiki.license.skip' : 'true',
-                'maven.test.failure.ignore' : 'true'
+                    'xwiki.revapi.skip' : 'true',
+                    'xwiki.checkstyle.skip' : 'true',
+                    'xwiki.enforcer.skip' : 'true',
+                    'xwiki.license.skip' : 'true',
+                    'maven.test.failure.ignore' : 'true'
             ])
             def profiles = "-Pclover,integration-tests,flavor-integration-tests,distribution,docker"
             // Use "nice" to reduce priority of the Maven process so that Jenkins stays as responsive as possible during
@@ -217,10 +192,10 @@ private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cl
             sh "nice -n 5 mvn clean clover:setup install ${profiles} ${commonPropertiesString} ${propertiesString}"
 
             // Check that there are no false positives. If there are then stop the build.
-            def containsFalsePositives = new Utils().checkForFalsePositives()
+            def containsFalsePositives = checkForFalsePositives()
             if (containsFalsePositives) {
                 throw new RuntimeException(
-                    "The build contains at least one false positive which can skew the global TPC result, stopping job")
+                        "The build contains at least one false positive which can skew the global TPC result, stopping job")
             }
 
             // Note: Clover reporting requires a display. Even though we're inside XVNC and thus have a display, let's
@@ -240,10 +215,10 @@ private def getSystemPropertiesAsString(def systemPropertiesAsMap)
 private void sendMail(def htmlContent)
 {
     emailext (
-        subject: "Global Coverage Failure - Build # ${env.BUILD_NUMBER}",
-        body: htmlContent,
-        mimeType: 'text/html',
-        to: 'notifications@xwiki.org'
+            subject: "Global Coverage Failure - Build # ${env.BUILD_NUMBER}",
+            body: htmlContent,
+            mimeType: 'text/html',
+            to: 'notifications@xwiki.org'
     )
 }
 

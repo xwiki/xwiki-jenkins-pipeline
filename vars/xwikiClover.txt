@@ -1,0 +1,24 @@
+Computes the full Clover TPC for the XWiki project, taking into account all tests located in various repos:
+`xwiki-commons`, `xwiki-rendering` and `xwiki-platform`.
+
+Also performs an analysis of the report by comparing it to a previous report and generating an email if some modules
+have a global TPC contribution lower than before.
+
+Example usage:
+
+```
+import org.xwiki.jenkins.Clover
+node('docker') {
+    xwikiClover([
+        [baseline: "20171222-1835", fail: false],
+        [baseline: "20190101-2330", fail: true]
+    ])
+}
+```
+
+Parameters:
+
+* `baselineDefinitions`: list of values corresponding to existing report directories at
+  http://maven.xwiki.org/site/clover against which the new report will be compared against. Also specify if
+  errors in each diff report should result in an email and failing the job or not.
+  Example: `[[baseline: "20171222-1835", fail: false]]`.
