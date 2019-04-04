@@ -1,0 +1,4 @@
+Check for false positives for known cases of failures not related to code.
+
+Returns:
+* true if false positives have been detected, false otherwise.

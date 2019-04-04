@@ -20,9 +20,6 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-/**
- * Echo text with a special character prefix to make it stand out in the pipeline logs.
- */
 void call(text)
 {
     echo "\u27A1 ${text}"

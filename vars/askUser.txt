@@ -1,0 +1,7 @@
+Ask the user what to build.
+
+Parameters:
+* `buildMap` A map consisting of build configurations. See the `Jenkinsfile` for `xwiki-platform` to see how to use it
+
+Returns:
+* The id of the item selected in the passed `buildMap`

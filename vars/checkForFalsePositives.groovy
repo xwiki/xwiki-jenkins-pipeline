@@ -20,11 +20,6 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-/**
- * Check for false positives for known cases of failures not related to code.
- *
- * @return true if false positives have been detected, false otherwise
- */
 def call()
 {
     def messages = [

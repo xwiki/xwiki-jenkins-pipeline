@@ -1,0 +1,1 @@
+Echo text with a special character prefix to make it stand out in the pipeline logs.

@@ -1,0 +1,1 @@
+Send a mail to notify of a failure/problem, using a predefined XWiki template.

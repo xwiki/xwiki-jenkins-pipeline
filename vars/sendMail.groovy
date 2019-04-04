@@ -20,9 +20,6 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-/**
- * Send a mail to notify of a failure/problem.
- */
 void call(buildStatus, name)
 {
     echoXWiki "Build has failed, sending mails to concerned parties"

@@ -20,10 +20,6 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-/**
- * Configure which Java version to use by Maven and which Java memory options to use when the {@code javaTool} and
- * {@code mavenOpts} config parameter weren't specified.
- */
 void call(config, pom)
 {
     def javaTool = config.javaTool

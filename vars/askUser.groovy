@@ -20,12 +20,6 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-/**
- * Ask the user what to build.
- *
- * @param buildMap A map consisting of build configurations. See the Jenkinsfile for xwiki-platform to see how to use it
- * @return the id of the item selected in the passed buildMap
- */
 def call(def buildMap)
 {
     def selection
