@@ -185,9 +185,8 @@ void call(name = 'Default', body)
         // Note: We use the "find" shell command since there's some limitation currently with archiveArtifacts,
         // see https://issues.jenkins-ci.org/browse/JENKINS-51913
         echoXWiki "Looking for test videos in ${pwd()}"
-        def findPath = '-path "*/target/*" -not \\\\\\( -path "*/tmp-jenkins-flv/*" -prune \\\\\\)'
-        def rsyncCommand = 'rsync -R {} tmp-jenkins-flv/'
-        sh "find . ${findPath} -type f -name '*.flv' -exec ${rsyncCommand} \\;"
+        sh "find . -path '*/target/*' -not \\( -path '*/tmp-jenkins-flv/*' -prune \\)\
+            -type f -name '*.flv' -exec rsync -R {} 'tmp-jenkins-flv/' \\;"
         dir('tmp-jenkins-flv') {
             archiveArtifacts artifacts: '**', allowEmptyArchive: true
         }
@@ -198,9 +197,8 @@ void call(name = 'Default', body)
         // Note: we look for screenshots only in the screenshots directory to avoid false positives such as PNG images
         // that would be located in a XWiki distribution located in target/.
         echoXWiki "Looking for test failure images in ${pwd()}"
-        findPath = '-path "*/target/*/screenshots" -not \\\\\\( -path "*/tmp-jenkins-png/*" -prune \\\\\\)'
-        rsyncCommand = 'rsync -R {} tmp-jenkins-png/'
-        sh "find . ${findPath} -type f -name '*.png' -exec ${rsyncCommand} \\;"
+        sh "find . -path '*/target/*/screenshots' -not \\( -path '*/tmp-jenkins-png/*' -prune \\)\
+            -type f -name '*.png' -exec rsync -R {} 'tmp-jenkins-png/' \\;"
         dir('tmp-jenkins-png') {
             archiveArtifacts artifacts: '**', allowEmptyArchive: true
         }
