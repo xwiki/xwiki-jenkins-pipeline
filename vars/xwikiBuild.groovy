@@ -26,50 +26,6 @@ import hudson.tasks.test.AbstractTestResultAction
 import com.jenkinsci.plugins.badge.action.BadgeAction
 import com.cloudbees.groovy.cps.NonCPS
 
-// Example usage:
-// parallel(
-//     "standard": {
-//         node {
-//             xwikiBuild {
-//                 goals = "clean install"
-//             }
-//         }
-//     },
-//     "test": {
-//         node {
-//             xwikiBuild {
-//                 goals = "clean deploy"
-//             }
-//         }
-//     }
-// )
-
-// The following options are available:
-//     goals = 'clean install' (default is 'clean deploy' for 'master' and 'stable-*' branches and 'clean install'
-//         for the rest)
-//     profiles = 'quality' (default is 'quality,legacy,integration-tests,jetty,hsqldb,firefox')
-//     mavenOpts = '-Xmx1024m'
-//         (default is '-Xmx1536m -Xms256m' for java8 and '-Xmx1536m -Xms256m -XX:MaxPermSize=512m' for java7)
-//     mavenTool = 'Maven 3' (default is 'Maven')
-//     properties = '-Dparam1=value1 -Dparam2value2' (default is empty)
-//     javaTool = 'java7' (default is 'official')
-//     timeout = 60 (default is 240 minutes)
-//     disabled = true (allows disabling a build, defaults to true)
-//     xvnc = false (disable running xvnc, useful when running on a local Jenkins, defaults to true)
-//     pom = 'some/other/pom.xml' (defaults to 'pom.xml')
-//     archiveArtifacts = true (defaults to false since we don't need that as we push to a maven repo)
-//     fingerprintDependencies = true (default to false since it's time consuming and is not required for the Maven
-//         plugin's ability to trigger downstream jobs)
-//     skipCheckout = true (default is false). If true then don't perform a SCM checkout by default. This is useful to
-//         be able to use this library for simple pipeline jobs (without a Jenkinsfile). In this case the pipeline
-//         would do the checkout.
-//     mavenFlags = '--projects ... -amd -U -e' (default is '-U -e')
-//     cron = '@midnight' (default is '@monthly'). Sets the minimal time-based trigger for the job. Use 'none' to
-//         not override the cron setting for the job.
-//     skipMail = true (default is false). If true then don't send emails when the job or tests fail.
-//     sonar = true (by default it's false). If true then deploy the result of sonar:sonar to the defined 'sonar'
-//         configuration in Jenkins.
-//
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
 //
 // - Configure Global tools:
