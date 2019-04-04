@@ -32,6 +32,8 @@ void call(body)
     // If no modules are passed, then find all modules containing docker tests.
     def modules = config.modules ?: getDockerModules()
 
+    echoXWiki "Configurations to execute: ${config.configurations}"
+
     // Run docker tests on all modules for all supported configurations
     config.configurations.eachWithIndex() { testConfig, i ->
         def systemProperties = []
