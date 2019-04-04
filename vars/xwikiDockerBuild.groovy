@@ -29,8 +29,8 @@ void call(body)
 
     // If no modules are passed, then find all modules containing docker tests.
     // Find all modules named -test-docker to located docker-based tests
-    if (!config.modules || config.modules.isEmpty()) {
-        modules = []
+    def modules = config.modules ?: []
+    if (modules.isEmpty()) {
         def dockerModuleFiles = findFiles(glob: '**/*-test-docker/pom.xml')
         dockerModuleFiles.each() {
             // Skip 'xwiki-platform-test-docker' since it matches the glob pattern but isn't a test module.
