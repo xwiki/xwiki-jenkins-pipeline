@@ -19,6 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
+import com.cloudbees.groovy.cps.NonCPS
 
 void call(body)
 {
@@ -28,19 +29,7 @@ void call(body)
     body()
 
     // If no modules are passed, then find all modules containing docker tests.
-    // Find all modules named -test-docker to located docker-based tests
-    def modules = config.modules ?: []
-    if (modules.isEmpty()) {
-        def dockerModuleFiles = findFiles(glob: '**/*-test-docker/pom.xml')
-        dockerModuleFiles.each() {
-            // Skip 'xwiki-platform-test-docker' since it matches the glob pattern but isn't a test module.
-            if (!it.path.contains('xwiki-platform-test-docker')) {
-                // Find grand parent module, e.g. return the path to xwiki-platform-menu when
-                // xwiki-platform-menu-test-docker is found.
-                modules.add(getParentPath(getParentPath(getParentPath(it.path))))
-            }
-        }
-    }
+    def modules = config.modules ?: getDockerModules()
 
     // Run docker tests on all modules for all supported configurations
     config.configurations.eachWithIndex() { testConfig, i ->
@@ -98,6 +87,25 @@ void call(body)
             )
         }
     }
+}
+
+/**
+ * Find all modules named -test-docker to located docker-based tests.
+ */
+@NonCPS
+private def getDockerModules()
+{
+    def modules = []
+    def dockerModuleFiles = findFiles(glob: '**/*-test-docker/pom.xml')
+    dockerModuleFiles.each() {
+        // Skip 'xwiki-platform-test-docker' since it matches the glob pattern but isn't a test module.
+        if (!it.path.contains('xwiki-platform-test-docker')) {
+            // Find grand parent module, e.g. return the path to xwiki-platform-menu when
+            // xwiki-platform-menu-test-docker is found.
+            modules.add(getParentPath(getParentPath(getParentPath(it.path))))
+        }
+    }
+    return modules
 }
 
 private def getParentPath(def path)
