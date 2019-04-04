@@ -21,6 +21,7 @@
  */
 import com.cloudbees.groovy.cps.NonCPS
 
+@NonCPS
 void call(body)
 {
     def config = [:]
@@ -92,7 +93,6 @@ void call(body)
 /**
  * Find all modules named -test-docker to located docker-based tests.
  */
-@NonCPS
 private def getDockerModules()
 {
     def modules = []
