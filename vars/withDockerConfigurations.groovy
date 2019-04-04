@@ -26,7 +26,7 @@ def call(configurationName, xwikiPlatformBranch, body)
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = config
 
-    config.configurations = getDockerConfigurations(config.xwikiPlatformBranch).configurationName
+    config.configurations = getDockerConfigurations(config.xwikiPlatformBranch).get(configurationName)
 
     body()
 }
