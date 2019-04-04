@@ -25,7 +25,6 @@ import javax.xml.bind.DatatypeConverter
 import hudson.tasks.test.AbstractTestResultAction
 import com.jenkinsci.plugins.badge.action.BadgeAction
 import com.cloudbees.groovy.cps.NonCPS
-import org.xwiki.jenkins.Utils
 
 // Example usage:
 // parallel(
@@ -95,7 +94,7 @@ import org.xwiki.jenkins.Utils
 /**
  * @param name a string representing the current build
  */
-def call(String name = 'Default', body)
+void call(name = 'Default', body)
 {
     echoXWiki "Calling Jenkinsfile..."
     def config = [:]
@@ -212,7 +211,7 @@ def call(String name = 'Default', body)
                     //   since we're stopping the build!
                     // - Don't send emails for aborts! We discover aborts by checking for exit code 143.
                     if (!e.getMessage()?.contains('exit code 143') && !config.skipMail) {
-                        notifyByMail('ERROR', name)
+                        sendMail('ERROR', name)
                     }
                     throw e
                 }
@@ -303,136 +302,6 @@ def wrapInSonarQube(config, closure)
     }
 }
 
-def notifyByMail(String buildStatus, String name)
-{
-
-    echoXWiki "Build has failed, sending mails to concerned parties"
-
-    // Sending mails to:
-    // - culprits: list of users who committed a change since the last non-broken build till now
-    // - developers: anyone who checked in code for the last build
-    // - requester: whoever triggered the build manually
-
-    // TODO: Sending some simple mail content FTM since it seems that parsing large logs fails and hangs the job.
-    sendSimpleMail(buildStatus, name)
-}
-
-def sendFullMail(String buildStatus, String name)
-{
-    emailext (
-            subject: "${env.JOB_NAME} - [${name}] - Build # ${env.BUILD_NUMBER} - ${buildStatus}",
-            body: '''
-Check console output at $BUILD_URL to view the results.
-
-Failed tests:
-
-${FAILED_TESTS}
-
-Cause of error:
-
-${BUILD_LOG_REGEX, regex = ".*BUILD FAILURE.*", linesBefore = 250, linesAfter = 0}
-
-Maven error reported:
-
-${BUILD_LOG_REGEX, regex = ".*Re-run Maven using the -X switch to enable full debug logging*", linesBefore = 100, linesAfter = 0}
-''',
-            mimeType: 'text/plain',
-            recipientProviders: [
-                    [$class: 'CulpritsRecipientProvider'],
-                    [$class: 'DevelopersRecipientProvider'],
-                    [$class: 'RequesterRecipientProvider']
-            ]
-    )
-}
-
-def sendSimpleMail(String buildStatus, String name)
-{
-    emailext (
-            subject: "${env.JOB_NAME} - [${name}] - Build # ${env.BUILD_NUMBER} - ${buildStatus}",
-            body: '''
-Check console output at $BUILD_URL to view the results.
-
-Failed tests:
-
-${FAILED_TESTS}
-''',
-            mimeType: 'text/plain',
-            recipientProviders: [
-                    [$class: 'CulpritsRecipientProvider'],
-                    [$class: 'DevelopersRecipientProvider'],
-                    [$class: 'RequesterRecipientProvider']
-            ]
-    )
-}
-
-/**
- * Echo text with a special character prefix to make it stand out in the pipeline logs.
- */
-def echoXWiki(string)
-{
-    echo "\u27A1 ${string}"
-}
-
-/**
- * Configure which Java version to use by Maven and which Java memory options to use when the {@code javaTool} and
- * {@code mavenOpts} config parameter weren't specified.
- */
-def configureJavaTool(def config, def pom)
-{
-    def javaTool = config.javaTool
-    if (!javaTool) {
-        javaTool = getJavaTool(pom)
-    }
-    // NOTE: The Java tool Needs to be configured in the Jenkins global configuration.
-    env.JAVA_HOME="${tool javaTool}"
-    env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
-
-    // Configure MAVEN_OPTS based on the java version found and whether users have configured the mavenOpts or not
-    echoXWiki "Found overridden Maven options: ${config.mavenOpts}"
-    def mavenOpts = config.mavenOpts
-    if (!mavenOpts) {
-        mavenOpts = '-Xmx1920m -Xms256m'
-        if (javaTool == 'java7') {
-            mavenOpts = "${mavenOpts} -XX:MaxPermSize=512m"
-        }
-    }
-    // Note: withMaven is concatenating any passed "mavenOpts" with env.MAVEN_OPTS. Thus in order to fully
-    // control the maven options used we only set env.MAVEN_OPTS and don't pass "mavenOpts" when using withMaven.
-    // See http://bit.ly/2zwl4IU
-    env.MAVEN_OPTS = mavenOpts
-}
-
-/**
- * Read the parent pom to try to guess the java tool to use based on the parent pom version.
- * XWiki versions < 8 should use Java 7.
- */
-def getJavaTool(def pom)
-{
-    def parent = pom.parent
-    def groupId
-    def artifactId
-    def version
-    if (parent != null) {
-        groupId = parent.groupId
-        artifactId = parent.artifactId
-        version = parent.version
-    } else {
-        // We're on the top pom (no parent)
-        groupId = pom.groupId
-        artifactId = pom.artifactId
-        version = pom.version
-
-    }
-    if (isKnownParent(groupId, artifactId)) {
-        // If version < 8 then use Java7, otherwise official
-        def major = version.substring(0, version.indexOf('.'))
-        if (major.toInteger() < 8) {
-            return 'java7'
-        }
-    }
-    return 'official'
-}
-
 def computeMavenGoals(config)
 {
     def goals = config.goals
@@ -449,21 +318,6 @@ def computeMavenGoals(config)
         goals = "clean ${goals}"
     }
     return goals
-}
-
-/**
- * Since we're trying to guess the Java version to use based on the parent POM version, we need to ensure that the
- * parent POM points to an XWiki core module (there are several possible) so that we can compare with the version 8.
- */
-def isKnownParent(parentGroupId, parentArtifactId)
-{
-    return (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-platform') ||
-        (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-commons') ||
-        (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-rendering') ||
-        (parentGroupId == 'org.xwiki.commons' && parentArtifactId == 'xwiki-commons-pom') ||
-        (parentGroupId == 'org.xwiki.rendering' && parentArtifactId == 'xwiki-rendering') ||
-        (parentGroupId == 'org.xwiki.platform' && parentArtifactId == 'xwiki-platform') ||
-        (parentGroupId == 'org.xwiki.platform' && parentArtifactId == 'xwiki-platform-distribution')
 }
 
 /**
@@ -571,7 +425,7 @@ def attachScreenshotToFailingTests(def failingTests)
 def checkForFalsePositivesAndFlickers(def failingTests)
 {
     // Step 1: Check for false positives
-    def containsFalsePositives = new Utils().checkForFalsePositives()
+    def containsFalsePositives = checkForFalsePositives()
 
     // Step 2: Check for flickers
     def containsOnlyFlickers = checkForFlickers(failingTests)
