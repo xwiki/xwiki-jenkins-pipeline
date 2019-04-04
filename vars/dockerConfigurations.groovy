@@ -20,26 +20,14 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-def call(configurationName, xwikiPlatformBranch, body)
-{
-    def config = [:]
-    body.resolveStrategy = Closure.DELEGATE_FIRST
-    body.delegate = config
-
-    config.configurations = getDockerConfigurations(config.xwikiPlatformBranch).get(configurationName)
-
-    body()
-}
-
-def getDockerConfigurations(xwikiPlatformBranch)
+def call(configurationName, xwikiPlatformBranch)
 {
     def configurations = [:]
     configurations.latest = getLatestConfigurations(xwikiPlatformBranch)
     configurations.all = getAllConfigurations(xwikiPlatformBranch)
     configurations.unsupported = getUnsupportedConfigurations(xwikiPlatformBranch)
-    return configurations
+    return configurations.get(configurationName)
 }
-
 
 /**
  * Defines the latest versions of supported XWiki configurations, according to:
