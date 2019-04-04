@@ -20,6 +20,8 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
+// Main use case: simple maven modules with a single maven build. For more complex use cases, see xwikiBuild.groovy
+
 // Example usage:
 //   xwikiModule {
 //     goals = 'clean install'
