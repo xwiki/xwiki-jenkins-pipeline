@@ -7,7 +7,6 @@ have a global TPC contribution lower than before.
 Example usage:
 
 ```
-import org.xwiki.jenkins.Clover
 node('docker') {
     xwikiClover([
         [baseline: "20171222-1835", fail: false],
