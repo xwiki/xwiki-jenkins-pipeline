@@ -23,7 +23,7 @@
 /**
  * Ask the user what to build.
  *
- * @param buildMap A map consisting of build configuration. See the Jenkinsfile for xwiki-platform to see how to use it
+ * @param buildMap A map consisting of build configurations. See the Jenkinsfile for xwiki-platform to see how to use it
  * @return the id of the item selected in the passed buildMap
  */
 def call(def buildMap)
@@ -37,7 +37,7 @@ def call(def buildMap)
             timeout(time: 60, unit: 'SECONDS') {
                 def choices = buildMap.collect { k,v -> "$k" }.join('\n')
                 selection = input(id: 'selection', message: 'Select what to build', parameters: [
-                        choice(choices: choices, description: 'Choose with build to execute', name: 'build')
+                    choice(choices: choices, description: 'Choose which build to execute', name: 'build')
                 ])
             }
         } catch(err) {
