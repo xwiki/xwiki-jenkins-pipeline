@@ -1,0 +1,10 @@
+Main use case: simple maven modules with a single maven build. For more complex use cases, see documentation for the
+`xwikiBuild` step, in which you'll qlso find the full list of configuration options available.
+
+Example usage:
+
+```
+xwikiModule {
+    goals = 'clean install'
+}
+```
