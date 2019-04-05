@@ -38,6 +38,7 @@ void call(body)
     // Note: don't use each() since it leads to unserializable exceptions
     def i = 0
     for (def testConfig in config.configurations) {
+        echoXWiki "Processing configuration: ${testConfig}"
         def systemProperties = []
         // Note: don't use each() since it leads to unserializable exceptions
         for (def entry in testConfig.value) {
@@ -54,6 +55,7 @@ void call(body)
         // Note: don't use each() since it leads to unserializable exceptions
         def j = 0;
         for (def modulePath in modules) {
+            echoXWiki "Processing module: ${modulePath}"
             def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
             def profiles = 'docker,legacy,integration-tests,snapshotModules'
             def commonProperties =
