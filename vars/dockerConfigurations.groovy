@@ -23,9 +23,9 @@
 def call(configurationName, xwikiPlatformBranch)
 {
     def configurations = [:]
-    configurations.latest = getLatestConfigurations(xwikiPlatformBranch)
-    configurations.all = getAllConfigurations(xwikiPlatformBranch)
-    configurations.unsupported = getUnsupportedConfigurations(xwikiPlatformBranch)
+    configurations.'docker-latest' = getLatestConfigurations(xwikiPlatformBranch)
+    configurations.'docker-all' = getAllConfigurations(xwikiPlatformBranch)
+    configurations.'docker-unsupported' = getUnsupportedConfigurations(xwikiPlatformBranch)
     return configurations.get(configurationName)
 }
 
