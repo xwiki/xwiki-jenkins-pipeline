@@ -21,7 +21,6 @@
  */
 import com.cloudbees.groovy.cps.NonCPS
 
-@NonCPS
 void call(body)
 {
     def config = [:]
