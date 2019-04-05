@@ -39,8 +39,9 @@ void call(body)
     def i = 0
     for (def testConfig in config.configurations) {
         def systemProperties = []
-        testConfig.value.each() { paramName, value ->
-            systemProperties.add("-Dxwiki.test.ui.${paramName}=${value}")
+        // Note: don't use each() since it leads to unserializable exceptions
+        for (def entry in testConfig.value) {
+            systemProperties.add("-Dxwiki.test.ui.${entry.key}=${entry.value}")
         }
         def testConfigurationName = getTestConfigurationName(testConfig.value)
         // Only execute maven with -U for the first Maven builds since XWiki SNAPSHOT dependencies don't change with
