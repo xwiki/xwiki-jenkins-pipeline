@@ -36,7 +36,9 @@ void call(body)
     echoXWiki "Modules to execute: ${modules}"
 
     // Run docker tests on all modules for all supported configurations
-    config.configurations.eachWithIndex() { testConfig, i ->
+    // Note: don't use each() since it leads to unserializable exceptions
+    for (int i = 0; i < config.configurations.size(); i++) {
+        def testConfig = config.configurations[i]
         def systemProperties = []
         testConfig.value.each() { paramName, value ->
             systemProperties.add("-Dxwiki.test.ui.${paramName}=${value}")
@@ -49,7 +51,9 @@ void call(body)
         if (i == 0) {
             flags = "${flags} -U"
         }
-        modules.eachWithIndex() { modulePath, j ->
+        // Note: don't use each() since it leads to unserializable exceptions
+        for (int j = 0; j < modules.size(); j++) {
+            def modulePath = modules[j]
             def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
             def profiles = 'docker,legacy,integration-tests,snapshotModules'
             def commonProperties =
