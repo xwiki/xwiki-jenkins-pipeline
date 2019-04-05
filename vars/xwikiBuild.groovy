@@ -82,6 +82,7 @@ void call(name = 'Default', body)
         allProperties.addAll(config.jobProperties)
     }
     allProperties.addAll(projectProperties)
+    echoXWiki "Setting job properties: ${allProperties}"
     properties(allProperties)
 
     def mavenTool
