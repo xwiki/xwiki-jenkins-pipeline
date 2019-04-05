@@ -58,25 +58,31 @@ void call(name = 'Default', body)
     body.delegate = config
     body()
 
-    // Only keep builds for the last 7 days & disable concurrent builds to avoid rebuilding whenever a new commit is
-    // made. The commits will accumulate till the previous build is finished before starting a new one.
-    // Note 1: this is limiting concurrency per branch only.
-    // Note 2: This needs to be one of the first code executed which is why it's the first step we execute.
-    // See https://thepracticalsysadmin.com/limit-jenkins-multibranch-pipeline-builds/ for details.
+    // Does the following:
+    // - Only keep builds for the last 7 days
+    // - Disable concurrent builds to avoid rebuilding whenever a new commit is made. The commits will accumulate till
+    //   the previous build is finished before starting a new one.
+    //   Note 1: this is limiting concurrency per branch only.
+    //   Note 2: This needs to be one of the first code executed which is why it's the first step we execute.
+    //   See https://thepracticalsysadmin.com/limit-jenkins-multibranch-pipeline-builds/ for details.
+    // -  Make sure projects are built at least once a month because SNAPSHOT older than one month are deleted
+    //    by the Nexus scheduler.
     echoXWiki "Only keep the builds for the last 7 days + disable concurrent builds"
     def projectProperties = [
-            [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', daysToKeepStr: '7']],
-            disableConcurrentBuilds()
+        [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', daysToKeepStr: '7']],
+        disableConcurrentBuilds(),
+        pipelineTriggers([cron("@monthly")])
     ]
 
-    // By default make sure projects are built at least once a month because SNAPSHOT older than one month are deleted
-    // by the Nexus scheduler.
-    def cronValue = config.cron ?: '@monthly'
-    if (cronValue != 'none') {
-        echoXWiki "Setting cron to [${cronValue}]"
-        projectProperties.add(pipelineTriggers([cron("${cronValue}")]))
+    // Process job properties overrides.
+    def allProperties = []
+    // Note: we add the overridden job properties first since the properties() step will honor the values that come
+    // first and ignore further ones. This allows Jenkinsfile to take precedence.
+    if (config.jobProperties) {
+        allProperties.addAll(config.jobProperties)
     }
-    properties(projectProperties)
+    allProperties.addAll(projectProperties)
+    properties(allProperties)
 
     def mavenTool
     stage("Preparation for ${name}") {

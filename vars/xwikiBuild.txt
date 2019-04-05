@@ -40,8 +40,9 @@ The following options are available:
   be able to use this library for simple pipeline jobs (without a `Jenkinsfile`). In this case the pipeline
   would do the checkout.
 * `mavenFlags` = `'--projects ... -amd -U -e'` (default is `'-U -e'`)
-* `cron` = `'@midnight'` (default is `'@monthly'`). Sets the minimal time-based trigger for the job. Use `'none'` to
-  not override the cron setting for the job.
+* `jobProperties` = `[parameters([string(defaultValue: 'standard', description: 'Job type', name: 'type')])]`. Sets
+  properties that will be merged (and take precedence when on the same content) with the default ones. This allows
+  adding some crons, parameters, etc.
 * `skipMail` = true (default is `false`). If true then don't send emails when the job or tests fail.
 * `sonar` = `true` (by default it's `false`). If `true` then deploy the result of sonar:sonar to the defined `'sonar'`
   configuration in Jenkins.
