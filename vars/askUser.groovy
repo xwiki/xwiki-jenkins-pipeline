@@ -20,7 +20,7 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-def call(def buildMap)
+def call(choices)
 {
     def selection
 
@@ -29,7 +29,6 @@ def call(def buildMap)
         echo "Build triggered by user, asking question..."
         try {
             timeout(time: 60, unit: 'SECONDS') {
-                def choices = buildMap.collect { k,v -> "$k" }.join('\n')
                 selection = input(id: 'selection', message: 'Select what to build', parameters: [
                     choice(choices: choices, description: 'Choose which build to execute', name: 'build')
                 ])
@@ -44,7 +43,7 @@ def call(def buildMap)
             }
         }
     } else {
-        echo "Build triggered automatically, building all..."
+        echo "Build triggered automatically, building 'All'..."
         selection = 'All'
     }
 
