@@ -53,10 +53,10 @@ void call(body)
             flags = "${flags} -U"
         }
         // Note: don't use each() since it leads to unserializable exceptions
-        def j = 0;
         for (def modulePath in modules) {
             echoXWiki "Processing module: ${modulePath}"
             def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
+            echoXWiki "Module name: ${moduleName}"
             def profiles = 'docker,legacy,integration-tests,snapshotModules'
             def commonProperties =
                 '-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dxwiki.revapi.skip=true'
@@ -95,7 +95,6 @@ void call(body)
                 goals: 'clean verify',
                 skipMail: config.skipMail
             )
-            j++
         }
         i++
     }
