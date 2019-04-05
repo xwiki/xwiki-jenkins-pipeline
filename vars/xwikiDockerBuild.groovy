@@ -67,9 +67,10 @@ void call(body)
             // Note 2: we also don't need to build the pageobjects modules since it's built by the standard platform
             // jobs (i.e. built by -Pintegration-tests).
             if (i == 0) {
-                def exists = fileExists "${modulePath}/${moduleName}-ui/pom.xml"
+                def uiModuleName = "${modulePath}/${moduleName}-ui"
+                echoXWiki "UI module pom: ${uiModuleName}/pom.xml"
+                def exists = fileExists "${uiModuleName}/pom.xml"
                 if (exists) {
-                    def uiModuleName = "${modulePath}/${moduleName}-ui"
                     echoXWiki "Buklding UI module: ${uiModuleName}"
                     build(
                         name: "UI module for ${moduleName}",
