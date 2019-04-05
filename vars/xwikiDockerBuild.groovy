@@ -35,9 +35,7 @@ void call(body)
     echoXWiki "Modules to execute: ${modules}"
 
     // Run docker tests on all modules for all supported configurations
-    // Note: don't use each() since it leads to unserializable exceptions
-    def i = 0
-    for (def testConfig in config.configurations) {
+    config.configurations.eachWithIndex() { testConfig, i ->
         echoXWiki "Processing configuration: ${testConfig}"
         def systemProperties = []
         // Note: don't use each() since it leads to unserializable exceptions
@@ -52,8 +50,7 @@ void call(body)
         if (i == 0) {
             flags = "${flags} -U"
         }
-        // Note: don't use each() since it leads to unserializable exceptions
-        for (def modulePath in modules) {
+        modules.each() { modulePath ->
             echoXWiki "Processing module: ${modulePath}"
             def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
             echoXWiki "Module name: ${moduleName}"
@@ -71,7 +68,7 @@ void call(body)
                 echoXWiki "UI module pom: ${uiModuleName}/pom.xml"
                 def exists = fileExists "${uiModuleName}/pom.xml"
                 if (exists) {
-                    echoXWiki "Buklding UI module: ${uiModuleName}"
+                    echoXWiki "Building UI module: ${uiModuleName}"
                     build(
                         name: "UI module for ${moduleName}",
                         profiles: profiles,
@@ -88,7 +85,7 @@ void call(body)
             // Note: We clean every time since we set the maven.build.dir and specify a directory that depends on the
             // configuration (each config has its own target dir).
             def testModuleName = "${modulePath}/${moduleName}-test/${moduleName}-test-docker"
-            echoXWiki "Buklding Test module: ${testModuleName}"
+            echoXWiki "Building Test module: ${testModuleName}"
             build(
                 name: "${testConfig.key} - Docker tests for ${moduleName}",
                 profiles: profiles,
@@ -101,7 +98,6 @@ void call(body)
                 skipMail: config.skipMail
             )
         }
-        i++
     }
 }
 
