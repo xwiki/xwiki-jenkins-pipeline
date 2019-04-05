@@ -33,6 +33,8 @@ void call(body)
     // If no modules are passed, then find all modules containing docker tests.
     def modules = config.modules ?: getDockerModules()
 
+    echoXWiki "Modules to execute: ${modules}"
+
     // Run docker tests on all modules for all supported configurations
     config.configurations.eachWithIndex() { testConfig, i ->
         def systemProperties = []
@@ -98,8 +100,8 @@ private def getDockerModules()
 {
     def modules = []
     def dockerModuleFiles = findFiles(glob: '**/*-test-docker/pom.xml')
-    dockerModuleFiles.each() {
-        echo "Checking module: ${it}"
+    // Note: don't use each() since it leads to unserializable exceptions
+    for (def it in dockerModuleFiles) {
         // Skip 'xwiki-platform-test-docker' since it matches the glob pattern but isn't a test module.
         if (!it.path.contains('xwiki-platform-test-docker')) {
             // Find grand parent module, e.g. return the path to xwiki-platform-menu when
@@ -107,7 +109,6 @@ private def getDockerModules()
             modules.add(getParentPath(getParentPath(getParentPath(it.path))))
         }
     }
-    echo "Found modules: ${modules}"
     return modules
 }
 
