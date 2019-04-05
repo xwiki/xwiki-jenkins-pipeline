@@ -33,7 +33,7 @@ void call(buildStatus, name)
     sendSimpleMail(buildStatus, name)
 }
 
-void sendFullMail(buildStatus, name, env)
+void sendFullMail(buildStatus, name)
 {
     emailext (
             subject: "${env.JOB_NAME} - [${name}] - Build # ${env.BUILD_NUMBER} - ${buildStatus}",
@@ -61,7 +61,7 @@ ${BUILD_LOG_REGEX, regex = ".*Re-run Maven using the -X switch to enable full de
     )
 }
 
-void sendSimpleMail(buildStatus, name, env)
+void sendSimpleMail(buildStatus, name)
 {
     emailext (
             subject: "${env.JOB_NAME} - [${name}] - Build # ${env.BUILD_NUMBER} - ${buildStatus}",
