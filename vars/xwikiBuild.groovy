@@ -221,7 +221,7 @@ void call(name = 'Default', body)
                 // Also send a mail notification when the job is not successful.
                 echoXWiki "Checking if email should be sent or not"
                 if (!containsFalsePositivesOrOnlyFlickers && !config.skipMail) {
-                    notifyByMail(currentBuild.result, name)
+                    sendMail(currentBuild.result, name)
                 } else {
                     echoXWiki "No email sent even if some tests failed because they contain only flickering tests!"
                     echoXWiki "Considering job as successful!"
