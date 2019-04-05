@@ -19,7 +19,6 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-import com.cloudbees.groovy.cps.NonCPS
 
 void call(body)
 {
@@ -37,8 +36,8 @@ void call(body)
 
     // Run docker tests on all modules for all supported configurations
     // Note: don't use each() since it leads to unserializable exceptions
-    for (int i = 0; i < config.configurations.size(); i++) {
-        def testConfig = config.configurations[i]
+    def i = 0
+    for (def testConfig in config.configurations) {
         def systemProperties = []
         testConfig.value.each() { paramName, value ->
             systemProperties.add("-Dxwiki.test.ui.${paramName}=${value}")
@@ -52,8 +51,8 @@ void call(body)
             flags = "${flags} -U"
         }
         // Note: don't use each() since it leads to unserializable exceptions
-        for (int j = 0; j < modules.size(); j++) {
-            def modulePath = modules[j]
+        def j = 0;
+        for (def modulePath in modules) {
             def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
             def profiles = 'docker,legacy,integration-tests,snapshotModules'
             def commonProperties =
@@ -93,7 +92,9 @@ void call(body)
                 goals: 'clean verify',
                 skipMail: config.skipMail
             )
+            j++
         }
+        i++
     }
 }
 
