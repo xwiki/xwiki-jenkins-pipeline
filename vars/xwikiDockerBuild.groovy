@@ -69,11 +69,13 @@ void call(body)
             if (i == 0) {
                 def exists = fileExists "${modulePath}/${moduleName}-ui/pom.xml"
                 if (exists) {
+                    def uiModuleName = "${modulePath}/${moduleName}-ui"
+                    echoXWiki "Buklding UI module: ${uiModuleName}"
                     build(
                         name: "UI module for ${moduleName}",
                         profiles: profiles,
                         properties: commonProperties,
-                        mavenFlags: "--projects ${modulePath}/${moduleName}-ui ${flags}",
+                        mavenFlags: "--projects ${uiModuleName} ${flags}",
                         skipCheckout: true,
                         xvnc: false,
                         goals: 'clean install',
@@ -84,12 +86,14 @@ void call(body)
             // Then run the tests
             // Note: We clean every time since we set the maven.build.dir and specify a directory that depends on the
             // configuration (each config has its own target dir).
+            def testModuleName = "${modulePath}/${moduleName}-test/${moduleName}-test-docker"
+            echoXWiki "Buklding Test module: ${testModuleName}"
             build(
                 name: "${testConfig.key} - Docker tests for ${moduleName}",
                 profiles: profiles,
                 properties:
                   "${commonProperties} -Dmaven.build.dir=target/${testConfigurationName} ${systemProperties.join(' ')}",
-                mavenFlags: "--projects ${modulePath}/${moduleName}-test/${moduleName}-test-docker ${flags}",
+                mavenFlags: "--projects ${testModuleName} ${flags}",
                 skipCheckout: true,
                 xvnc: false,
                 goals: 'clean verify',
