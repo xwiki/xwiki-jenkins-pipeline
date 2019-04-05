@@ -78,11 +78,12 @@ void call(name = 'Default', body)
     def allProperties = []
     // Note: we add the overridden job properties first since the properties() step will honor the values that come
     // first and ignore further ones. This allows Jenkinsfile to take precedence.
+    echoXWiki "Custom job properties: ${config.jobProperties}"
     if (config.jobProperties) {
         allProperties.addAll(config.jobProperties)
     }
     allProperties.addAll(projectProperties)
-    echoXWiki "Setting job properties: ${allProperties}"
+    echoXWiki "Full job properties: ${allProperties}"
     properties(allProperties)
 
     def mavenTool
