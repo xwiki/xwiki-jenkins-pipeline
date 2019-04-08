@@ -1,0 +1,32 @@
+Example usage:
+
+```
+node('docker') {
+  xwikiDockerBuild {
+    configurations = [
+      'MySQL 5.7.x, Tomcat 8.5.x, Chrome': [
+        'database' : 'mysql',
+        'databaseTag' : '5.7',
+        'jdbcVersion' : '5.1.45',
+        'servletEngine' : 'tomcat',
+        'servletEngineTag' : '8.5',
+        'browser' : 'chrome',
+        'verbose' : 'true'
+      ]]
+    modules = 'xwiki-platform-core/xwiki-platform-menu'
+  }
+)
+```
+
+The following options are available:
+
+* `configurations`: The list of XWiki configurations on which to execute the Docker/TestContainers-based tests.
+* `modules`: The list of Maven modules on which to execute the Docker/TestContainers-based tests. If not specified,
+  then look for all modules matching the pattern `*-test-docker`.
+
+Notes:
+
+The Docker/TestContainers-based test modules must follow these rules:
+* Be located in a `XXX/XXX-test/XXX-test-docker` directory.
+* (optional) Have a `XXX-ui` module containing the UI being tested and the needed dependencies. Note that UI module
+  will be built before building the `XXX-test-docker` module.

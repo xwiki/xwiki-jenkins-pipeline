@@ -1,9 +1,9 @@
-Ask the user what to build.
+Ask the user what to build and exits after 1 minute if no choice was made.
 
 Parameters:
 
-* `buildMap` A map consisting of build configurations. See the `Jenkinsfile` for `xwiki-platform` to see how to use it
+* `choices`: A list of choices that the user can choose from.
 
 Returns:
 
-* The id of the item selected in the passed `buildMap`
+* The selected item from  the passed `choices` list or `All` if the question timed out.
