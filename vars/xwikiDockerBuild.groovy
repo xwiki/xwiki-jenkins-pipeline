@@ -34,6 +34,12 @@ void call(body)
 
     echoXWiki "Modules to execute: ${modules}"
 
+    // Mark build as a Docker build in the Jenkins UI to differentiate it from others "standard" builds
+    def badgeText = 'Docker Build'
+    manager.addInfoBadge(badgeText)
+    manager.createSummary('green.gif').appendText("<h1>${badgeText}</h1>", false, false, false, 'green')
+    currentBuild.rawBuild.save()
+
     // Run docker tests on all modules for all supported configurations
     config.configurations.eachWithIndex() { testConfig, i ->
         echoXWiki "Processing configuration: ${testConfig}"
