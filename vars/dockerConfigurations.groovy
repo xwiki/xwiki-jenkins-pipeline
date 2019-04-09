@@ -20,19 +20,19 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-def call(configurationName, xwikiPlatformBranch)
+def call(configurationName, xwikiVersion)
 {
     def configurations = [:]
-    configurations.'docker-latest' = getLatestConfigurations(xwikiPlatformBranch)
-    configurations.'docker-all' = getAllConfigurations(xwikiPlatformBranch)
-    configurations.'docker-unsupported' = getUnsupportedConfigurations(xwikiPlatformBranch)
+    configurations.'docker-latest' = getLatestConfigurations(xwikiVersion)
+    configurations.'docker-all' = getAllConfigurations(xwikiVersion)
+    configurations.'docker-unsupported' = getUnsupportedConfigurations(xwikiVersion)
     return configurations.get(configurationName)
 }
 
 /**
  * Defines the latest versions of supported XWiki configurations.
  */
-def getLatestConfigurations(def xwikiPlatformBranch)
+def getLatestConfigurations(def xwikiVersion)
 {
     def configurations = [
         'MySQL 5.7.x, Tomcat 8.5.x, Chrome': [
@@ -67,7 +67,7 @@ def getLatestConfigurations(def xwikiPlatformBranch)
  * Configurations for smoke tests (i.e. only a few tests) on the maximum number of configurations to flush out problems
  * of configurations when XWiki doesn't start or has basic problems. This includes all supported configurations.
  */
-def getAllConfigurations(def xwikiPlatformBranch)
+def getAllConfigurations(def xwikiVersion)
 {
     def configurations = [
         'MySQL 5.7.x, Tomcat 8.x, Chrome': [
@@ -123,10 +123,9 @@ def getAllConfigurations(def xwikiPlatformBranch)
         ]
     ]
 
-    // The LTS branch currently doesn't support the following configurations which is why they're only active for the
-    // master branch.
+    // Support for utf8mb4 & for Java 11 is only available from XWiki 11.3RC1+
     // TODO: Merge with config above when LTS becomes 11.x
-    if (!xwikiPlatformBranch || xwikiPlatformBranch == 'master') {
+    if (isXWikiVersionGreaterThan(xwikiVersion, '11', '3') {
         configurations.'MySQL 5.7.x (utf8mb4), Tomcat 8.x, Chrome' = [
             'database' : 'mysql',
             'database.commands.character-set-server' : 'utf8mb4',
@@ -155,7 +154,7 @@ def getAllConfigurations(def xwikiPlatformBranch)
  * Coonfigurations for smoke tests (i.e. only a few tests) on configurations that we'll want to support in the future
  * but that are currently not supported or not working.
  */
-def getUnsupportedConfigurations(def xwikiPlatformBranch)
+def getUnsupportedConfigurations(def xwikiVersion)
 {
     def configurations = [
         // Test on latest MySQL 8.x.
@@ -180,4 +179,20 @@ def getUnsupportedConfigurations(def xwikiPlatformBranch)
         ]
     ]
     return configurations
+}
+
+private def isXWikiVersionGreaterThan(xwikiVersion, major, minor)
+{
+    def result
+    if (xwikiVersion) {
+        def versionParts = xwikiVersion?.split('\\.')
+        if (versionParts[0] >= '11' && versionParts[1] >= '3') {
+            result = true
+        } else {
+            result = false
+        }
+    } else {
+        result = true
+    }
+    return result
 }
