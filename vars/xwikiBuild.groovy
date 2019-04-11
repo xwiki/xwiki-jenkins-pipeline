@@ -142,7 +142,7 @@ void call(name = 'Default', body)
                 try {
                     def goals = computeMavenGoals(config)
                     echoXWiki "Using Maven goals: ${goals}"
-                    def profiles = config.profiles ?: 'quality,legacy,integration-tests,jetty,hsqldb,firefox'
+                    def profiles = getMavenProfiles(config, env)
                     echoXWiki "Using Maven profiles: ${profiles}"
                     def properties = config.properties ?: ''
                     echoXWiki "Using Maven properties: ${properties}"
@@ -232,7 +232,17 @@ void call(name = 'Default', body)
     }
 }
 
-def wrapInXvnc(config, closure)
+private def getMavenProfiles(config, env)
+{
+    def profiles = config.profiles ?: 'quality,legacy,integration-tests,jetty,hsqldb,firefox'
+    // If we're on a node supporting docker, also build the docker-based tests (i.e. for the default configuration)
+    if (env.NODE_LABELS.split().contains('docker')) {
+        profiles = "${profiles},docker"
+    }
+    return profiles
+}
+
+private def wrapInXvnc(config, closure)
 {
     def isXvncEnabled = config.xvnc == null ? true : config.xvnc
     if (isXvncEnabled) {
@@ -245,7 +255,7 @@ def wrapInXvnc(config, closure)
     }
 }
 
-def wrapInSonarQube(config, closure)
+private def wrapInSonarQube(config, closure)
 {
     if (config.sonar) {
         withSonarQubeEnv('sonar') {
@@ -256,7 +266,7 @@ def wrapInSonarQube(config, closure)
     }
 }
 
-def computeMavenGoals(config)
+private def computeMavenGoals(config)
 {
     def goals = config.goals
     if (!goals) {
@@ -277,7 +287,7 @@ def computeMavenGoals(config)
 /**
  * Create a FilePath instance that points either to a file on the master node or a file on a remote agent node.
  */
-def createFilePath(String path)
+private def createFilePath(String path)
 {
     if (env['NODE_NAME'] == null) {
         error "envvar NODE_NAME is not set, probably not inside an node {} or running an older version of Jenkins!"
@@ -302,7 +312,7 @@ def createFilePath(String path)
  *       (http://<jenkins server ip>/configureSecurity).</li>
  * </ul>
  */
-def attachScreenshotToFailingTests(def failingTests)
+private def attachScreenshotToFailingTests(def failingTests)
 {
     // Go through each failed test in the current build.
     for (def failedTest : failingTests) {
@@ -376,7 +386,7 @@ def attachScreenshotToFailingTests(def failingTests)
  *
  * @return true if the build has false positives or if there are only flickering tests
  */
-def checkForFalsePositivesAndFlickers(def failingTests)
+private def checkForFalsePositivesAndFlickers(def failingTests)
 {
     // Step 1: Check for false positives
     def containsFalsePositives = checkForFalsePositives()
@@ -394,7 +404,7 @@ def checkForFalsePositivesAndFlickers(def failingTests)
  *
  * @return true if the failing tests only contain flickering tests
  */
-def checkForFlickers(def failingTests)
+private def checkForFlickers(def failingTests)
 {
     def knownFlickers = getKnownFlickeringTests()
     echoXWiki "Known flickering tests: ${knownFlickers}"
@@ -449,7 +459,7 @@ def checkForFlickers(def failingTests)
 }
 
 @NonCPS
-def isBadgeFound(def badgeActionItems, def badgeText)
+private def isBadgeFound(def badgeActionItems, def badgeText)
 {
     def badgeFound = false
     badgeActionItems.each() {
@@ -466,7 +476,7 @@ def isBadgeFound(def badgeActionItems, def badgeText)
  *         {@code org.xwiki.test.ui.repository.RepositoryTest#validateAllFeatures}
  */
 @NonCPS
-def getKnownFlickeringTests()
+private def getKnownFlickeringTests()
 {
     def knownFlickers = []
     def url = "https://jira.xwiki.org/sr/jira.issueviews:searchrequest-xml/temp/SearchRequest.xml?".concat(
@@ -499,7 +509,7 @@ def getKnownFlickeringTests()
 /**
  * @return the failing tests for the current build
  */
-def getFailingTests()
+private def getFailingTests()
 {
     def failingTests
     AbstractTestResultAction testResultAction = currentBuild.rawBuild.getAction(AbstractTestResultAction.class)
