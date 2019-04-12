@@ -34,6 +34,9 @@ def call(configurationName, xwikiVersion)
  */
 def getLatestConfigurations(def xwikiVersion)
 {
+    // Note: For Oracle 1.0.0 corresponds to Oracle 11g Release 2,
+    // see https://hub.docker.com/r/oracleinanutshell/oracle-xe-11g/tags
+    // In the future we need to find an image using Oracle 12.x since that's what we officially support.
     def configurations = [
         'MySQL 5.7.x, Tomcat 8.5.x, Chrome': [
             'database' : 'mysql',
@@ -57,6 +60,15 @@ def getLatestConfigurations(def xwikiVersion)
             'database' : 'hsqldb_embedded',
             'servletEngine' : 'jetty_standalone',
             'browser' : 'firefox',
+            'verbose' : 'true'
+        ],
+        'Oracle 11g Release 2, Tomcat 8.5.x, Firefox': [
+            'database' : 'oracle',
+            'databaseTag' : '1.0.0',
+            'jdbcVersion' : '12.2.0.1',
+            'servletEngine' : 'tomcat',
+            'servletEngineTag' : '8.5',
+            'browser' : 'chrome',
             'verbose' : 'true'
         ]
     ]
