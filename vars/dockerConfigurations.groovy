@@ -137,7 +137,7 @@ def getAllConfigurations(def xwikiVersion)
 
     // Support for utf8mb4 & for Java 11 is only available from XWiki 11.3RC1+
     // TODO: Merge with config above when LTS becomes 11.x
-    if (isXWikiVersionGreaterThan(xwikiVersion, '11', '3') {
+    if (isXWikiVersionGreaterThan(xwikiVersion, '11', '3')) {
         configurations.'MySQL 5.7.x (utf8mb4), Tomcat 8.x, Chrome' = [
             'database' : 'mysql',
             'database.commands.character-set-server' : 'utf8mb4',
