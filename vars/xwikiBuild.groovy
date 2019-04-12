@@ -52,7 +52,7 @@ import com.cloudbees.groovy.cps.NonCPS
  */
 void call(name = 'Default', body)
 {
-    echoXWiki "Calling Jenkinsfile..."
+    echoXWiki "Calling Jenkinsfile for build [{$name}]"
     def config = [:]
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = config
