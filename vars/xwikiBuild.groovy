@@ -57,6 +57,7 @@ void call(name = 'Default', body)
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = config
     body()
+    printConfigurationProperties(config)
 
     // Does the following:
     // - Only keep builds for the last 7 days
@@ -230,6 +231,13 @@ void call(name = 'Default', body)
             }
         }
     }
+}
+
+private void printConfigurationProperties(config)
+{
+    def buffer = new StringBuilder()
+    config.each{ k, v -> buffer.append("[${k}] = [${v}]\n") }
+    echoXWiki "Passed configuration properties:\n${buffer.toString()}"
 }
 
 private def getMavenProfiles(config, env)
