@@ -20,6 +20,15 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
+/**
+ * Assume that the current directory contains a pom.xml from which we'll extract the version.
+ */
+def call(configurationName)
+{
+    def pom = readMavenPom file: 'pom.xml'
+    call(configurationName, pom.version)
+}
+
 def call(configurationName, xwikiVersion)
 {
     def configurations = [:]
