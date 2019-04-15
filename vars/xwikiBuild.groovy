@@ -100,12 +100,8 @@ void call(name = 'Default', body)
         }
 
         if (!config.skipCheckout) {
-            // Only display "changes" in the Jenkins UI for the first checkout, in order to not display duplicates.
-            // OTOH we need to checkout since each build can happen on a different node.
-            def skipChangeLog = env.SKIPCHANGELOG ? true : false
-            echoXWiki "SCM checkout with skipChangelog set to [${skipChangeLog}]"
-            checkout skipChangeLog: skipChangeLog, scm: scm
-            env.SKIPCHANGELOG = true
+            echoXWiki "SCM checkout with skipChangelog set to [${config.skipChangeLog}]"
+            checkout skipChangeLog: config.skipChangeLog ?: false, scm: scm
         }
 
         // Configure the version of Java to use
