@@ -83,7 +83,8 @@ void call(body)
                         skipCheckout: true,
                         xvnc: false,
                         goals: 'clean install',
-                        skipMail: true
+                        skipMail: true,
+                        jobProperties: config.jobProperties
                     )
                 }
             }
@@ -101,7 +102,8 @@ void call(body)
                 skipCheckout: true,
                 xvnc: false,
                 goals: 'clean verify',
-                skipMail: config.skipMail
+                skipMail: config.skipMail,
+                jobProperties: config.jobProperties
             )
         }
     }
@@ -167,6 +169,9 @@ private void build(map)
         }
         if (map.skipMail != null) {
             skipMail = map.skipMail
+        }
+        if (map.jobProperties != null) {
+            jobProperties = map.jobProperties
         }
     }
 }
