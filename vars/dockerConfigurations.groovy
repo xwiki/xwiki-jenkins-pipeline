@@ -77,7 +77,7 @@ def getLatestConfigurations(def xwikiVersion)
             'jdbcVersion' : '12.2.0.1',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8.5',
-            'browser' : 'chrome',
+            'browser' : 'firefox',
             'verbose' : 'true'
         ]
     ]
