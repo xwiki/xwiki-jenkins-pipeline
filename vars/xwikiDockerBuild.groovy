@@ -66,7 +66,7 @@ void call(body)
                     profiles: profiles,
                     properties:
                         "${commonProperties} -Dmaven.build.dir=target/${testConfigurationName} ${systemProperties.join(' ')}",
-                    mavenFlags: "--projects ${testModuleName} ${flags}",
+                    mavenFlags: "--projects ${testModuleName} -e -U",
                     xvnc: false,
                     goals: 'clean verify',
                     skipMail: config.skipMail,
