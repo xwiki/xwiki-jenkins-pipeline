@@ -20,6 +20,7 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 import com.cloudbees.groovy.cps.NonCPS
+import com.jenkinsci.plugins.badge.action.BadgeAction
 
 void call(body)
 {
