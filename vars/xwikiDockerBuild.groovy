@@ -44,7 +44,6 @@ void call(body)
     // Run docker tests on all modules for all supported configurations
     def builds = [:]
     config.configurations.eachWithIndex() { testConfig, i ->
-        echoXWiki "Processing configuration: ${testConfig}"
         def systemProperties = []
         // Note: don't use each() since it leads to unserializable exceptions
         for (def entry in testConfig.value) {
@@ -52,14 +51,12 @@ void call(body)
         }
         def testConfigurationName = getTestConfigurationName(testConfig.value)
         config.modules.each() { modulePath ->
-            echoXWiki "Processing module: ${modulePath}"
             def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
             echoXWiki "Module name: ${moduleName}"
             def profiles = 'docker,legacy,integration-tests,snapshotModules'
             def commonProperties =
                 '-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dxwiki.revapi.skip=true'
             def testModuleName = "${modulePath}/${moduleName}-test/${moduleName}-test-docker"
-            echoXWiki "Building Test module: ${testModuleName}"
             builds["${testConfig.key} - Docker tests for ${moduleName}"] = {
                 build(
                     name: "${testConfig.key} - Docker tests for ${moduleName}",
