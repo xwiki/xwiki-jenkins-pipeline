@@ -67,7 +67,8 @@ void call(body)
                     xvnc: false,
                     goals: 'clean verify',
                     skipMail: config.skipMail,
-                    jobProperties: config.jobProperties
+                    jobProperties: config.jobProperties,
+                    label: config.label ?: 'docker'
                 )
             }
         }
@@ -86,7 +87,7 @@ private def getTestConfigurationName(def testConfig)
 
 private void build(map)
 {
-    node('docker') {
+    node(map.label) {
         xwikiBuild(map.name) {
             mavenOpts = map.mavenOpts ?: "-Xmx2048m -Xms512m"
             if (map.goals != null) {
