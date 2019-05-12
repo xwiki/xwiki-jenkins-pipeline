@@ -172,8 +172,14 @@ private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cl
 {
     // Generate Clover Report locally
     wrap([$class: 'Xvnc']) {
+        // Configure the version of Java to use
+        def pom = readMavenPom file: 'pom.xml'
         // Note: With 2048m we got a OOM.
-        withEnv(["PATH+MAVEN=${mvnHome}/bin", 'MAVEN_OPTS=-Xmx4096m']) {
+        def config = ['mavenOpts' : '-Xmx4096m']
+        configureJavaTool(config, pom)
+        withMaven(maven: 'Maven', options: [artifactsPublisher(disabled: true),
+            dependenciesFingerprintPublisher(disabled: true)])
+        {
             def commonPropertiesString = getSystemPropertiesAsString([
                     'maven.repo.local' : "'${localRepository}'",
                     'maven.clover.cloverDatabase' : "${cloverDir}/clover.db"
@@ -196,7 +202,7 @@ private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cl
             def containsFalsePositives = checkForFalsePositives()
             if (containsFalsePositives) {
                 throw new RuntimeException(
-                        "The build contains at least one false positive which can skew the global TPC result, stopping job")
+                    "The build contains at least one false positive which can skew the global TPC result, stopping job")
             }
 
             // Note: Clover reporting requires a display. Even though we're inside XVNC and thus have a display, let's
