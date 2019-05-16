@@ -22,7 +22,7 @@
 import com.cloudbees.groovy.cps.NonCPS
 import com.jenkinsci.plugins.badge.action.BadgeAction
 
-void call(body)
+void call(boolean isParallel = false, body)
 {
     def config = [:]
     body.resolveStrategy = Closure.DELEGATE_FIRST
@@ -73,7 +73,15 @@ void call(body)
             }
         }
     }
-    parallel builds
+
+    if (isParallel) {
+        parallel builds
+    } else {
+        builds.each() {
+            it.call()
+        }
+    }
+
 }
 
 private def getTestConfigurationName(def testConfig)
