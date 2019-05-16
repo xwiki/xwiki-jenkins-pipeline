@@ -77,8 +77,8 @@ void call(boolean isParallel = false, body)
     if (isParallel) {
         parallel builds
     } else {
-        builds.each() {
-            it.call()
+        builds.each() { key, build ->
+            build.call()
         }
     }
 
