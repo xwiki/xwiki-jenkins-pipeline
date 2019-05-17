@@ -191,6 +191,7 @@ private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cl
                     'xwiki.enforcer.skip' : 'true',
                     'xwiki.license.skip' : 'true',
                     'xwiki.surefire.captureconsole.skip' : 'true',
+                    'xwiki.test.validateconsole.skip' : 'true',
                     'maven.test.failure.ignore' : 'true'
             ])
             def profiles = "-Pclover,integration-tests,flavor-integration-tests,distribution,docker"
