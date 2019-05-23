@@ -19,6 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
+import java.util.regex.Pattern
 
 def call()
 {
@@ -63,26 +64,16 @@ def call()
     ]
 
     def hasFalsePositives = false
-
-    // Because of https://issues.jenkins-ci.org/browse/JENKINS-54128 we need to not use BadgeManager.logContains
-    // which uses the deprecated Run#.getLogFile() which fills XWiki's Jenkins logs with tons of warning, producing
-    // over 1TB of logs every day and filling up the disk space.
-    // In addition it's faster to first iterate over the log lines and then the messages than the opposite!
-    new BufferedReader(currentBuild.rawBuild.getLogReader()).with { br ->
-        def line = null
-        line = br.readLine()
-        while (line != null) {
-            messages.each { message ->
-                if (line.matches(message.get(0))) {
-                    manager.addWarningBadge(message.get(1))
-                    manager.createSummary("warning.gif").appendText(
-                            "<h1>${message.get(2)}</h1>", false, false, false, "red")
-                    manager.buildUnstable()
-                    echo "False positive detected [${message.get(2)}] ..."
-                    hasFalsePositives = true
-                }
-            }
-            line = br.readLine()
+    messages.each { message ->
+        // Because of https://issues.jenkins-ci.org/browse/JENKINS-54128 we need to not use BadgeManager.logContains
+        // which uses the deprecated Run#.getLogFile() which fills XWiki's Jenkins logs with tons of warning, producing
+        // over 1TB of logs every day and filling up the disk space.
+        if (logContains(message.get(0))) {
+            manager.addWarningBadge(message.get(1))
+            manager.createSummary("warning.gif").appendText("<h1>${message.get(2)}</h1>", false, false, false, "red")
+            manager.buildUnstable()
+            echoXWiki "False positive detected [${message.get(2)}] ..."
+            hasFalsePositives = true
         }
     }
     if (hasFalsePositives) {
@@ -91,4 +82,34 @@ def call()
     }
 
     return hasFalsePositives
+}
+
+private def logContains(regexp)
+{
+    return contains(currentBuild.rawBuild.getLogReader(), regexp)
+}
+
+private def contains(reader, regexp)
+{
+    def matcher = getMatcher(reader, regexp)
+    return (matcher != null) && matcher.matches()
+}
+
+private def getMatcher(reader, regexp)
+{
+    def matcher = null
+    new BufferedReader(reader).with { br ->
+        def pattern = Pattern.compile(regexp)
+        def line = null
+        line = br.readLine()
+        while (line != null) {
+            def m = pattern.matcher(line);
+            if (m.matches()) {
+                matcher = m
+                break
+            }
+            line = br.readLine()
+        }
+    }
+    return matcher
 }
