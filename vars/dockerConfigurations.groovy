@@ -50,7 +50,7 @@ def getLatestConfigurations(def xwikiVersion)
         'MySQL 5.7.x, Tomcat 8.5.x, Chrome': [
             'database' : 'mysql',
             'databaseTag' : '5.7',
-            'jdbcVersion' : '5.1.45',
+            'jdbcVersion' : '5.1.47',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8.5',
             'browser' : 'chrome',
@@ -59,7 +59,7 @@ def getLatestConfigurations(def xwikiVersion)
         'PostgreSQL 11.x, Jetty 9.2.x, Chrome': [
             'database' : 'postgresql',
             'databaseTag' : '11',
-            'jdbcVersion' : '42.2.5',
+            'jdbcVersion' : '42.2.6',
             'servletEngine' : 'jetty',
             'servletEngineTag' : '9.2',
             'browser' : 'chrome',
@@ -94,7 +94,7 @@ def getAllConfigurations(def xwikiVersion)
         'MySQL 5.7.x, Tomcat 8.x, Chrome': [
             'database' : 'mysql',
             'databaseTag' : '5.7',
-            'jdbcVersion' : '5.1.45',
+            'jdbcVersion' : '5.1.47',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8',
             'browser' : 'chrome',
@@ -103,7 +103,7 @@ def getAllConfigurations(def xwikiVersion)
         'MySQL 5.5.x, Tomcat 8.x, Firefox': [
             'database' : 'mysql',
             'databaseTag' : '5.5',
-            'jdbcVersion' : '5.1.45',
+            'jdbcVersion' : '5.1.47',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8',
             'browser' : 'chrome',
@@ -112,7 +112,7 @@ def getAllConfigurations(def xwikiVersion)
         'PostgreSQL 11.x, Jetty 9.x, Chrome': [
             'database' : 'postgresql',
             'databaseTag' : '11',
-            'jdbcVersion' : '42.2.5',
+            'jdbcVersion' : '42.2.6',
             'servletEngine' : 'jetty',
             'servletEngineTag' : '9',
             'browser' : 'chrome',
@@ -121,7 +121,7 @@ def getAllConfigurations(def xwikiVersion)
         'PostgreSQL 9.4.x, Jetty 9.x, Firefox': [
             'database' : 'postgresql',
             'databaseTag' : '9.4',
-            'jdbcVersion' : '42.2.5',
+            'jdbcVersion' : '42.2.6',
             'servletEngine' : 'jetty',
             'servletEngineTag' : '9',
             'browser' : 'chrome',
@@ -130,7 +130,7 @@ def getAllConfigurations(def xwikiVersion)
         'PostgreSQL 9.6.x, Jetty 9.x, Chrome': [
             'database' : 'postgresql',
             'databaseTag' : '9.6',
-            'jdbcVersion' : '42.2.5',
+            'jdbcVersion' : '42.2.6',
             'servletEngine' : 'jetty',
             'servletEngineTag' : '9',
             'browser' : 'chrome',
@@ -152,7 +152,7 @@ def getAllConfigurations(def xwikiVersion)
             'database.commands.character-set-server' : 'utf8mb4',
             'database.commands.collation-server' : 'utf8mb4_bin',
             'databaseTag' : '5.7',
-            'jdbcVersion' : '5.1.45',
+            'jdbcVersion' : '5.1.47',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8',
             'browser' : 'chrome',
@@ -161,7 +161,7 @@ def getAllConfigurations(def xwikiVersion)
         configurations.'MySQL 5.7.x, Tomcat 8.x (Java 11), Firefox' = [
             'database' : 'mysql',
             'databaseTag' : '5.7',
-            'jdbcVersion' : '5.1.45',
+            'jdbcVersion' : '5.1.47',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8-jre11',
             'browser' : 'firefox',
@@ -182,7 +182,17 @@ def getUnsupportedConfigurations(def xwikiVersion)
         'MySQL 8.x, Tomcat 8.x, Chrome': [
             'database' : 'mysql',
             'databaseTag' : '8',
-            'jdbcVersion' : '5.1.45',
+            'jdbcVersion' : '8.0.16',
+            'servletEngine' : 'tomcat',
+            'servletEngineTag' : '8',
+            'browser' : 'chrome',
+            'verbose' : 'true'
+        ],
+        // Test on latest MySQL 8.x with 5.x connector.
+        'MySQL 8.x, Tomcat 8.x, Chrome': [
+            'database' : 'mysql',
+            'databaseTag' : '8',
+            'jdbcVersion' : '5.1.47',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8',
             'browser' : 'chrome',
