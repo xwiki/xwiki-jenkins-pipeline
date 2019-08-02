@@ -47,16 +47,16 @@ def getLatestConfigurations(def xwikiVersion)
     // see https://hub.docker.com/r/oracleinanutshell/oracle-xe-11g/tags
     // In the future we need to find an image using Oracle 12.x since that's what we officially support.
     def configurations = [
-        'MySQL 5.7.x, Tomcat 9.x, Chrome': [
+        'MySQL 5.7.x, Tomcat 9.x (Java 8), Chrome': [
             'database' : 'mysql',
             'databaseTag' : '5.7',
             'jdbcVersion' : '5.1.47',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : '9',
+            'servletEngineTag' : '9-jdk8',
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'PostgreSQL 11.x, Jetty 9.2.x, Chrome': [
+        'PostgreSQL 11.x, Jetty 9.2.x (Java 8), Chrome': [
             'database' : 'postgresql',
             'databaseTag' : '11',
             'jdbcVersion' : '42.2.6',
@@ -71,12 +71,12 @@ def getLatestConfigurations(def xwikiVersion)
             'browser' : 'firefox',
             'verbose' : 'true'
         ],
-        'Oracle 11g Release 2, Tomcat 9.x, Firefox': [
+        'Oracle 11g Release 2, Tomcat 9.x (Java 8), Firefox': [
             'database' : 'oracle',
             'databaseTag' : '1.0.0',
             'jdbcVersion' : '12.2.0.1',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : '9',
+            'servletEngineTag' : '9-jdk8',
             'browser' : 'firefox',
             'verbose' : 'true'
         ]
@@ -147,24 +147,24 @@ def getAllConfigurations(def xwikiVersion)
     // Support for utf8mb4 & for Java 11 is only available from XWiki 11.3RC1+
     // TODO: Merge with config above when LTS becomes 11.x
     if (isXWikiVersionGreaterThan(xwikiVersion, '11', '3')) {
-        configurations.'MySQL 5.7.x (utf8mb4), Tomcat 9.x, Chrome' = [
+        configurations.'MySQL 5.7.x (utf8mb4), Tomcat 9.x (Java 8), Chrome' = [
             'database' : 'mysql',
             'database.commands.character-set-server' : 'utf8mb4',
             'database.commands.collation-server' : 'utf8mb4_bin',
             'databaseTag' : '5.7',
             'jdbcVersion' : '5.1.47',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : '9',
+            'servletEngineTag' : '9-jdk8',
             'browser' : 'chrome',
             'verbose' : 'true'
         ]
         // TODO: move that to Tomcat 9
-        configurations.'MySQL 5.7.x, Tomcat 8.x (Java 11), Firefox' = [
+        configurations.'MySQL 5.7.x, Tomcat 9.x (Java 11), Firefox' = [
             'database' : 'mysql',
             'databaseTag' : '5.7',
             'jdbcVersion' : '5.1.47',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : '8-jre11',
+            'servletEngineTag' : '9',
             'browser' : 'firefox',
             'verbose' : 'true'
         ]
@@ -180,22 +180,22 @@ def getUnsupportedConfigurations(def xwikiVersion)
 {
     def configurations = [
         // Test on latest MySQL 8.x.
-        'MySQL 8.x, Tomcat 9.x, Chrome': [
+        'MySQL 8.x, Tomcat 9.x (Java 8), Chrome': [
             'database' : 'mysql',
             'databaseTag' : '8',
             'jdbcVersion' : '8.0.16',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : '9',
+            'servletEngineTag' : '9-jdk8',
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
         // Test on latest MySQL 8.x with 5.x connector.
-        'MySQL 8.x, Tomcat 9.x, Chrome': [
+        'MySQL 8.x, Tomcat 9.x (Java 8), Chrome': [
             'database' : 'mysql',
             'databaseTag' : '8',
             'jdbcVersion' : '5.1.47',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : '9',
+            'servletEngineTag' : '9-jdk8',
             'browser' : 'chrome',
             'verbose' : 'true'
         ]
