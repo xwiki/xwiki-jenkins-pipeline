@@ -231,12 +231,7 @@ void call(name = 'Default', body)
 
 private def computeDaysToKeepStr(config)
 {
-    def daysToKeepStr = config.daysToKeepStr
-    if (!daysToKeepStr) {
-        daysToKeepStr = '7'
-    }
-
-    return daysToKeepStr
+    return config.daysToKeepStr ?: '7'
 }
 
 private void printConfigurationProperties(config)
