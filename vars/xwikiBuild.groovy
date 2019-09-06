@@ -60,7 +60,7 @@ void call(name = 'Default', body)
     printConfigurationProperties(config)
 
     // Does the following:
-    // - Only keep builds for the last 7 days
+    // - Only keep builds for the last configured number of days (7 by default)
     // - Disable concurrent builds to avoid rebuilding whenever a new commit is made. The commits will accumulate till
     //   the previous build is finished before starting a new one.
     //   Note 1: this is limiting concurrency per branch only.
@@ -68,9 +68,10 @@ void call(name = 'Default', body)
     //   See https://thepracticalsysadmin.com/limit-jenkins-multibranch-pipeline-builds/ for details.
     // -  Make sure projects are built at least once a month because SNAPSHOT older than one month are deleted
     //    by the Nexus scheduler.
-    echoXWiki "Only keep the builds for the last 7 days + disable concurrent builds"
+    def computedDaysToKeepStr = computeDaysToKeepStr(config)
+    echoXWiki "Only keep the builds for the last $computedDaysToKeepStr days + disable concurrent builds"
     def projectProperties = [
-        [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', daysToKeepStr: computeDaysToKeepStr(config)]],
+        [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', daysToKeepStr: computedDaysToKeepStr]],
         disableConcurrentBuilds(),
         pipelineTriggers([cron("@monthly")])
     ]
