@@ -68,7 +68,7 @@ void call(name = 'Default', body)
     //   See https://thepracticalsysadmin.com/limit-jenkins-multibranch-pipeline-builds/ for details.
     // -  Make sure projects are built at least once a month because SNAPSHOT older than one month are deleted
     //    by the Nexus scheduler.
-    def computedDaysToKeepStr = computeDaysToKeepStr(config)
+    def computedDaysToKeepStr = config.daysToKeepStr ?: '7'
     echoXWiki "Only keep the builds for the last $computedDaysToKeepStr days + disable concurrent builds"
     def projectProperties = [
         [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', daysToKeepStr: computedDaysToKeepStr]],
@@ -228,11 +228,6 @@ void call(name = 'Default', body)
             }
         }
     }
-}
-
-private def computeDaysToKeepStr(config)
-{
-    return config.daysToKeepStr ?: '7'
 }
 
 private void printConfigurationProperties(config)
