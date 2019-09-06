@@ -70,7 +70,7 @@ void call(name = 'Default', body)
     //    by the Nexus scheduler.
     echoXWiki "Only keep the builds for the last 7 days + disable concurrent builds"
     def projectProperties = [
-        [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', daysToKeepStr: '7']],
+        [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', daysToKeepStr: computeDaysToKeepStr(config)]],
         disableConcurrentBuilds(),
         pipelineTriggers([cron("@monthly")])
     ]
@@ -227,6 +227,16 @@ void call(name = 'Default', body)
             }
         }
     }
+}
+
+private def computeDaysToKeepStr(config)
+{
+    def daysToKeepStr = config.daysToKeepStr
+    if (!daysToKeepStr) {
+        daysToKeepStr = '7'
+    }
+
+    return daysToKeepStr
 }
 
 private void printConfigurationProperties(config)
