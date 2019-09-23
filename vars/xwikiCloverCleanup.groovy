@@ -30,13 +30,12 @@ void call()
         if (it.startsWith('2019')) {
             def tpc = sh(script: "${sshPrefix} \"sed -ne 's/.*<td>ALL<\\/td><td>[^<]*<\\/td><td>\\([^<]*\\)<\\/td>.*/\\1/p;q;' ${location}/${it}/XWikiReport*.html\"", returnStdout: true) as Integer
             echoXWiki("TPC = ${tpc}")
-            if (previousTPC == -1) {
-                previousTPC = tpc
-            } else if (tpc < previousTPC) {
+            if (previousTPC != -1 && tpc < previousTPC) {
                 // Move directory inside toDelete directory
                 echoXWiki "TPC in ${it} (${tpc}) lower than previous one (${previousTPC}), moving directory to be deleted"
                 sh(script: "${sshPrefix} \"mkdir -p ${location}/toDelete; mv ${location}/${it} ${location}/toDelete/\"", returnStdout: true)
             }
+            previousTPC = tpc
         }
     }
 }
