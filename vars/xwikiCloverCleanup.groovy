@@ -25,7 +25,7 @@ void call()
     def dirs = sh(script: 'ssh maven@maven.xwiki.org ls -1 public_html/site/clover/', returnStdout: true).split()
     dirs.each() {
         if (it.startsWith('2019')) {
-            def tpc = sh(script: 'ssh maven@maven.xwiki.org sed -ne "s/.*<td>ALL<\\/td><td>[^<]*<\\/td><td>\\([^<]*\\)<\\/td>.*/\\1/p;q;" ${it}/XWikiReport*.html', returnStdout: true)
+            def tpc = sh(script: 'ssh maven@maven.xwiki.org sed -ne \'s/.*<td>ALL<\\/td><td>[^<]*<\\/td><td>\\([^<]*\\)<\\/td>.*/\\1/p;q;\' ${it}/XWikiReport*.html', returnStdout: true)
             echoXWiki("TPC = ${tpc}")
         }
     }
