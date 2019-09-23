@@ -22,11 +22,21 @@
 
 void call()
 {
-    def dirs = sh(script: 'ssh maven@maven.xwiki.org ls -1 public_html/site/clover/', returnStdout: true).split()
+    def sshPrefix = 'ssh maven@maven.xwiki.org'
+    def location = 'public_html/site/clover'
+    def dirs = sh(script: "${sshPrefix} ls -1t ${location}/", returnStdout: true).split()
+    int previousTPC = -1
     dirs.each() {
         if (it.startsWith('2019')) {
-            def tpc = sh(script: "ssh maven@maven.xwiki.org \"sed -ne 's/.*<td>ALL<\\/td><td>[^<]*<\\/td><td>\\([^<]*\\)<\\/td>.*/\\1/p;q;' public_html/site/clover/${it}/XWikiReport*.html\"", returnStdout: true)
+            def tpc = sh(script: "${sshPrefix} \"sed -ne 's/.*<td>ALL<\\/td><td>[^<]*<\\/td><td>\\([^<]*\\)<\\/td>.*/\\1/p;q;' ${location}/${it}/XWikiReport*.html\"", returnStdout: true) as Integer
             echoXWiki("TPC = ${tpc}")
+            if (previousTPC == -1) {
+                previousTPC = tpc
+            } else if (tpc < previousTPC) {
+                // Move directory inside toDelete directory
+                echoXWiki "TPC in ${it} (${tpc}) lower than previous one (${previousTPC}), moving directory to be deleted"
+                sh(script: "${sshPrefix} \"mkdir -p ${location}/toDelete; mv ${location}/${it} ${location}/toDelete/\"", returnStdout: true)
+            }
         }
     }
 }
