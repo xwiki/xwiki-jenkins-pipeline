@@ -25,10 +25,10 @@ void call()
     def sshPrefix = 'ssh maven@maven.xwiki.org'
     def location = 'public_html/site/clover'
     def dirs = sh(script: "${sshPrefix} ls -1t ${location}/", returnStdout: true).split()
-    int previousTPC = -1
+    double previousTPC = -1
     dirs.each() {
         if (it.startsWith('2019')) {
-            def tpc = sh(script: "${sshPrefix} \"sed -ne 's/.*<td>ALL<\\/td><td>[^<]*<\\/td><td>\\([^<]*\\)<\\/td>.*/\\1/p;q;' ${location}/${it}/XWikiReport*.html\"", returnStdout: true) as Integer
+            def tpc = sh(script: "${sshPrefix} \"sed -ne 's/.*<td>ALL<\\/td><td>[^<]*<\\/td><td>\\([^<]*\\)<\\/td>.*/\\1/p;q;' ${location}/${it}/XWikiReport*.html\"", returnStdout: true) as Double
             echoXWiki("TPC = ${tpc}")
             if (previousTPC != -1 && tpc < previousTPC) {
                 // Move directory inside toDelete directory
