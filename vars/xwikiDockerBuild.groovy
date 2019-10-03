@@ -56,7 +56,16 @@ void call(boolean isParallel = false, body)
             def profiles = 'docker,legacy,integration-tests,snapshotModules'
             def commonProperties =
                 '-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dxwiki.revapi.skip=true'
+            // Try first with a submodule having the same prefix as its parent.
             def testModuleName = "${modulePath}/${moduleName}-test/${moduleName}-test-docker"
+            if (!fileExists("${testModuleName}/pom.xml")) {
+                // Then, try by removing the last char which could be an 's'
+                def singularModuleName = moduleName.substring(0, moduleName.length() - 1)
+                testModuleName = "${modulePath}/${singularModuleName}-test/${singularModuleName}-test-docker"
+                if (!fileExists("${testModuleName}/pom.xml")) {
+                    throw new Exception("Cannot find pom.xml at [${testModuleName}]")
+                }
+            }
             builds["${testConfig.key} - Docker tests for ${moduleName}"] = {
                 build(
                     name: "${testConfig.key} - Docker tests for ${moduleName}",
