@@ -50,29 +50,21 @@ void call(boolean isParallel = false, body)
             systemProperties.add("-Dxwiki.test.ui.${entry.key}=${entry.value}")
         }
         def testConfigurationName = getTestConfigurationName(testConfig.value)
-        config.modules.each() { modulePath ->
-            def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
-            echoXWiki "Module name: ${moduleName}"
+        config.modules.each() { parentModulePath ->
+            def parentModuleName =
+                parentModulePath.substring(parentModulePath.lastIndexOf('/') + 1, parentModulePath.length())
+            echoXWiki "Module name: ${parentModuleName}"
             def profiles = 'docker,legacy,integration-tests,snapshotModules'
             def commonProperties =
                 '-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dxwiki.revapi.skip=true'
-            // Try first with a submodule having the same prefix as its parent.
-            def testModuleName = "${modulePath}/${moduleName}-test/${moduleName}-test-docker"
-            if (!fileExists("${testModuleName}/pom.xml")) {
-                // Then, try by removing the last char which could be an 's'
-                def singularModuleName = moduleName.substring(0, moduleName.length() - 1)
-                testModuleName = "${modulePath}/${singularModuleName}-test/${singularModuleName}-test-docker"
-                if (!fileExists("${testModuleName}/pom.xml")) {
-                    throw new Exception("Cannot find pom.xml at [${testModuleName}]")
-                }
-            }
-            builds["${testConfig.key} - Docker tests for ${moduleName}"] = {
+            builds["${testConfig.key} - Docker tests for ${parentModuleName}"] = {
                 build(
-                    name: "${testConfig.key} - Docker tests for ${moduleName}",
+                    name: "${testConfig.key} - Docker tests for ${parentModuleName}",
                     profiles: profiles,
                     properties:
                         "${commonProperties} -Dmaven.build.dir=target/${testConfigurationName} ${systemProperties.join(' ')}",
-                    mavenFlags: "--projects ${testModuleName} -e -U",
+                    parentModulePath: parentModulePath,
+                    parentModuleName: parentModuleName,
                     xvnc: false,
                     goals: 'clean verify',
                     skipMail: config.skipMail,
@@ -119,9 +111,7 @@ private void build(map)
             if (map.pom != null) {
                 pom = map.pom
             }
-            if (map.mavenFlags != null) {
-                mavenFlags = map.mavenFlags
-            }
+            mavenFlags = "--projects ${getTestModuleName(map.parentModulePath, map.parentModuleName)} -e -U"
             if (map.skipCheckout != null) {
                 skipCheckout = map.skipCheckout
             }
@@ -136,6 +126,21 @@ private void build(map)
             }
         }
     }
+}
+
+private def getTestModuleName(parentModulePath, parentModuleName)
+{
+    // Try first with a submodule having the same prefix as its parent.
+    def testModuleName = "${parentModulePath}/${parentModuleName}-test/${parentModuleName}-test-docker"
+    if (!fileExists("${testModuleName}/pom.xml")) {
+        // Then, try by removing the last char which could be an 's'
+        def singularModuleName = parentModuleName.substring(0, parentModuleName.length() - 1)
+        testModuleName = "${parentModulePath}/${singularModuleName}-test/${singularModuleName}-test-docker"
+        if (!fileExists("${testModuleName}/pom.xml")) {
+            throw new Exception("Cannot find pom.xml at [${testModuleName}]")
+        }
+    }
+    return testModuleName
 }
 
 @NonCPS
