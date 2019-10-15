@@ -10,6 +10,6 @@ Example usage from a Jenkinsfile:
 
 xwikiBuild() {
   ...
-  properties = getFirefoxVersionSystemProperty('32.0.1')
+  properties = getFirefoxVersionSystemProperty()
   ...
 }
