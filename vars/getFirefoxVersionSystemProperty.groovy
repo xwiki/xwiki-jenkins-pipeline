@@ -20,21 +20,6 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-/**
- * Used to override the FF binary path since we're on an old branch and we need to use FF 32.0.1 (as testing with a
- * newer version requires a newer version of Selenium and that in turn requires Guava 21+, which is hard to
- * update and that we updated in XWiki 11.6+
- *
- * Usage from a Jenkinsfile:
- *
- * <pre><code>
- * xwikiBuild() {
- *   ...
- *   properties = getFirefoxVersionSystemProperty('32.0.1')
- *   ...
- * }
- * </code></pre>
- */
 def call(firefoxVersion = '32.0.1')
 {
     // Example of running "which firefox-bin":
