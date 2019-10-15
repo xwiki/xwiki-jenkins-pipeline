@@ -35,7 +35,7 @@
  * }
  * </code></pre>
  */
-def call(firefoxVersion)
+def call(firefoxVersion = '32.0.1')
 {
     // Example of running "which firefox-bin":
     // - on the agent directly: "/home/hudsonagent/firefox//firefox-bin"
