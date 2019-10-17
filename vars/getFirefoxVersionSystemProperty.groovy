@@ -22,10 +22,13 @@
 
 def call(firefoxVersion = '32.0.1')
 {
-    // Example of running "which firefox-bin":
-    // - on the agent directly: "/home/hudsonagent/firefox//firefox-bin"
-    // - inside the xwiki jenkins docker image "/usr/bin/firefox/firefox-bin"
-    def ffpath = sh script: 'which firefox-bin', returnStdout: true
-    def newffpath = "${ffpath.substring(0, ffpath.indexOf('/firefox') + 8)}-${firefoxVersion}/firefox-bin"
+    // Example of running "which firefox":
+    // - on agents not having FF installed with apt: "/home/hudsonagent/firefox//firefox"
+    // - on agents having FF installed with apt (KS4 for ex): "/usr/bin/firefox"
+    // - inside the xwiki jenkins docker image "/usr/bin/firefox"
+    // We expect that the other firefox version will be available at "<prefix>/firefox-<firefoxVersion>/firefox",
+    // where "<prefix>" is the path before "/firefox" in the result of "which firefox" (see above).
+    def ffpath = sh script: 'which firefox', returnStdout: true
+    def newffpath = "${ffpath.substring(0, ffpath.indexOf('/firefox') + 8)}-${firefoxVersion}/firefox"
     return "-Dwebdriver.firefox.bin=${newffpath}"
 }
