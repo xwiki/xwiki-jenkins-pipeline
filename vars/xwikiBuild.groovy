@@ -113,6 +113,12 @@ void call(name = 'Default', body)
         // Note: if the executables don't exist, this won't fail the step thanks to "returnStatus: true".
         sh script: 'ps -ef', returnStatus: true
         sh script: 'netstat -nltp', returnStatus: true
+        // Note: the "|| true" allows the sh command to fail (when firefox is not installed for example) without
+        // failing the job build.
+        def firefoxVersion = sh script: 'firefox -version || true', returnStdout: true
+        if (firefoxVersion) {
+            echoXWiki "Firefox version installed: ${firefoxVersion}"
+        }
     }
     stage("Build for ${name}") {
         // Execute the XVNC plugin (useful for integration-tests)
