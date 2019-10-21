@@ -54,7 +54,8 @@ def getLatestConfigurations(def xwikiVersion)
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '9-jdk8',
             'browser' : 'chrome',
-            'verbose' : 'true'
+            'verbose' : 'true',
+            'vnc': 'false'
         ],
         'PostgreSQL 11.x, Jetty 9.2.x (Java 8), Chrome': [
             'database' : 'postgresql',
@@ -63,13 +64,15 @@ def getLatestConfigurations(def xwikiVersion)
             'servletEngine' : 'jetty',
             'servletEngineTag' : '9.2',
             'browser' : 'chrome',
-            'verbose' : 'true'
+            'verbose' : 'true',
+            'vnc': 'false'
         ],
         'HSQLDB Embedded, Jetty Standalone, Firefox': [
             'database' : 'hsqldb_embedded',
             'servletEngine' : 'jetty_standalone',
             'browser' : 'firefox',
-            'verbose' : 'true'
+            'verbose' : 'true',
+            'vnc': 'false'
         ],
         'Oracle 11g Release 2, Tomcat 9.x (Java 8), Firefox': [
             'database' : 'oracle',
@@ -78,7 +81,8 @@ def getLatestConfigurations(def xwikiVersion)
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '9-jdk8',
             'browser' : 'firefox',
-            'verbose' : 'true'
+            'verbose' : 'true',
+            'vnc': 'false'
         ]
     ]
     return configurations
