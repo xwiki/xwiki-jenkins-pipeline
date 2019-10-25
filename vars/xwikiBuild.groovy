@@ -234,6 +234,9 @@ void call(name = 'Default', body)
             }
         }
     }
+
+    // Let the Claim plugin do its magic
+    step([$class: 'ClaimPublisher'])
 }
 
 private void printConfigurationProperties(config)
