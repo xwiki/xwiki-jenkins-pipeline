@@ -150,6 +150,11 @@ void call(name = 'Default', body)
                     echoXWiki "Using Maven profiles: ${profiles}"
                     def properties = config.properties ?: ''
                     echoXWiki "Using Maven properties: ${properties}"
+                    def javadoc = ''
+                    if (config.javadoc == null || config.javadoc == true) {
+                        javadoc = 'javadoc:javadoc -Ddoclint=all'
+                        echoXWiki "Enabling javadoc validation"
+                    }
                     def timeoutThreshold = config.timeout ?: 240
                     echoXWiki "Using timeout: ${timeoutThreshold}"
                     // Display the java version for information (in case it's useful to debug some specific issue)
@@ -168,7 +173,7 @@ void call(name = 'Default', body)
                         // Set Maven flags to use
                         def mavenFlags = config.mavenFlags ?: '-U -e'
                         wrapInSonarQube(config) {
-                            sh "mvn -f ${pom} ${goals} -P${profiles} ${mavenFlags} ${fullProperties}"
+                            sh "mvn -f ${pom} ${goals} -P${profiles} ${mavenFlags} ${fullProperties} ${javadoc}"
                         }
                     }
                 } catch (Exception e) {
