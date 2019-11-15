@@ -39,7 +39,8 @@ def call(configurationName, xwikiVersion)
 }
 
 /**
- * Defines the latest versions of supported XWiki configurations.
+ * Defines the latest versions of supported XWiki configurations. Note that this excludes the default configuration
+ * since this one is already executed by the main pipeline job execution.
  */
 def getLatestConfigurations(def xwikiVersion)
 {
@@ -67,13 +68,6 @@ def getLatestConfigurations(def xwikiVersion)
             'verbose' : 'true',
             'vnc': 'true'
         ],
-        'HSQLDB Embedded, Jetty Standalone, Firefox': [
-            'database' : 'hsqldb_embedded',
-            'servletEngine' : 'jetty_standalone',
-            'browser' : 'firefox',
-            'verbose' : 'true',
-            'vnc': 'true'
-        ],
         'Oracle 11g Release 2, Tomcat 9.x (Java 8), Firefox': [
             'database' : 'oracle',
             'databaseTag' : '1.0.0',
@@ -91,6 +85,8 @@ def getLatestConfigurations(def xwikiVersion)
 /**
  * Configurations for smoke tests (i.e. only a few tests) on the maximum number of configurations to flush out problems
  * of configurations when XWiki doesn't start or has basic problems. This includes all supported configurations.
+ * Note that this excludes the default configuration since this one is already executed by the main pipeline job
+ * execution.
  */
 def getAllConfigurations(def xwikiVersion)
 {
@@ -138,12 +134,6 @@ def getAllConfigurations(def xwikiVersion)
             'servletEngine' : 'jetty',
             'servletEngineTag' : '9',
             'browser' : 'chrome',
-            'verbose' : 'true'
-        ],
-        'HSQLDB Embedded, Jetty Standalone, Firefox': [
-            'database' : 'hsqldb_embedded',
-            'servletEngine' : 'jetty_standalone',
-            'browser' : 'firefox',
             'verbose' : 'true'
         ]
     ]
