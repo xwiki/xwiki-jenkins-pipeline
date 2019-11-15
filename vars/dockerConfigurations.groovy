@@ -55,8 +55,7 @@ def getLatestConfigurations(def xwikiVersion)
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '9-jdk8',
             'browser' : 'chrome',
-            'verbose' : 'true',
-            'vnc': 'true'
+            'verbose' : 'true'
         ],
         'PostgreSQL 11.x, Jetty 9.2.x (Java 8), Chrome': [
             'database' : 'postgresql',
@@ -65,8 +64,7 @@ def getLatestConfigurations(def xwikiVersion)
             'servletEngine' : 'jetty',
             'servletEngineTag' : '9.2',
             'browser' : 'chrome',
-            'verbose' : 'true',
-            'vnc': 'true'
+            'verbose' : 'true'
         ],
         'Oracle 11g Release 2, Tomcat 9.x (Java 8), Firefox': [
             'database' : 'oracle',
@@ -75,8 +73,7 @@ def getLatestConfigurations(def xwikiVersion)
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '9-jdk8',
             'browser' : 'firefox',
-            'verbose' : 'true',
-            'vnc': 'true'
+            'verbose' : 'true'
         ]
     ]
     return configurations
