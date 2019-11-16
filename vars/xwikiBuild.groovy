@@ -148,7 +148,7 @@ void call(name = 'Default', body)
                     echoXWiki "Using Maven goals: ${goals}"
                     def profiles = getMavenProfiles(config, env)
                     echoXWiki "Using Maven profiles: ${profiles}"
-                    def properties = config.properties ?: ''
+                    def properties = getMavenSystemProperties(config, "${NODE_NAME}")
                     echoXWiki "Using Maven properties: ${properties}"
                     def javadoc = ''
                     if (config.javadoc == null || config.javadoc == true) {
@@ -239,6 +239,18 @@ void call(name = 'Default', body)
             }
         }
     }
+}
+
+private def getMavenSystemProperties(config, nodeName)
+{
+    def properties = config.properties ?: ''
+
+    // Add a system property that represents the agent name so that whenever a test fails, we can display the agent
+    // on which it is executed in order to make it easier for debugging (it'll appear in the jenkins page for the
+    // failing test (see XWikiDockerExtension which prints it).
+    properties = "${properties} -DjenkinsAgentName=${nodeName}"
+
+    return properties
 }
 
 private void printConfigurationProperties(config)
