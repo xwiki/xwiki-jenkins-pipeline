@@ -248,7 +248,7 @@ private def getMavenSystemProperties(config, nodeName)
     // Add a system property that represents the agent name so that whenever a test fails, we can display the agent
     // on which it is executed in order to make it easier for debugging (it'll appear in the jenkins page for the
     // failing test (see XWikiDockerExtension which prints it).
-    properties = "${properties} -DjenkinsAgentName=${nodeName}"
+    properties = "${properties} -DjenkinsAgentName=\"${nodeName}\""
 
     return properties
 }
