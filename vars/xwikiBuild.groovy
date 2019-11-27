@@ -250,6 +250,9 @@ private def getMavenSystemProperties(config, nodeName)
     // failing test (see XWikiDockerExtension which prints it).
     properties = "${properties} -DjenkinsAgentName=\"${nodeName}\""
 
+    // Have functional tests retry twice in case of error. This is done to try to reduce the quantity of flickers.
+    properties = "${properties} -Dfailsafe.rerunFailingTestsCount=2"
+
     return properties
 }
 
