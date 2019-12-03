@@ -149,7 +149,6 @@ def getAllConfigurations(def xwikiVersion)
             'browser' : 'chrome',
             'verbose' : 'true'
         ]
-        // TODO: move that to Tomcat 9
         configurations.'MySQL 5.7.x, Tomcat 9.x (Java 11), Firefox' = [
             'database' : 'mysql',
             'databaseTag' : '5.7',
