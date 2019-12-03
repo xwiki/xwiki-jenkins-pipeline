@@ -170,7 +170,10 @@ def getUnsupportedConfigurations(def xwikiVersion)
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        // Test on latest MySQL 8.x with 5.x connector.
+        // Test on latest MySQL 8.x with 5.x connector. We want to test this for now since our XWiki Debian packaging
+        // is currently bundling a 5.x MySQL JDBc driver. Thus to be nice to our users and to make using MySQL 8.x as
+        // seamless as possible, we test that it works, even though it's not recommended.
+        // TODO: Remove once we start bundling a Mysql 8.x JDBC driver in the XWiki Debian packaging.
         'MySQL 8.x, Tomcat 9.x (Java 8), Chrome': [
             'database' : 'mysql',
             'databaseTag' : '8',
