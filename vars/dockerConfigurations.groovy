@@ -57,12 +57,12 @@ def getLatestConfigurations(def xwikiVersion)
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'PostgreSQL 11.x, Jetty 9.2.x (Java 8), Chrome': [
+        'PostgreSQL 11.x, Jetty 9.x (Java 8), Chrome': [
             'database' : 'postgresql',
             'databaseTag' : '11',
             'jdbcVersion' : '42.2.8',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : '9.2',
+            'servletEngineTag' : '9',
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
@@ -115,21 +115,21 @@ def getAllConfigurations(def xwikiVersion)
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'PostgreSQL 9.4.x, Jetty 9.x, Firefox': [
+        'PostgreSQL 9.4.x, Jetty 9.2.x, Firefox': [
             'database' : 'postgresql',
             'databaseTag' : '9.4',
             'jdbcVersion' : '42.2.8',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : '9',
+            'servletEngineTag' : '9.2',
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'PostgreSQL 9.6.x, Jetty 9.x, Chrome': [
+        'PostgreSQL 9.6.x, Jetty 9.4.x, Chrome': [
             'database' : 'postgresql',
             'databaseTag' : '9.6',
             'jdbcVersion' : '42.2.8',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : '9',
+            'servletEngineTag' : '9.4',
             'browser' : 'chrome',
             'verbose' : 'true'
         ]
