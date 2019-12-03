@@ -126,7 +126,7 @@ def getAllConfigurations(def xwikiVersion)
         ]
     ]
 
-    // Support for utf8mb4 & for Java 11 is only available from XWiki 11.3RC1+
+    // Support for utf8mb4 & for Java 11+ is only available from XWiki 11.3RC1+
     // TODO: Merge with config above when LTS becomes 11.x
     if (isXWikiVersionGreaterThan(xwikiVersion, '11', '3')) {
         configurations.'MySQL 5.7.x (utf8mb4), Tomcat 9.x (Java 8), Chrome' = [
@@ -146,6 +146,17 @@ def getAllConfigurations(def xwikiVersion)
             'jdbcVersion' : '5.1.48',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '9',
+            'browser' : 'firefox',
+            'verbose' : 'true'
+        ]
+        // Verify XWiki works on the latest released Java version in order to prepare for the next Java LTS (which
+        // will be Java 17 in 2021).
+        configurations.'MySQL 5.7.x, Tomcat 9.x (Java 13), Firefox' = [
+            'database' : 'mysql',
+            'databaseTag' : '5.7',
+            'jdbcVersion' : '5.1.48',
+            'servletEngine' : 'tomcat',
+            'servletEngineTag' : '9-jdk13-openjdk-oracle',
             'browser' : 'firefox',
             'verbose' : 'true'
         ]
