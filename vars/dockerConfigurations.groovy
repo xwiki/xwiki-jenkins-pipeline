@@ -51,7 +51,7 @@ def getLatestConfigurations(def xwikiVersion)
         'MySQL 5.7.x, Tomcat 9.x (Java 8), Chrome': [
             'database' : 'mysql',
             'databaseTag' : '5.7',
-            'jdbcVersion' : '5.1.48',
+            'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '9-jdk8',
             'browser' : 'chrome',
@@ -60,7 +60,7 @@ def getLatestConfigurations(def xwikiVersion)
         'PostgreSQL 12.x, Jetty 9.x (Java 8), Chrome': [
             'database' : 'postgresql',
             'databaseTag' : '12',
-            'jdbcVersion' : '42.2.8',
+            'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
             'servletEngineTag' : '9',
             'browser' : 'chrome',
@@ -69,7 +69,7 @@ def getLatestConfigurations(def xwikiVersion)
         'Oracle 11g Release 2, Tomcat 9.x (Java 8), Firefox': [
             'database' : 'oracle',
             'databaseTag' : '1.0.0',
-            'jdbcVersion' : '12.2.0.1',
+            'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '9-jdk8',
             'browser' : 'firefox',
@@ -91,7 +91,7 @@ def getAllConfigurations(def xwikiVersion)
         'MySQL 5.7.x, Tomcat 8.5.x, Chrome': [
             'database' : 'mysql',
             'databaseTag' : '5.7',
-            'jdbcVersion' : '5.1.48',
+            'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8.5',
             'browser' : 'chrome',
@@ -100,7 +100,7 @@ def getAllConfigurations(def xwikiVersion)
         'MySQL 5.5.x, Tomcat 8.5.x, Firefox': [
             'database' : 'mysql',
             'databaseTag' : '5.5',
-            'jdbcVersion' : '5.1.48',
+            'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8.5',
             'browser' : 'chrome',
@@ -109,7 +109,7 @@ def getAllConfigurations(def xwikiVersion)
         'PostgreSQL 9.4.x, Jetty 9.2.x, Firefox': [
             'database' : 'postgresql',
             'databaseTag' : '9.4',
-            'jdbcVersion' : '42.2.8',
+            'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
             'servletEngineTag' : '9.2',
             'browser' : 'chrome',
@@ -118,7 +118,7 @@ def getAllConfigurations(def xwikiVersion)
         'PostgreSQL 9.6.x, Jetty 9.4.x, Chrome': [
             'database' : 'postgresql',
             'databaseTag' : '9.6',
-            'jdbcVersion' : '42.2.8',
+            'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
             'servletEngineTag' : '9.4',
             'browser' : 'chrome',
@@ -134,7 +134,7 @@ def getAllConfigurations(def xwikiVersion)
             'database.commands.character-set-server' : 'utf8mb4',
             'database.commands.collation-server' : 'utf8mb4_bin',
             'databaseTag' : '5.7',
-            'jdbcVersion' : '5.1.48',
+            'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '9-jdk8',
             'browser' : 'chrome',
@@ -143,7 +143,7 @@ def getAllConfigurations(def xwikiVersion)
         configurations.'MySQL 5.7.x, Tomcat 9.x (Java 11), Firefox' = [
             'database' : 'mysql',
             'databaseTag' : '5.7',
-            'jdbcVersion' : '5.1.48',
+            'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '9',
             'browser' : 'firefox',
@@ -154,7 +154,7 @@ def getAllConfigurations(def xwikiVersion)
         configurations.'MySQL 5.7.x, Tomcat 9.x (Java 13), Firefox' = [
             'database' : 'mysql',
             'databaseTag' : '5.7',
-            'jdbcVersion' : '5.1.48',
+            'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '9-jdk13-openjdk-oracle',
             'browser' : 'firefox',
@@ -188,7 +188,7 @@ def getUnsupportedConfigurations(def xwikiVersion)
         'MySQL 8.x, Tomcat 9.x (Java 8), Chrome': [
             'database' : 'mysql',
             'databaseTag' : '8',
-            'jdbcVersion' : '5.1.48',
+            'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '9-jdk8',
             'browser' : 'chrome',
