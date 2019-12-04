@@ -251,7 +251,8 @@ private def getMavenSystemProperties(config, nodeName)
     properties = "${properties} -DjenkinsAgentName=\"${nodeName}\""
 
     // Have functional tests retry twice in case of error. This is done to try to reduce the quantity of flickers.
-    properties = "${properties} -Dfailsafe.rerunFailingTestsCount=2"
+    // TODO: put back retry when the build is in a better shape
+    //properties = "${properties} -Dfailsafe.rerunFailingTestsCount=2"
 
     return properties
 }
