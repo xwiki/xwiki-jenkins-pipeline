@@ -44,9 +44,6 @@ def call(configurationName, xwikiVersion)
  */
 def getLatestConfigurations(def xwikiVersion)
 {
-    // Note: For Oracle 1.0.0 corresponds to Oracle 11g Release 2,
-    // see https://hub.docker.com/r/oracleinanutshell/oracle-xe-11g/tags
-    // In the future we need to find an image using Oracle 12.x since that's what we officially support.
     def configurations = [
         'MySQL 5.7.x, Tomcat 9.x (Java 8), Chrome': [
             'database' : 'mysql',
@@ -66,9 +63,9 @@ def getLatestConfigurations(def xwikiVersion)
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'Oracle 11g Release 2, Tomcat 9.x (Java 8), Firefox': [
+        'Oracle 19.3.0, Tomcat 9.x (Java 8), Firefox': [
             'database' : 'oracle',
-            'databaseTag' : '1.0.0',
+            'databaseTag' : '19.3.0-se2',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '9-jdk8',
