@@ -251,7 +251,8 @@ private def getMavenSystemProperties(config, nodeName)
     properties = "${properties} -DjenkinsAgentName=\"${nodeName}\""
 
     // Have functional tests retry twice in case of error. This is done to try to reduce the quantity of flickers.
-    // TODO: put back retry when the build is in a better shape
+    // TODO: put back the retry when the build is in a better shape and when Surefirex 3.x doesn't fail anymore in
+    // running the tests for xwiki-platform-rendering-macro-python
     //properties = "${properties} -Dfailsafe.rerunFailingTestsCount=2"
 
     return properties
