@@ -54,12 +54,12 @@ def getLatestConfigurations(def xwikiVersion)
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'PostgreSQL 12.x, Jetty 9.x (Java 8), Chrome': [
+        'PostgreSQL 12.x, Jetty 9.x (Java 11), Chrome': [
             'database' : 'postgresql',
             'databaseTag' : '12',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : '9',
+            'servletEngineTag' : '9-jre11',
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
@@ -85,39 +85,39 @@ def getLatestConfigurations(def xwikiVersion)
 def getAllConfigurations(def xwikiVersion)
 {
     def configurations = [
-        'MySQL 5.7.x, Tomcat 8.5.x, Chrome': [
+        'MySQL 5.7.x, Tomcat 8.5.x (Java 8), Chrome': [
             'database' : 'mysql',
             'databaseTag' : '5.7',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : '8.5',
+            'servletEngineTag' : '8.5-jdk8',
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'MySQL 5.5.x, Tomcat 8.5.x, Firefox': [
+        'MySQL 5.5.x, Tomcat 8.5.x (Java 8), Firefox': [
             'database' : 'mysql',
             'databaseTag' : '5.5',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : '8.5',
+            'servletEngineTag' : '8.5-jdk8',
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'PostgreSQL 9.4.x, Jetty 9.2.x, Firefox': [
+        'PostgreSQL 9.4.x, Jetty 9.2.x (Java 8), Firefox': [
             'database' : 'postgresql',
             'databaseTag' : '9.4',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : '9.2',
+            'servletEngineTag' : '9.2-jre8',
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'PostgreSQL 9.6.x, Jetty 9.4.x, Chrome': [
+        'PostgreSQL 9.6.x, Jetty 9.4.x (Java 11), Chrome': [
             'database' : 'postgresql',
             'databaseTag' : '9.6',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : '9.4',
+            'servletEngineTag' : '9.4-jre11',
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
@@ -137,7 +137,7 @@ def getAllConfigurations(def xwikiVersion)
             'databaseTag' : '5.7',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : '9',
+            'servletEngineTag' : '9-jdk11',
             'browser' : 'firefox',
             'verbose' : 'true'
         ]
