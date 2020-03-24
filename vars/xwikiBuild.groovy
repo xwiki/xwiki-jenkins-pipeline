@@ -101,8 +101,8 @@ void call(name = 'Default', body)
         }
 
         if (!config.skipCheckout) {
-            echoXWiki "SCM checkout with skipChangelog set to [${config.skipChangeLog}]"
-            checkout skipChangeLog: config.skipChangeLog ?: false, scm: scm
+            echoXWiki "SCM checkout with changelog set to [${config.skipChangeLog}]"
+            checkout changelog: config.skipChangeLog ?: false, scm: scm
         }
 
         // Configure the version of Java to use
