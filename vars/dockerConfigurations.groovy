@@ -121,10 +121,10 @@ def getAllConfigurations(def xwikiVersion)
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'MySQL 5.7.x (utf8mb4), Tomcat 9.x (Java 8), Chrome': [
+        'MySQL 5.7.x (utf8), Tomcat 9.x (Java 8), Chrome': [
             'database' : 'mysql',
-            'database.commands.character-set-server' : 'utf8mb4',
-            'database.commands.collation-server' : 'utf8mb4_bin',
+            'database.commands.character-set-server' : 'utf8',
+            'database.commands.collation-server' : 'utf8_bin',
             'databaseTag' : '5.7',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
