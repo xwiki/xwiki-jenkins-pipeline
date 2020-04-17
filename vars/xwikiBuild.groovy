@@ -183,10 +183,8 @@ void call(name = 'Default', body)
                     // - Note that withMaven() doesn't set any build result in this case but we don't need to set any
                     //   since we're stopping the build!
                     // - Don't send emails for aborts! We discover aborts by checking for exit code 143.
+                    displayDebugData()
                     if (!e.getMessage()?.contains('exit code 143') && !config.skipMail) {
-                        // Since we have build stability issues like agents being killed by the master or not responding
-                        // we display debug data to help find out what the problem is.
-                        displayDebugData()
                         sendMail('ERROR', name)
                     }
                     throw e

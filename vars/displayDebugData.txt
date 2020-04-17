@@ -1,2 +1,1 @@
-Display debug data in the console to help diagnose build stability issues. For example we have agents being killed by
-jenkins master or not responding and we need to find out why.
+Display debug data in the console to help diagnose build stability issues.
