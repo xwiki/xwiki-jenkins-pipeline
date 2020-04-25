@@ -169,7 +169,9 @@ void call(name = 'Default', body)
                         // build (see all failing tests for all modules built). Also note that the build is marked
                         // unstable when there are failing tests by the JUnit Archiver executed during the
                         // 'Post Build' stage below.
-                        def fullProperties = "-Dmaven.test.failure.ignore ${properties}"
+                        // Note: "--no-transfer-progress" is used to avoid the download progress indicators which do
+                        // not display well in a non-interactive shell and which use a lot of console log space.
+                        def fullProperties = "--no-transfer-progress -Dmaven.test.failure.ignore ${properties}"
                         // Set Maven flags to use
                         def mavenFlags = config.mavenFlags ?: '-U -e'
                         wrapInSonarQube(config) {
