@@ -25,8 +25,11 @@ void call()
     echoXWiki "Debug Data:"
 
     // Note: if the executables don't exist, this won't fail the step thanks to "returnStatus: true".
-    sh script: 'top -b -n 1', returnStatus: true
+    sh script: 'top -b -c -n ', returnStatus: true
     sh script: 'lsof -i -P -n', returnStatus: true
     sh script: 'docker ps -a', returnStatus: true
+    sh script: 'docker run --cap-add=NET_ADMIN --network=host --rm --entrypoint "/bin/sh" vimagick/iptables\
+         -c "/sbin/iptables -S"', returnStatus: true
     sh script: "docker events --since '15m' --until '0m'", returnStatus: true
+
 }
