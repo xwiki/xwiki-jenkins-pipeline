@@ -185,8 +185,12 @@ void call(name = 'Default', body)
                     // - Note that withMaven() doesn't set any build result in this case but we don't need to set any
                     //   since we're stopping the build!
                     // - Don't send emails for aborts! We discover aborts by checking for exit code 143.
+                    // - Also don't send emails for process kills since it's an environment issue and not an XWiki
+                    //   source problem (this happens when the exit code is 137).
                     displayDebugData()
-                    if (!e.getMessage()?.contains('exit code 143') && !config.skipMail) {
+                    if (!e.getMessage()?.contains('exit code 143') && !e.getMessage()?.contains('exit code 137')
+                        && !config.skipMail)
+                    {
                         sendMail('ERROR', name)
                     }
                     throw e
