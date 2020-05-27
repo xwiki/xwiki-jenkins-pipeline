@@ -41,34 +41,45 @@ def call(configurationName, xwikiVersion)
 /**
  * Defines the latest versions of supported XWiki configurations. Note that this excludes the default configuration
  * since this one is already executed by the main pipeline job execution.
+ *
+ * See <a href="https://dev.xwiki.org/xwiki/bin/view/Community/SupportStrategy/">Support Strategy</a>.
  */
 def getLatestConfigurations(def xwikiVersion)
 {
     def configurations = [
-        'MySQL 5.7.x, Tomcat 9.x (Java 8), Chrome': [
+        'MySQL 8.0.x, Tomcat 9.x (Java 11), Chrome': [
             'database' : 'mysql',
-            'databaseTag' : '5.7',
+            'databaseTag' : '8.0',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : '9-jdk8',
+            'servletEngineTag' : '9-jdk11',
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'PostgreSQL 12.x, Jetty 9.x (Java 11), Chrome': [
-            'database' : 'postgresql',
-            'databaseTag' : '12',
+        'MariaDB 10.4.x, Jetty 9.x (Java 11), Firefox': [
+            'database' : 'mariadb',
+            'databaseTag' : '10.4',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
             'servletEngineTag' : '9-jre11',
+            'browser' : 'firefox',
+            'verbose' : 'true'
+        ],
+        'PostgreSQL 12.3.x, Tomcat 9.x (Java 11), Chrome': [
+            'database' : 'postgresql',
+            'databaseTag' : '12.3',
+            'jdbcVersion' : 'pom',
+            'servletEngine' : 'tomcat',
+            'servletEngineTag' : '9-jdk11',
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'Oracle 19.3.0, Tomcat 9.x (Java 8), Firefox': [
+        'Oracle 19.3.0, Jetty 9.x (Java 11), Firefox': [
             'database' : 'oracle',
             'databaseTag' : '19.3.0-se2',
             'jdbcVersion' : 'pom',
-            'servletEngine' : 'tomcat',
-            'servletEngineTag' : '9-jdk8',
+            'servletEngine' : 'jetty',
+            'servletEngineTag' : '9-jre11',
             'browser' : 'firefox',
             'verbose' : 'true'
         ]
@@ -81,6 +92,8 @@ def getLatestConfigurations(def xwikiVersion)
  * of configurations when XWiki doesn't start or has basic problems. This includes all supported configurations.
  * Note that this excludes the default configuration since this one is already executed by the main pipeline job
  * execution.
+ *
+ * See <a href="https://dev.xwiki.org/xwiki/bin/view/Community/SupportStrategy/">Support Strategy</a>.
  */
 def getAllConfigurations(def xwikiVersion)
 {
@@ -94,33 +107,26 @@ def getAllConfigurations(def xwikiVersion)
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'MySQL 5.5.x, Tomcat 8.5.x (Java 8), Firefox': [
-            'database' : 'mysql',
-            'databaseTag' : '5.5',
+        'MariaDB 10.3.x, Tomcat 8.5.x (Java 8), Firefox': [
+            'database' : 'mariadb',
+            'databaseTag' : '10.3',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '8.5-jdk8',
-            'browser' : 'chrome',
+            'browser' : 'firefox',
             'verbose' : 'true'
         ],
-        'PostgreSQL 9.4.x, Jetty 9.2.x (Java 8), Firefox': [
+        'PostgreSQL 11.8.x, Jetty 9.3.x (Java 8), Chrome': [
             'database' : 'postgresql',
-            'databaseTag' : '9.4',
+            'databaseTag' : '11.8',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : '9.2-jre8',
+            'servletEngineTag' : '9.3-jre8',
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'PostgreSQL 9.6.x, Jetty 9.4.x (Java 11), Chrome': [
-            'database' : 'postgresql',
-            'databaseTag' : '9.6',
-            'jdbcVersion' : 'pom',
-            'servletEngine' : 'jetty',
-            'servletEngineTag' : '9.4-jre11',
-            'browser' : 'chrome',
-            'verbose' : 'true'
-        ],
+        // Special case: verify we still support utf8 for MySQL and at the same time test with latest Tomcat on Java8
+        // to potentially discover problem in advance (to add more value since we're doing another config test).
         'MySQL 5.7.x (utf8), Tomcat 9.x (Java 8), Chrome': [
             'database' : 'mysql',
             'database.commands.character-set-server' : 'utf8',
@@ -132,9 +138,13 @@ def getAllConfigurations(def xwikiVersion)
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        'MySQL 5.7.x, Tomcat 9.x (Java 11), Firefox': [
-            'database' : 'mysql',
-            'databaseTag' : '5.7',
+        // Special case for Debian: Debian "stable" for PostgreSQL is still on 11.7.x. At the same time test with
+        // latest Tomcat on Java11 to potentially discover problem in advance (to add more value since we're doing
+        // another config test).
+        // TOD: Remove as soon as Debian upgrades.
+        'PostgreSQL 11.7.x, Tomcat 9.x (Java 11), Firefox': [
+            'database' : 'postgresql',
+            'databaseTag' : '11.7',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : '9-jdk11',
@@ -147,62 +157,46 @@ def getAllConfigurations(def xwikiVersion)
 }
 
 /**
- * Coonfigurations for smoke tests (i.e. only a few tests) on configurations that we'll want to support in the future
+ * Configurations for smoke tests (i.e. only a few tests) on configurations that we'll want to support in the future
  * but that are currently not supported or not working.
+ *
+ * See <a href="https://dev.xwiki.org/xwiki/bin/view/Community/SupportStrategy/">Support Strategy</a>.
  */
 def getUnsupportedConfigurations(def xwikiVersion)
 {
     def configurations = [
-        // Test on latest MySQL 8.x.
-        'MySQL 8.x, Tomcat 9.x (Java 8), Chrome': [
+        // Test on latest MySQL, latest Tomcat, Java LTS
+        'MySQL latest, Tomcat latest (Java LTS), Chrome': [
             'database' : 'mysql',
-            'databaseTag' : '8',
-            'jdbcVersion' : '8.0.16',
+            'databaseTag' : 'latest',
+            'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : '9-jdk8',
+            'servletEngineTag' : 'latest',
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
-        // Test on latest MySQL 8.x with 5.x connector. We want to test this for now since our XWiki Debian packaging
-        // is currently bundling a 5.x MySQL JDBc driver. Thus to be nice to our users and to make using MySQL 8.x as
-        // seamless as possible, we test that it works, even though it's not recommended.
-        // TODO: Remove once we start bundling a Mysql 8.x JDBC driver in the XWiki Debian packaging.
-        'MySQL 8.x, Tomcat 9.x (Java 8), Chrome': [
-            'database' : 'mysql',
-            'databaseTag' : '8',
+        // Test on latest PostgreSQL, latest Jetty, Java LTS
+        'PostgreSQL latest, Jetty latest (Java LTS), Chrome': [
+            'database' : 'postgresql',
+            'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
-            'servletEngine' : 'tomcat',
-            'servletEngineTag' : '9-jdk8',
+            'servletEngine' : 'jetty',
+            'servletEngineTag' : 'latest',
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
         // Verify XWiki works on the latest released Java version in order to prepare for the next Java LTS (which
         // will be Java 17 in 2021).
-        'MySQL 5.7.x, Tomcat 9.x (Java 13), Firefox': [
-            'database' : 'mysql',
-            'databaseTag' : '5.7',
+        // Also test latest MariaDB at the same time.
+        'MariaDB latest, Tomcat latest (Java 14), Firefox': [
+            'database' : 'mariadb',
+            'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : '9-jdk13-openjdk-oracle',
+            'servletEngineTag' : 'jdk14-openjdk-oracle',
             'browser' : 'firefox',
             'verbose' : 'true'
         ]
     ]
     return configurations
-}
-
-private def isXWikiVersionGreaterThan(xwikiVersion, major, minor)
-{
-    def result
-    if (xwikiVersion) {
-        def versionParts = xwikiVersion?.split('\\.')
-        if (versionParts[0] >= '11' && versionParts[1] >= '3') {
-            result = true
-        } else {
-            result = false
-        }
-    } else {
-        result = true
-    }
-    return result
 }
