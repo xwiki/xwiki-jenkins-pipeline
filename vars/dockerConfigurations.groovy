@@ -31,21 +31,21 @@ def call(configurationName)
 
 def call(configurationName, xwikiVersion)
 {
+    def versions = [
+        'mysql' : [ 'latest' : '8.0', 'lts' : '5.7' ],
+        'mariadb' : [ 'latest' : '10.4', 'lts' : '10.3' ],
+        'postgresql' : [ 'latest' : '12.3', 'lts' : '11.8', 'debian' : '11.7' ],
+        'oracle' : [ 'latest' : '19.3.0-se2' ],
+        'tomcat' : [ 'latest' : '9-jdk11', 'lts' : '8.5-jdk8', 'special' : '9-jdk8' ],
+        'jetty' : [ 'latest' : '9-jre11', 'lts' : '9.3-jre8' ]
+    ]
+
     def configurations = [:]
-    configurations.'docker-latest' = getLatestConfigurations(xwikiVersion)
-    configurations.'docker-all' = getAllConfigurations(xwikiVersion)
-    configurations.'docker-unsupported' = getUnsupportedConfigurations(xwikiVersion)
+    configurations.'docker-latest' = getLatestConfigurations(xwikiVersion, versions)
+    configurations.'docker-all' = getAllConfigurations(xwikiVersion, versions)
+    configurations.'docker-unsupported' = getUnsupportedConfigurations(xwikiVersion, versions)
     return configurations.get(configurationName)
 }
-
-def VERSIONS = [
-    'mysql' : [ 'latest' : '8.0', 'lts' : '5.7' ],
-    'mariadb' : [ 'latest' : '10.4', 'lts' : '10.3' ],
-    'postgresql' : [ 'latest' : '12.3', 'lts' : '11.8', 'debian' : '11.7' ],
-    'oracle' : [ 'latest' : '19.3.0-se2' ],
-    'tomcat' : [ 'latest' : '9-jdk11', 'lts' : '8.5-jdk8', 'special' : '9-jdk8' ],
-    'jetty' : [ 'latest' : '9-jre11', 'lts' : '9.3-jre8' ]
-]
 
 /**
  * Defines the latest versions of supported XWiki configurations. Note that this excludes the default configuration
@@ -53,42 +53,42 @@ def VERSIONS = [
  *
  * See <a href="https://dev.xwiki.org/xwiki/bin/view/Community/SupportStrategy/">Support Strategy</a>.
  */
-def getLatestConfigurations(def xwikiVersion)
+def getLatestConfigurations(def xwikiVersion, def versions)
 {
     def configurations = [
         'MySQL 8.0.x, Tomcat 9.x (Java 11), Chrome': [
             'database' : 'mysql',
-            'databaseTag' : VERSIONS.mysql.latest,
+            'databaseTag' : versions.mysql.latest,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : VERSIONS.tomcat.latest,
+            'servletEngineTag' : versions.tomcat.latest,
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
         'MariaDB 10.4.x, Jetty 9.x (Java 11), Firefox': [
             'database' : 'mariadb',
-            'databaseTag' : VERSIONS.mariadb.latest,
+            'databaseTag' : versions.mariadb.latest,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : VERSIONS.jetty.latest,
+            'servletEngineTag' : versions.jetty.latest,
             'browser' : 'firefox',
             'verbose' : 'true'
         ],
         'PostgreSQL 12.3.x, Tomcat 9.x (Java 11), Chrome': [
             'database' : 'postgresql',
-            'databaseTag' : VERSIONS.postgresql.latest,
+            'databaseTag' : versions.postgresql.latest,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : VERSIONS.tomcat.latest,
+            'servletEngineTag' : versions.tomcat.latest,
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
         'Oracle 19.3.0, Jetty 9.x (Java 11), Firefox': [
             'database' : 'oracle',
-            'databaseTag' : VERSIONS.oracle.latest,
+            'databaseTag' : versions.oracle.latest,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : VERSIONS.jetty.latest,
+            'servletEngineTag' : versions.jetty.latest,
             'browser' : 'firefox',
             'verbose' : 'true'
         ]
@@ -104,33 +104,33 @@ def getLatestConfigurations(def xwikiVersion)
  *
  * See <a href="https://dev.xwiki.org/xwiki/bin/view/Community/SupportStrategy/">Support Strategy</a>.
  */
-def getAllConfigurations(def xwikiVersion)
+def getAllConfigurations(def xwikiVersion, def versions)
 {
     def configurations = [
         'MySQL 5.7.x, Tomcat 8.5.x (Java 8), Chrome': [
             'database' : 'mysql',
-            'databaseTag' : VERSIONS.mysql.lts,
+            'databaseTag' : versions.mysql.lts,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : VERSIONS.tomcat.lts,
+            'servletEngineTag' : versions.tomcat.lts,
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
         'MariaDB 10.3.x, Tomcat 8.5.x (Java 8), Firefox': [
             'database' : 'mariadb',
-            'databaseTag' : VERSIONS.mariadb.lts,
+            'databaseTag' : versions.mariadb.lts,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : VERSIONS.tomcat.lts,
+            'servletEngineTag' : versions.tomcat.lts,
             'browser' : 'firefox',
             'verbose' : 'true'
         ],
         'PostgreSQL 11.8.x, Jetty 9.3.x (Java 8), Chrome': [
             'database' : 'postgresql',
-            'databaseTag' : VERSIONS.postgresql.lts,
+            'databaseTag' : versions.postgresql.lts,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : VERSIONS.jetty.lts,
+            'servletEngineTag' : versions.jetty.lts,
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
@@ -140,10 +140,10 @@ def getAllConfigurations(def xwikiVersion)
             'database' : 'mysql',
             'database.commands.character-set-server' : 'utf8',
             'database.commands.collation-server' : 'utf8_bin',
-            'databaseTag' : VERSIONS.mysql.lts,
+            'databaseTag' : versions.mysql.lts,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : VERSIONS.tomcat.special,
+            'servletEngineTag' : versions.tomcat.special,
             'browser' : 'chrome',
             'verbose' : 'true'
         ],
@@ -153,10 +153,10 @@ def getAllConfigurations(def xwikiVersion)
         // TOD: Remove as soon as Debian upgrades.
         'PostgreSQL 11.7.x, Tomcat 9.x (Java 11), Firefox': [
             'database' : 'postgresql',
-            'databaseTag' : VERSIONS.postgresql.debian,
+            'databaseTag' : versions.postgresql.debian,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : VERSIONS.tomcat.latest,
+            'servletEngineTag' : versions.tomcat.latest,
             'browser' : 'firefox',
             'verbose' : 'true'
         ]
@@ -171,7 +171,7 @@ def getAllConfigurations(def xwikiVersion)
  *
  * See <a href="https://dev.xwiki.org/xwiki/bin/view/Community/SupportStrategy/">Support Strategy</a>.
  */
-def getUnsupportedConfigurations(def xwikiVersion)
+def getUnsupportedConfigurations(def xwikiVersion, def versions)
 {
     def configurations = [
         // Test on latest MySQL, latest Tomcat, Java LTS
