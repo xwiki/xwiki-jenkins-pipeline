@@ -98,6 +98,7 @@ private void build(map)
     node(map.label) {
         xwikiBuild(map.name) {
             mavenOpts = map.mavenOpts ?: "-Xmx2048m -Xms512m"
+            javadoc = false
             if (map.goals != null) {
                 goals = map.goals
             }
