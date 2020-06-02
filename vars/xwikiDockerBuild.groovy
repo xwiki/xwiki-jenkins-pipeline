@@ -54,8 +54,13 @@ void call(boolean isParallel = false, body)
             def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
             echoXWiki "Module name: ${moduleName}"
             def profiles = 'docker,legacy,integration-tests,snapshotModules'
-            def commonProperties =
-                '-Dxwiki.checkstyle.skip=true -Dxwiki.surefire.captureconsole.skip=true -Dxwiki.revapi.skip=true'
+            def commonProperties = '''
+                -Dxwiki.checkstyle.skip=true
+                -Dxwiki.surefire.captureconsole.skip=true
+                -Dxwiki.revapi.skip=true
+                -Dxwiki.spoon.skip=true
+                -Dxwiki.enforcer.skip=true
+            '''
             def testModuleName = "${modulePath}/${moduleName}-test/${moduleName}-test-docker"
             builds["${testConfig.key} - Docker tests for ${moduleName}"] = {
                 build(
@@ -98,6 +103,7 @@ private void build(map)
     node(map.label) {
         xwikiBuild(map.name) {
             mavenOpts = map.mavenOpts ?: "-Xmx2048m -Xms512m"
+            // Javadoc execution is on by default but we don't need it for the docker tests.
             javadoc = false
             if (map.goals != null) {
                 goals = map.goals
