@@ -54,20 +54,20 @@ void call(boolean isParallel = false, body)
             def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
             echoXWiki "Module name: ${moduleName}"
             def profiles = 'docker,legacy,integration-tests,snapshotModules'
-            def commonProperties = '''
-                -Dxwiki.checkstyle.skip=true
-                -Dxwiki.surefire.captureconsole.skip=true
-                -Dxwiki.revapi.skip=true
-                -Dxwiki.spoon.skip=true
-                -Dxwiki.enforcer.skip=true
-            '''
+            def additionalSystemProperties = [
+                '-Dxwiki.checkstyle.skip=true',
+                '-Dxwiki.surefire.captureconsole.skip=true',
+                '-Dxwiki.revapi.skip=true',
+                '-Dxwiki.spoon.skip=true',
+                '-Dxwiki.enforcer.skip=true',
+                "-Dmaven.build.dir=target/${testConfigurationName}"
+            ]
             def testModuleName = "${modulePath}/${moduleName}-test/${moduleName}-test-docker"
             builds["${testConfig.key} - Docker tests for ${moduleName}"] = {
                 build(
                     name: "${testConfig.key} - Docker tests for ${moduleName}",
                     profiles: profiles,
-                    properties:
-                        "${commonProperties} -Dmaven.build.dir=target/${testConfigurationName} ${systemProperties.join(' ')}",
+                    properties: "${additionalSystemProperties.join(' ')} ${systemProperties.join(' ')}",
                     mavenFlags: "--projects ${testModuleName} -e -U",
                     xvnc: false,
                     goals: 'clean verify',
