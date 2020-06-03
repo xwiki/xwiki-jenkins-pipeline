@@ -22,7 +22,7 @@
 import com.cloudbees.groovy.cps.NonCPS
 import com.jenkinsci.plugins.badge.action.BadgeAction
 
-void call(boolean isParallel = false, body)
+void call(boolean isParallel = true, body)
 {
     def config = [:]
     body.resolveStrategy = Closure.DELEGATE_FIRST
