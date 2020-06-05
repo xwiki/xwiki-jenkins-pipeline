@@ -41,6 +41,10 @@ void call(boolean isParallel = true, body)
         currentBuild.rawBuild.save()
     }
 
+    // Start by building the test framework in case there have been recent changes not yet push to the Maven remote
+    // repo.
+    buildTestFramework()
+
     // Run docker tests on all modules for all supported configurations
     def builds = [:]
     config.configurations.eachWithIndex() { testConfig, i ->
@@ -55,13 +59,9 @@ void call(boolean isParallel = true, body)
             echoXWiki "Module name: ${moduleName}"
             def profiles = 'docker,legacy,integration-tests,snapshotModules'
             def additionalSystemProperties = [
-                '-Dxwiki.checkstyle.skip=true',
-                '-Dxwiki.surefire.captureconsole.skip=true',
-                '-Dxwiki.revapi.skip=true',
-                '-Dxwiki.spoon.skip=true',
-                '-Dxwiki.enforcer.skip=true',
                 "-Dmaven.build.dir=target/${testConfigurationName}"
             ]
+            additionalSystemProperties.addAll(getSystemProperties())
             def testModuleName = "${modulePath}/${moduleName}-test/${moduleName}-test-docker"
             builds["${testConfig.key} - Docker tests for ${moduleName}"] = {
                 build(
@@ -96,6 +96,28 @@ private def getTestConfigurationName(def testConfig)
     def servletEnginePart = "${testConfig.servletEngine}-${testConfig.servletEngineTag ?: 'default'}"
     def browserPart = "${testConfig.browser}"
     return "${databasePart}-${servletEnginePart}-${browserPart}"
+}
+
+private void buildTestFramework()
+{
+    build(
+        name: 'Building Test Framework',
+        profiles: "docker,integration-tests",
+        properties: "${getSystemProperties().join(' ')}",
+        mavenFlags: '--projects xwiki-platform-core/xwiki-platform-test',
+        xvnc: false
+    )
+}
+
+private def getSystemProperties()
+{
+    return [
+        '-Dxwiki.checkstyle.skip=true',
+        '-Dxwiki.surefire.captureconsole.skip=true',
+        '-Dxwiki.revapi.skip=true',
+        '-Dxwiki.spoon.skip=true',
+        '-Dxwiki.enforcer.skip=true'
+    ]
 }
 
 private void build(map)
