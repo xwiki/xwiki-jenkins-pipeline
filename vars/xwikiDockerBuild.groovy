@@ -101,7 +101,7 @@ private def getTestConfigurationName(def testConfig)
 private void buildTestFramework()
 {
     build(
-        name: 'Building Test Framework',
+        name: 'Test Framework',
         profiles: "docker,integration-tests",
         properties: "${getSystemProperties().join(' ')}",
         mavenFlags: '--projects xwiki-platform-core/xwiki-platform-test',
