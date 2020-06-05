@@ -104,7 +104,7 @@ private void buildTestFramework()
         name: 'Test Framework',
         profiles: "docker,integration-tests",
         properties: "${getSystemProperties().join(' ')}",
-        mavenFlags: '--projects xwiki-platform-core/xwiki-platform-test',
+        pom: 'xwiki-platform-core/xwiki-platform-test/pom.xml',
         xvnc: false
     )
 }
