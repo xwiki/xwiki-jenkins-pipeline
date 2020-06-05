@@ -62,8 +62,7 @@ def getLatestConfigurations(def xwikiVersion, def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : versions.tomcat.latest,
-            'browser' : 'chrome',
-            'verbose' : 'true'
+            'browser' : 'chrome'
         ],
         'MariaDB 10.4.x, Jetty 9.x (Java 11), Firefox': [
             'database' : 'mariadb',
@@ -71,8 +70,7 @@ def getLatestConfigurations(def xwikiVersion, def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
             'servletEngineTag' : versions.jetty.latest,
-            'browser' : 'firefox',
-            'verbose' : 'true'
+            'browser' : 'firefox'
         ],
         'PostgreSQL 12.3.x, Tomcat 9.x (Java 11), Chrome': [
             'database' : 'postgresql',
@@ -80,8 +78,7 @@ def getLatestConfigurations(def xwikiVersion, def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : versions.tomcat.latest,
-            'browser' : 'chrome',
-            'verbose' : 'true'
+            'browser' : 'chrome'
         ],
         'Oracle 19.3.0, Jetty 9.x (Java 11), Firefox': [
             'database' : 'oracle',
@@ -89,8 +86,7 @@ def getLatestConfigurations(def xwikiVersion, def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
             'servletEngineTag' : versions.jetty.latest,
-            'browser' : 'firefox',
-            'verbose' : 'true'
+            'browser' : 'firefox'
         ]
     ]
     return configurations
@@ -113,8 +109,7 @@ def getAllConfigurations(def xwikiVersion, def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : versions.tomcat.lts,
-            'browser' : 'chrome',
-            'verbose' : 'true'
+            'browser' : 'chrome'
         ],
         'MariaDB 10.3.x, Tomcat 8.5.x (Java 8), Firefox': [
             'database' : 'mariadb',
@@ -122,8 +117,7 @@ def getAllConfigurations(def xwikiVersion, def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : versions.tomcat.lts,
-            'browser' : 'firefox',
-            'verbose' : 'true'
+            'browser' : 'firefox'
         ],
         'PostgreSQL 11.8.x, Jetty 9.3.x (Java 8), Chrome': [
             'database' : 'postgresql',
@@ -131,8 +125,7 @@ def getAllConfigurations(def xwikiVersion, def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
             'servletEngineTag' : versions.jetty.lts,
-            'browser' : 'chrome',
-            'verbose' : 'true'
+            'browser' : 'chrome'
         ],
         // Special case: verify we still support utf8 for MySQL and at the same time test with latest Tomcat on Java8
         // to potentially discover problem in advance (to add more value since we're doing another config test).
@@ -144,8 +137,7 @@ def getAllConfigurations(def xwikiVersion, def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : versions.tomcat.special,
-            'browser' : 'chrome',
-            'verbose' : 'true'
+            'browser' : 'chrome'
         ],
         // Special case for Debian: Debian "stable" for PostgreSQL is still on 11.7.x. At the same time test with
         // latest Tomcat on Java11 to potentially discover problem in advance (to add more value since we're doing
@@ -157,8 +149,7 @@ def getAllConfigurations(def xwikiVersion, def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : versions.tomcat.latest,
-            'browser' : 'firefox',
-            'verbose' : 'true'
+            'browser' : 'firefox'
         ]
     ]
 
@@ -181,8 +172,7 @@ def getUnsupportedConfigurations(def xwikiVersion, def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : 'latest',
-            'browser' : 'chrome',
-            'verbose' : 'true'
+            'browser' : 'chrome'
         ],
         // Test on latest PostgreSQL, latest Jetty, Java LTS
         'PostgreSQL latest, Jetty latest (Java LTS), Chrome': [
@@ -191,8 +181,7 @@ def getUnsupportedConfigurations(def xwikiVersion, def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
             'servletEngineTag' : 'latest',
-            'browser' : 'chrome',
-            'verbose' : 'true'
+            'browser' : 'chrome'
         ],
         // Verify XWiki works on the latest released Java version in order to prepare for the next Java LTS (which
         // will be Java 17 in 2021).
@@ -203,8 +192,7 @@ def getUnsupportedConfigurations(def xwikiVersion, def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : 'jdk14-openjdk-oracle',
-            'browser' : 'firefox',
-            'verbose' : 'true'
+            'browser' : 'firefox'
         ]
     ]
     return configurations
