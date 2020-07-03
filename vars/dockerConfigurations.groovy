@@ -31,6 +31,9 @@ def call(configurationName)
 
 def call(configurationName, xwikiVersion)
 {
+    // Note: these version only specify major and minor (and not bugfix) so that:
+    // - we always test with the latest bugfix version
+    // - we reduce the maintenance (since specifying the bugfix part would mean updating them all the time)
     def versions = [
         'mysql' : [ 'latest' : '8.0', 'lts' : '5.7' ],
         'mariadb' : [ 'latest' : '10.4', 'lts' : '10.3' ],
