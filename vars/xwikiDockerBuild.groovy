@@ -19,8 +19,6 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-import com.cloudbees.groovy.cps.NonCPS
-import com.jenkinsci.plugins.badge.action.BadgeAction
 
 void call(boolean isParallel = true, body)
 {
@@ -34,7 +32,7 @@ void call(boolean isParallel = true, body)
 
     // Mark build as a Docker build in the Jenkins UI to differentiate it from others "standard" builds
     def badgeText = 'Docker Build'
-    def badgeFound = isBadgeFound(currentBuild.getRawBuild().getActions(BadgeAction.class), badgeText)
+    def badgeFound = isBadgeFound(currentBuild.getRawBuild(), badgeText)
     if (!badgeFound) {
         manager.addInfoBadge(badgeText)
         manager.createSummary('green.gif').appendText("<h1>${badgeText}</h1>", false, false, false, 'green')
@@ -156,17 +154,4 @@ private void build(map)
             }
         }
     }
-}
-
-@NonCPS
-private def isBadgeFound(def badgeActionItems, def badgeText)
-{
-    def badgeFound = false
-    badgeActionItems.each() {
-        if (it.getText().contains(badgeText)) {
-            badgeFound = true
-            return
-        }
-    }
-    return badgeFound
 }

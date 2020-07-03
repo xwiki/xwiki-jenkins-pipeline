@@ -23,7 +23,6 @@ import hudson.FilePath
 import hudson.util.IOUtils
 import javax.xml.bind.DatatypeConverter
 import hudson.tasks.test.AbstractTestResultAction
-import com.jenkinsci.plugins.badge.action.BadgeAction
 import com.cloudbees.groovy.cps.NonCPS
 
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
@@ -482,7 +481,7 @@ private def checkForFlickers(def failingTests)
     if (containsAtLeastOneFlicker) {
         // Only add the badge if none already exist
         def badgeText = 'Contains some flickering tests'
-        def badgeFound = isBadgeFound(currentBuild.getRawBuild().getActions(BadgeAction.class), badgeText)
+        def badgeFound = isBadgeFound(currentBuild.getRawBuild(), badgeText)
         if (!badgeFound) {
             manager.addWarningBadge(badgeText)
             manager.createSummary('warning.gif').appendText("<h1>${badgeText}</h1>", false, false, false, 'red')
@@ -496,19 +495,6 @@ private def checkForFlickers(def failingTests)
     }
 
     return containsOnlyFlickers
-}
-
-@NonCPS
-private def isBadgeFound(def badgeActionItems, def badgeText)
-{
-    def badgeFound = false
-    badgeActionItems.each() {
-        if (it.getText().contains(badgeText)) {
-            badgeFound = true
-            return
-        }
-    }
-    return badgeFound
 }
 
 /**
