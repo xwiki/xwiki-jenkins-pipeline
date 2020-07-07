@@ -23,13 +23,11 @@ import com.jenkinsci.plugins.badge.action.BadgeAction
 
 def call(rawBuild, badgeText)
 {
-    def badgeFound = false
     def badgeActionItems = rawBuild.getActions(BadgeAction.class)
     badgeActionItems.each() {
         if (it.getText().contains(badgeText)) {
-            badgeFound = true
-            return
+            return true
         }
     }
-    return badgeFound
+    return false
 }
