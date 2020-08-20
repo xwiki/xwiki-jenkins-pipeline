@@ -179,6 +179,12 @@ void call(name = 'Default', body)
                             sh "mvn -f ${pom} ${goals} -P${profiles} ${mavenFlags} ${fullProperties} ${javadoc}"
                         }
                     }
+                } catch (InterruptedException e) {
+                    // This can happen when the timeout() step reaches the timeout. We need to let this bubble up so
+                    // that Jenkins can coordinate the stopping of all threads & builds that execute in parallel.
+                    displayDebugData()
+                    Thread.currentThread().interrupt();
+                    // Note: Don't send email on an interrupted build.
                 } catch (Exception e) {
                     // - If this line is reached it means the build has failed (other than for failing tests) or has
                     //   been aborted (because we told maven above to not stop on test failures!)
