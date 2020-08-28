@@ -78,7 +78,7 @@ void call(name = 'Default', body)
     // Process job properties overrides.
     def allProperties = []
     // Note: we add the overridden job properties first since the properties() step will honor the values that come
-    // first and ignore further ones. This allows Jenkinsfile to take precedence.
+    // first and ignore further ones. This allows the Jenkinsfile to take precedence.
     echoXWiki "Custom job properties: ${config.jobProperties}"
     if (config.jobProperties) {
         allProperties.addAll(config.jobProperties)

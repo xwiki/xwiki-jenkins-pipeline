@@ -21,23 +21,26 @@
  */
 
 /**
- * @return the list of Maven module paths having Docker-based tests, found in the current directory and sub
- * directories. For example will return {@code xwiki-platform-menu} if there's a
- * {@code xwiki-platform-menu-test/xwiki-platform-menu-test-docker} module.
+ * @return the list of Maven module paths having integration tests, found in the current directory and sub
+ * directories. We will return all modules ending in {@code -test-tests} and {@code -test-docker} (e.g.
+ * {@code xwiki-platform-administration-test-tests} and {@code xwiki-platform-administration-test-docker}).
  */
 def call()
 {
     def modules = []
-    def dockerModuleFiles = findFiles(glob: '**/*-test-docker/pom.xml')
+
+    def dockerModules = findFiles(glob: '**/*-test-docker/pom.xml')
     // Note: don't use each() since it leads to unserializable exceptions
-    for (def it in dockerModuleFiles) {
-        // Skip 'xwiki-platform-test-docker' since it matches the glob pattern but isn't a test module.
-        if (!it.path.contains('xwiki-platform-test-docker')) {
-            // Find grand parent module, e.g. return the path to xwiki-platform-menu when
-            // xwiki-platform-menu-test-docker is found.
-            modules.add(getParentPath(getParentPath(getParentPath(it.path))))
-        }
+    for (def it in dockerModules) {
+        modules.add(getParentPath(it.path))
     }
+
+    def otherModules = findFiles(glob: '**/*-test-tests/pom.xml')
+    // Note: don't use each() since it leads to unserializable exceptions
+    for (def it in otherModules) {
+        modules.add(getParentPath(it.path))
+    }
+
     return modules
 }
 
