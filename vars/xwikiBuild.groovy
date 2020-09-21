@@ -154,9 +154,7 @@ void call(name = 'Default', body)
                         javadoc = 'javadoc:javadoc -Ddoclint=all'
                         echoXWiki "Enabling javadoc validation"
                     }
-                    // TODO: Reduce the timeout to 4 hours when we implement the execution of functional tests in
-                    // separate builds, see https://jira.xwiki.org/browse/XINFRA-317
-                    def timeoutThreshold = config.timeout ?: 360
+                    def timeoutThreshold = config.timeout ?: 240
                     echoXWiki "Using timeout: ${timeoutThreshold}"
                     // Display the java version for information (in case it's useful to debug some specific issue)
                     echoXWiki 'Java version used:'
