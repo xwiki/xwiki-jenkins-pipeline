@@ -105,7 +105,7 @@ void call(name = 'Default', body)
         }
 
         // Configure the version of Java to use
-        def pom = readMavenPom file: 'pom.xml'
+        def pom = readMavenPom file: getPOMFile(config)
         configureJavaTool(config, pom)
 
         // Display some environmental information that can be useful to debug some failures
@@ -161,7 +161,7 @@ void call(name = 'Default', body)
                     sh script: 'java -version', returnStatus: true
                     // Abort the build if it takes more than the timeout threshold (in minutes).
                     timeout(timeoutThreshold) {
-                        def pom = config.pom ?: 'pom.xml'
+                        def pom = getPOMFile(config)
                         echoXWiki "Using POM file: ${pom}"
                         // Note: We use -Dmaven.test.failure.ignore so that the maven build continues till the
                         // end and is not stopped by the first failing test. This allows to get more info from the
@@ -252,6 +252,11 @@ void call(name = 'Default', body)
             }
         }
     }
+}
+
+private def getPOMFile(def config)
+{
+    return config.pom ?: 'pom.xml'
 }
 
 private def getMavenSystemProperties(config, nodeName)
