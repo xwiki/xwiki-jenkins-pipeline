@@ -36,13 +36,13 @@ def call(configurationName, xwikiVersion)
     // - we reduce the maintenance (since specifying the bugfix part would mean updating them all the time)
     def versions = [
         'mysql' : [ 'latest' : '8.0', 'lts' : '5.7' ],
-        'mariadb' : [ 'latest' : '10.5', 'lts' : '10.4', 'debian' : '10.3' ],
+        'mariadb' : [ 'latest' : '10.5', 'lts' : '10.4' ],
         // Note: for postgreSQL latest is the last cycle and LTS the previous one. Thus, we don't specify the minor to
         // be always up to date in our tests. We also specify the Debian version since it doesn't match latest or LTS.
-        'postgresql' : [ 'latest' : '12', 'lts' : '11', 'debian' : '11.7' ],
+        'postgresql' : [ 'latest' : '13', 'lts' : '12' ],
         'oracle' : [ 'latest' : '19.3.0-se2' ],
-        'tomcat' : [ 'latest' : '9-jdk11', 'lts' : '8.5-jdk8', 'special' : '9-jdk8' ],
-        'jetty' : [ 'latest' : '9-jre11', 'lts' : '9.3-jre8' ]
+        'tomcat' : [ 'latest' : '9', 'lts' : '8.5-jdk8', 'special' : '9-jdk8' ],
+        'jetty' : [ 'latest' : '9', 'lts' : '9.3-jre8' ]
     ]
 
     def configurations = [:]
