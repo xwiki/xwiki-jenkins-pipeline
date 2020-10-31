@@ -240,9 +240,13 @@ void call(name = 'Default', body)
                 echoXWiki "Checking for false positives and flickers in build results..."
                 def containsFalsePositivesOrOnlyFlickers = checkForFalsePositivesAndFlickers(failingTests)
 
-                // Also send a mail notification when the job is not successful.
+                // Also send a mail notification when there are not only false positives or flickering tests.
+                // Update 2020-10-31: Temporarily only send mails when there are failing non-functional tests to reduce
+                // the number of emails sent, until we fix functional tests stability. See https://bit.ly/34GTVBe
                 echoXWiki "Checking if email should be sent or not"
-                if (!containsFalsePositivesOrOnlyFlickers && !config.skipMail) {
+                if (!containsFalsePositivesOrOnlyFlickers && !config.skipMail
+                    && containsNonFunctionalFailingTests(failingTests))
+                {
                     sendMail(currentBuild.result, name)
                 } else {
                     echoXWiki "No email sent even if some tests failed because they contain only flickering tests!"
@@ -252,6 +256,16 @@ void call(name = 'Default', body)
             }
         }
     }
+}
+
+private def containsNonFunctionalFailingTests(def failingTests)
+{
+    for (failingTest in failingTests) {
+        if (!failingTest.className.contains("IT")) {
+            return true
+        }
+    }
+    return false
 }
 
 private def getPOMFile(def config)
