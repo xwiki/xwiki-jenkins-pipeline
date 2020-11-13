@@ -42,8 +42,8 @@ def call(configurationName, xwikiVersion)
         'postgresql' : [ 'latest' : '13', 'lts' : '12' ],
         'oracle' : [ 'latest' : '19.3.0-se2' ],
         'tomcat' : [ 'latest' : '9', 'lts' : '8.5-jdk8', 'special' : '9-jdk8' ],
-        // TODO: Move back to using '9' when https://github.com/eclipse/jetty.project/issues/5649 is fixed and new
-        // working version of Jetty 9.4.x is released.
+        // TODO: Move back to using '9' when Jetty 9.4.34 is released on dockerhub, see
+        //  https://github.com/eclipse/jetty.project/issues/5649
         'jetty' : [ 'latest' : '9.4.32', 'lts' : '9.3-jre8' ]
     ]
 
