@@ -382,32 +382,26 @@ private def attachScreenshotToFailingTests(def failingTests)
     // Go through each failed test in the current build.
     for (def failedTest : failingTests) {
         // Compute the test's screenshot file name.
-        def testClass = failedTest.getClassName()
-        def testSimpleClass = failedTest.getSimpleName()
-        def testExample = failedTest.getName()
+        def testClass = failedTest.className
+        def testSimpleClass = failedTest.simpleName
+        def testName = failedTest.name
 
-        // Example of value for suiteResultFile (it's a String):
-        //   /Users/vmassol/.jenkins/workspace/blog/application-blog-test/application-blog-test-tests/target/
-        //     surefire-reports/TEST-org.xwiki.blog.test.ui.AllTests.xml
-        def suiteResultFile = failedTest.getSuiteResult().getFile()
-        if (suiteResultFile == null) {
-            // No results available. Go to the next test.
+        def targetDirectory = computeTargetDirectoryForTest(failedTest)
+        if (!targetDirectory) {
+            // We couldn't compute the target directory, move to the next test!
+            echo "Failed to find target directory for test [${failedTest.className}#${failedTest.name}]"
             continue
         }
 
-        // Compute the screenshot's location on the build agent.
-        // Example of target folder path:
-        //   /Users/vmassol/.jenkins/workspace/blog/application-blog-test/application-blog-test-tests/target
-        def targetFolderPath = createFilePath(suiteResultFile).getParent().getParent()
         // The screenshot can have several possible file names and locations, we check all.
         // Selenium 1 test screenshots.
-        def imageAbsolutePath1 = new FilePath(targetFolderPath, "selenium-screenshots/${testClass}-${testExample}.png")
+        def imageAbsolutePath1 = new FilePath(targetDirectory, "selenium-screenshots/${testClass}-${testName}.png")
         // Selenium 2 test screenshots.
-        def imageAbsolutePath2 = new FilePath(targetFolderPath, "screenshots/${testSimpleClass}-${testExample}.png")
+        def imageAbsolutePath2 = new FilePath(targetDirectory, "screenshots/${testSimpleClass}-${testName}.png")
         // If screenshotDirectory system property is not defined we save screenshots in the tmp dir so we must also
         // support this.
         def imageAbsolutePath3 =
-            new FilePath(createFilePath(System.getProperty("java.io.tmpdir")), "${testSimpleClass}-${testExample}.png")
+            new FilePath(createFilePath(System.getProperty("java.io.tmpdir")), "${testSimpleClass}-${testName}.png")
 
         // Determine which one exists, if any.
         def imageAbsolutePath = imageAbsolutePath1.exists() ?
@@ -440,10 +434,29 @@ private def attachScreenshotToFailingTests(def failingTests)
             }
         } else {
             def locationText = "[${imageAbsolutePath1}], [${imageAbsolutePath2}] or [${imageAbsolutePath3}]"
-            echo "No screenshot found for test [${testClass}#${testExample}] in ${locationText}"
-            sh script: "ls -alg ${targetFolderPath}", returnStatus: true
+            echo "No screenshot found for test [${testClass}#${testName}] in ${locationText}"
+            sh script: "ls -alg ${targetDirectory}", returnStatus: true
         }
     }
+}
+
+private def computeTargetDirectoryForTest(def caseResult)
+{
+    // A CaseResult has a SuiteResult as parent which holds the JUnit XML file path, from which we can infer the
+    // target directory for the passed test.
+
+    // Example of value for suiteResultFile (it's a String):
+    //   /Users/vmassol/.jenkins/workspace/blog/application-blog-test/application-blog-test-tests/target/
+    //     surefire-reports/TEST-org.xwiki.blog.test.ui.AllTests.xml
+    def suiteResultFile = caseResult.getSuiteResult().getFile()
+    if (suiteResultFile == null) {
+        return
+    }
+
+    // Compute the screenshot's location on the build agent.
+    // Example of target folder path:
+    //   /Users/vmassol/.jenkins/workspace/blog/application-blog-test/application-blog-test-tests/target
+    return createFilePath(suiteResultFile).getParent().getParent()
 }
 
 /**
