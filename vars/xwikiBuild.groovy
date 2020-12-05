@@ -479,12 +479,9 @@ private def checkForFlickers(def failingTests)
     boolean containsOnlyFlickers = true
     boolean isModified = false
     failingTests.each() { testResult ->
-        // Format of a Test Result id is "junit/<package name>/<test class name>/<test method name>"
-        // Example: "junit/org.xwiki.test.ui.repository/RepositoryTest/validateAllFeatures"
-        // => testName = "org.xwiki.test.ui.repository.RepositoryTest#validateAllFeatures"
-        def parts = testResult.getId().split('/')
-        def testName = "${parts[1]}.${parts[2]}#${parts[3]}".toString()
-        echoXWiki "Analyzing test [${testResult.getId()}] for flicker ([${testName}])..."
+        // Construct a normalized test name made of <test class name>#<method name>
+        def testName = "${testResult.className}#${testResult.name}"
+        echoXWiki "Analyzing test [${testName}] for flicker ..."
         if (knownFlickers.contains(testName)) {
             // Add the information that the test is a flicker to the test's description. Only display this
             // once (a Jenkinsfile can contain several builds and thus this code can be called several times
@@ -559,7 +556,7 @@ private def getKnownFlickeringTests()
 }
 
 /**
- * @return the failing tests for the current build
+ * @return the failing tests for the current build as a list of {@code hudson.tasks.junit.CaseResult} objects.
  */
 private def getFailingTests()
 {
