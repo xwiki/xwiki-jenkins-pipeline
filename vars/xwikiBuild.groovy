@@ -484,7 +484,7 @@ private def checkForFlickers(def failingTests)
         // => testName = "org.xwiki.test.ui.repository.RepositoryTest#validateAllFeatures"
         def parts = testResult.getId().split('/')
         def testName = "${parts[1]}.${parts[2]}#${parts[3]}".toString()
-        echoXWiki "Analyzing test [${testName}] for flicker..."
+        echoXWiki "Analyzing test [${testResult.getId()}] for flicker ([${testName}])..."
         if (knownFlickers.contains(testName)) {
             // Add the information that the test is a flicker to the test's description. Only display this
             // once (a Jenkinsfile can contain several builds and thus this code can be called several times
