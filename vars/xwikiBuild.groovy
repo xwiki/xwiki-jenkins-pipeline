@@ -485,7 +485,7 @@ private def checkForFalsePositivesAndFlickers(def failingTests)
 private def checkForFlickers(def failingTests)
 {
     def knownFlickers = getKnownFlickeringTests()
-    echoXWiki "Known flickering tests: ${knownFlickers}"
+    echoXWiki "Known flickering tests: ${knownFlickers} - Type: ${knownFlickers.class.name}"
 
     // For each failed test, check if it's in the known flicker list.
     def containsAtLeastOneFlicker = false
@@ -505,10 +505,10 @@ private def checkForFlickers(def failingTests)
                     "<h1 style='color:red'>${flickeringText}</h1>${testResult.getDescription() ?: ''}")
                 isModified = true
             }
-            echo "   It's a flicker"
+            echo "   [${testName}] is a flicker!"
             containsAtLeastOneFlicker = true
         } else {
-            echo "   Not a flicker"
+            echo "   [${testName}] is not a flicker"
             // This is a real failing test, thus we'll need to send the notification email...
             containsOnlyFlickers = false
         }
@@ -544,7 +544,7 @@ private def getKnownFlickeringTests()
     def url = "https://jira.xwiki.org/sr/jira.issueviews:searchrequest-xml/temp/SearchRequest.xml?".concat(
             "jqlQuery=%22Flickering%20Test%22%20is%20not%20empty%20and%20resolution%20=%20Unresolved")
     def root = new XmlSlurper().parseText(url.toURL().text)
-    // Note: slurper nodes are not seralizable, hence the @NonCPS annotation above.
+    // Note: slurper nodes are not serializable, hence the @NonCPS annotation above.
     def packageName = ''
     root.channel.item.customfields.customfield.each() { customfield ->
         if (customfield.customfieldname == 'Flickering Test') {
