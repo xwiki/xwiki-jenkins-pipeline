@@ -485,7 +485,7 @@ private def checkForFalsePositivesAndFlickers(def failingTests)
 private def checkForFlickers(def failingTests)
 {
     def knownFlickers = getKnownFlickeringTests()
-    echoXWiki "Known flickering tests: ${knownFlickers} - Type: ${knownFlickers.class.name}"
+    echoXWiki "Known flickering tests: ${knownFlickers}"
 
     // For each failed test, check if it's in the known flicker list.
     def containsAtLeastOneFlicker = false
@@ -495,6 +495,9 @@ private def checkForFlickers(def failingTests)
         // Construct a normalized test name made of <test class name>#<method name>
         def testName = "${testResult.className}#${testResult.name}"
         echoXWiki "Analyzing test [${testName}] for flicker ..."
+        knownFlickers.each() {
+            echo "   - [${it}] - [${it.class.name}] - [${it.equals(testName)}]"
+        }
         if (knownFlickers.contains(testName)) {
             // Add the information that the test is a flicker to the test's description. Only display this
             // once (a Jenkinsfile can contain several builds and thus this code can be called several times
@@ -549,16 +552,17 @@ private def getKnownFlickeringTests()
     root.channel.item.customfields.customfield.each() { customfield ->
         if (customfield.customfieldname == 'Flickering Test') {
             customfield.customfieldvalues.customfieldvalue.text().split(',').each() {
+                def trimmedValue = it.trim()
                 // Check if a package is specified and if not use the previously found package name
                 // This is an optimization to make it shorter to specify several tests in the same test class.
                 // e.g.: "org.xwiki.test.ui.extension.ExtensionTest#testUpgrade,testUninstall"
                 def fullName
-                int pos = it.indexOf('#')
+                int pos = trimmedValue.indexOf('#')
                 if (pos > -1) {
-                    packageName = it.substring(0, pos)
-                    fullName = it
+                    packageName = trimmedValue.substring(0, pos)
+                    fullName = trimmedValue
                 } else {
-                    fullName = "${packageName}#${it}".toString()
+                    fullName = "${packageName}#${trimmedValue}"
                 }
                 knownFlickers.add(fullName)
             }
