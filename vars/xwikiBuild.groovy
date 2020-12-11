@@ -496,7 +496,15 @@ private def checkForFlickers(def failingTests)
         def testName = "${testResult.className}#${testResult.name}"
         echoXWiki "Analyzing test [${testName}] for flicker ..."
         knownFlickers.each() {
-            echo "   - [${it}] - [${it.class.name}] - [${it.equals(testName)}]"
+            def text = ""
+            if (testName.length() == it.length()) {
+                for (int i = 0; i < it.length(); i++) {
+                    if (it.charAt(i) != testName.charAt(i)) {
+                        text = " - ${it.charAt(i)} != ${testName.charAt(i)} at pos ${i}"
+                    }
+                }
+            }
+            echo "   - [${it}] - [${it.class.name}] - [${it.equals(testName)}]${text}"
         }
         if (knownFlickers.contains(testName)) {
             // Add the information that the test is a flicker to the test's description. Only display this
