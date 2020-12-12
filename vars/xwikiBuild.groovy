@@ -559,8 +559,13 @@ private def getKnownFlickeringTests()
     def packageName = ''
     root.channel.item.customfields.customfield.each() { customfield ->
         if (customfield.customfieldname == 'Flickering Test') {
+            def trimSpaces = {
+                def trimmedIt = it.trim()
+                // When a leading space is adding in jira, the resulting XML value we get for it is "&nbsp;".
+                trimmedIt.startsWith('&nbsp;') ? trimmedIt - '&nbsp;' : trimmedIt
+            }
             customfield.customfieldvalues.customfieldvalue.text().split(',').each() {
-                def trimmedValue = it.trim()
+                def trimmedValue = trimSpaces(it)
                 // Check if a package is specified and if not use the previously found package name
                 // This is an optimization to make it shorter to specify several tests in the same test class.
                 // e.g.: "org.xwiki.test.ui.extension.ExtensionTest#testUpgrade,testUninstall"
