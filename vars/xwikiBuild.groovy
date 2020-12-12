@@ -500,11 +500,13 @@ private def checkForFlickers(def failingTests)
             if (testName.length() == it.length()) {
                 for (int i = 0; i < it.length(); i++) {
                     if (it.charAt(i) != testName.charAt(i)) {
-                        text = " - ${it.charAt(i)} != ${testName.charAt(i)} at pos ${i}"
+                        text = "${it.charAt(i)} != ${testName.charAt(i)} at pos ${i}"
                     }
                 }
+            } else {
+                text = "${testName.length()} / ${it.length()}"
             }
-            echo "   - [${it}] - [${it.class.name}] - [${it.equals(testName)}]${text}"
+            echo "   - [${it}] - [${it.class.name}] - [${it.equals(testName)}] - ${text}"
         }
         if (knownFlickers.contains(testName)) {
             // Add the information that the test is a flicker to the test's description. Only display this
