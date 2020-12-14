@@ -493,22 +493,10 @@ private def checkForFlickers(def failingTests)
     boolean isModified = false
     failingTests.each() { testResult ->
         // Construct a normalized test name made of <test class name>#<method name>
-        def testName = "${testResult.className}#${testResult.name}"
+        // Note: The call to toString() is important to get a String and not a GString so that contains() will work
+        // (since otherwise equals() will fail between a String and a GString)
+        def testName = "${testResult.className}#${testResult.name}".toString()
         echoXWiki "Analyzing test [${testName}] for flicker ..."
-        knownFlickers.each() {
-            def text
-            if (testName.length() == it.length()) {
-                text = "equality!"
-                for (int i = 0; i < it.length(); i++) {
-                    if (it.charAt(i) != testName.charAt(i)) {
-                        text = "${it.charAt(i)} != ${testName.charAt(i)} at pos ${i}"
-                    }
-                }
-            } else {
-                text = "${testName.length()} / ${it.length()}"
-            }
-            echo "   - [${it}] - [${it.class.name}] - [${it.equals(testName)}] - ${text}"
-        }
         if (knownFlickers.contains(testName)) {
             // Add the information that the test is a flicker to the test's description. Only display this
             // once (a Jenkinsfile can contain several builds and thus this code can be called several times
