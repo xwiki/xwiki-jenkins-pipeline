@@ -567,7 +567,7 @@ private def getKnownFlickeringTests()
                 // When a leading space is adding in jira, the resulting XML value we get for it is "&nbsp;".
                 trimmedIt.startsWith('&nbsp;') ? trimmedIt - '&nbsp;' : trimmedIt
             }
-            customfield.customfieldvalues.customfieldvalue.text().split('|').each() {
+            customfield.customfieldvalues.customfieldvalue.text().split('\\|').each() {
                 def trimmedValue = trimSpaces(it)
                 // Check if a package is specified and if not use the previously found package name
                 // This is an optimization to make it shorter to specify several tests in the same test class.
