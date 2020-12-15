@@ -497,14 +497,14 @@ private def checkForFlickers(def failingTests)
         // (since otherwise equals() will fail between a String and a GString)
         def testName = "${testResult.className}#${testResult.name}".toString()
         echoXWiki "Analyzing test [${testName}] for flicker ..."
-        if (knownFlickers.contains(testName)) {
+        if (knownFlickers.containsKey(testName)) {
             // Add the information that the test is a flicker to the test's description. Only display this
             // once (a Jenkinsfile can contain several builds and thus this code can be called several times
             // for the same tests).
-            def flickeringText = 'This is a flickering test'
+            def flickeringText =
+              "<h1 style='color:red'>This is a <a href='${knownFlickers.get(testName)}'>flickering</a> test</h1>"
             if (testResult.getDescription() == null || !testResult.getDescription().contains(flickeringText)) {
-                testResult.setDescription(
-                    "<h1 style='color:red'>${flickeringText}</h1>${testResult.getDescription() ?: ''}")
+                testResult.setDescription("${flickeringText}${testResult.getDescription() ?: ''}")
                 isModified = true
             }
             echo "   [${testName}] is a flicker!"
@@ -542,13 +542,14 @@ private def checkForFlickers(def failingTests)
 @NonCPS
 private def getKnownFlickeringTests()
 {
-    def knownFlickers = []
+    def knownFlickers = [:]
     def url = "https://jira.xwiki.org/sr/jira.issueviews:searchrequest-xml/temp/SearchRequest.xml?".concat(
             "jqlQuery=%22Flickering%20Test%22%20is%20not%20empty%20and%20resolution%20=%20Unresolved")
     def root = new XmlSlurper().parseText(url.toURL().text)
     // Note: slurper nodes are not serializable, hence the @NonCPS annotation above.
     def packageName = ''
     root.channel.item.customfields.customfield.each() { customfield ->
+
         if (customfield.customfieldname == 'Flickering Test') {
             def trimSpaces = {
                 def trimmedIt = it.trim()
@@ -568,7 +569,7 @@ private def getKnownFlickeringTests()
                 } else {
                     fullName = "${packageName}#${trimmedValue}"
                 }
-                knownFlickers.add(fullName)
+                knownFlickersknownFlickers.put(fullName, customfield.parent().parent().link.text())
             }
         }
     }
