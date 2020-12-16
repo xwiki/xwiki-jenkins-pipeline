@@ -569,7 +569,7 @@ private def getKnownFlickeringTests()
                 } else {
                     fullName = "${packageName}#${trimmedValue}"
                 }
-                knownFlickersknownFlickers.put(fullName, customfield.parent().parent().link.text())
+                knownFlickers.put(fullName, customfield.parent().parent().link.text())
             }
         }
     }
