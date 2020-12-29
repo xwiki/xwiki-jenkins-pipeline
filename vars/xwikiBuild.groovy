@@ -488,7 +488,7 @@ private def checkForFlickers(def failingTests)
     echoXWiki "Known flickering tests: ${knownFlickers}"
 
     // For each failed test, check if it's in the known flicker list.
-    def containsAtLeastOneFlicker = false
+    def foundFlickers = []
     boolean containsOnlyFlickers = true
     boolean isModified = false
     failingTests.each() { testResult ->
@@ -508,7 +508,7 @@ private def checkForFlickers(def failingTests)
                 isModified = true
             }
             echo "   [${testName}] is a flicker!"
-            containsAtLeastOneFlicker = true
+            foundFlickers.add(testName)
         } else {
             echo "   [${testName}] is not a flicker"
             // This is a real failing test, thus we'll need to send the notification email...
@@ -516,13 +516,18 @@ private def checkForFlickers(def failingTests)
         }
     }
 
-    if (containsAtLeastOneFlicker) {
+    if (!foundFlickers) {
         // Only add the badge if none already exist
         def badgeText = 'Contains some flickering tests'
         def badgeFound = isBadgeFound(currentBuild.getRawBuild(), badgeText)
         if (!badgeFound) {
             manager.addWarningBadge(badgeText)
-            manager.createSummary('warning.gif').appendText("<h1>${badgeText}</h1>", false, false, false, 'red')
+            def html = "<h1>${badgeText}</h1>"
+            def htmlList = ''
+            foundFlickers.each() {
+                htmlList = "${htmlList}<li><a href='${knownFlickers.get(it)}'>${it}</a></li>"
+            }
+            manager.createSummary('warning.gif').appendText("${html}<ul>${htmlList}</ul>", false, false, false, 'red')
             isModified = true
         }
     }
