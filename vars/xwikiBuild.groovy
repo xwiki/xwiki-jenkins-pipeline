@@ -516,7 +516,7 @@ private def checkForFlickers(def failingTests)
         }
     }
 
-    if (!foundFlickers) {
+    if (foundFlickers) {
         // Only add the badge if none already exist
         def badgeText = 'Contains some flickering tests'
         def badgeFound = isBadgeFound(currentBuild.getRawBuild(), badgeText)
