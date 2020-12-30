@@ -23,6 +23,9 @@ import java.util.regex.Pattern
 
 def call()
 {
+    // Old list of false positives messages. Commented-out for now to start afresh since we haven't seen them for a long
+    // time and it takes time to parse the logs for them.
+    /*
     def messages = [
         [".*A fatal error has been detected by the Java Runtime Environment.*", "JVM Crash", "A JVM crash happened!"],
         [".*Error: cannot open display: :1.0.*", "VNC not running", "VNC connection issue!"],
@@ -62,36 +65,35 @@ def call()
          "Error connecting to FF browser"],
         ["process apparently never started in.*", "Jenkins error", ""]
     ]
+    */
 
-    // TODO: Fix me.
-    // Because of https://issues.jenkins-ci.org/browse/JENKINS-54128 we need to not use BadgeManager.logContains
-    // which uses the deprecated Run#.getLogFile() which fills XWiki's Jenkins logs with tons of warning, producing
-    // over 1TB of logs every day and filling up the disk space.
-    // Thus we tried using Run#getLogReader() but for some reason it's very very slow adding 5 hours to the
-    // nightly docker-latest job execution! (see https://tinyurl.com/y4sto4gx).
-    // Thus we've had to turn off this feature for the time being until
-    // https://issues.jenkins-ci.org/browse/JENKINS-54128 is fixed.
     def hasFalsePositives = false
 
-    /*
-    messages.each { message ->
-        if (logContains(message.get(0))) {
-            manager.addWarningBadge(message.get(1))
-            manager.createSummary("warning.gif").appendText("<h1>${message.get(2)}</h1>", false, false, false, "red")
-            manager.buildUnstable()
-            echoXWiki "False positive detected [${message.get(2)}] ..."
-            hasFalsePositives = true
+    // For the moment, only run this test on master until we're sure it works fine
+    def branchName = env['BRANCH_NAME']
+    if (branchName != null && branchName.equals("master")) {
+        def messages = [
+            [".*Error setting up the XWiki testing environment on agent.*", "Docker test setup issue"]
+        ]
+        messages.each { message ->
+            if (manager.logContains(message.get(0))) {
+                manager.addWarningBadge(message.get(1))
+                manager.createSummary("warning.gif").appendText("<h1>${message.get(2)}</h1>", false, false, false, "red")
+                manager.buildUnstable()
+                echoXWiki "False positive detected [${message.get(2)}] ..."
+                hasFalsePositives = true
+            }
+        }
+        if (hasFalsePositives) {
+            // Persist badge changes
+            currentBuild.rawBuild.save()
         }
     }
-    if (hasFalsePositives) {
-        // Persist badge changes
-        currentBuild.rawBuild.save()
-    }
-    */
 
     return hasFalsePositives
 }
 
+/*
 private def logContains(regexp)
 {
     return contains(currentBuild.rawBuild.getLogReader(), regexp)
@@ -121,3 +123,4 @@ private def getMatcher(reader, regexp)
     }
     return matcher
 }
+*/
