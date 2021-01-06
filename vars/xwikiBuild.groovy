@@ -335,11 +335,12 @@ private def computeMavenGoals(config)
 {
     def goals = config.goals
     if (!goals) {
-        // Use "deploy" goal for "master" and "stable-*" branches only and "install" for the rest.
+        // Use "deploy" goal for "master", "main" and "stable-*" branches only and "install" for the rest.
         // This is to avoid having branches with the same version polluting the maven snapshot repo, overwriting one
-        // another.
+        // another. We support both "master" and "main" because GitHub has changed the default branch name from "master" 
+        // to "main" and we need to support both old repos (created with "master") and new ones (created with "main").
         def branchName = env['BRANCH_NAME']
-        if (branchName != null && (branchName.equals("master") || branchName.startsWith('stable-'))) {
+        if (branchName != null && (branchName.equals("master") || (branchName.equals("main") || branchName.startsWith('stable-'))) {
             goals = "deploy"
         } else {
             goals = "install"
