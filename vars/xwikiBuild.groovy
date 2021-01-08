@@ -501,7 +501,9 @@ private def checkForFlickers(def failingTests)
         if (knownFlickers.containsKey(testName)) {
             // Add the information that the test is a flicker to the test's description. Only display this
             // once (a Jenkinsfile can contain several builds and thus this code can be called several times
-            // for the same tests).
+            // for the same tests, as the failing tests passed are the failing tests for the whole job, see
+            // getFailingTests(). We haven't found a way to get the failing tests only for the current withMaven
+            // execution).
             def flickeringText =
               "<h1 style='color:red'>This is a <a href='${knownFlickers.get(testName)}'>flickering</a> test</h1>"
             if (testResult.getDescription() == null || !testResult.getDescription().contains(flickeringText)) {
