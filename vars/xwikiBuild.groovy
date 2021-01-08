@@ -513,6 +513,9 @@ private def checkForFlickers(def failingTests)
             if (testResult.getDescription() == null || !testResult.getDescription().contains(flickeringText)) {
                 testResult.setDescription("${flickeringText}${testResult.getDescription() ?: ''}")
                 isModified = true
+            } else {
+                // For debugging
+                echo "Flicker [${testName}] - Description = [${testResult.getDescription()}]"
             }
             echo "   [${testName}] is a flicker!"
             foundFlickers.add(testName)
