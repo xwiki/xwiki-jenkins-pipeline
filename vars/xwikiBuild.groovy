@@ -354,14 +354,6 @@ private def isStableBranch(def branchName)
     return branchName.startsWith('stable-')
 }
 
-private def isMasterBranch(def branchName)
-{
-    // Note: We support both "master" and "main" as valid names for the master branch because GitHub has changed the
-    // default branch name from "master" to "main" and we need to support both old repos (created with "master") and
-    // new ones (created with "main").
-    return branchName.equals("master") || branchName.equals("main")
-}
-
 /**
  * Create a FilePath instance that points either to a file on the master node or a file on a remote agent node.
  */
@@ -517,7 +509,7 @@ private def checkForFlickers(def failingTests)
             // getFailingTests(). We haven't found a way to get the failing tests only for the current withMaven
             // execution).
             def flickeringText =
-              "<h1 style='color:red'>This is a <a href='${knownFlickers.get(testName)}'>flickering</a> test</h1>"
+              "<h3 style='color:red'>This is a <a href='${knownFlickers.get(testName)}'>flickering</a> test</h3>"
             if (testResult.getDescription() == null || !testResult.getDescription().contains(flickeringText)) {
                 testResult.setDescription("${flickeringText}${testResult.getDescription() ?: ''}")
                 isModified = true
@@ -532,19 +524,20 @@ private def checkForFlickers(def failingTests)
     }
 
     if (foundFlickers) {
-        // Only add the badge if none already exist
         def badgeText = 'Contains some flickering tests'
         def badgeFound = isBadgeFound(currentBuild.getRawBuild(), badgeText)
         if (!badgeFound) {
             manager.addWarningBadge(badgeText)
-            def html = "<h1>${badgeText}</h1>"
-            def htmlList = ''
-            foundFlickers.each() {
-                htmlList = "${htmlList}<li><a href='${knownFlickers.get(it)}'>${it}</a></li>"
-            }
-            manager.createSummary('warning.gif').appendText("${html}<ul>${htmlList}</ul>", false, false, false, 'red')
-            isModified = true
         }
+        // Replace the existing summary with the accrued list of flickers found
+        manager.removeSummaries()
+        def summary = manager.createSummary("warning.gif")
+        summary.appendText("Flickering tests<ul>", false, false, false, 'red')
+        foundFlickers.each() {
+            summary.appendText("<li><a href='${knownFlickers.get(it)}'>${it}</a></li>", false, false, false, 'red')
+        }
+        summary.appendText("</ul>", false, false, false, 'red')
+        isModified = true
     }
 
     if (isModified) {

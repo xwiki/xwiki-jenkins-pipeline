@@ -67,30 +67,46 @@ def call()
     ]
     */
 
-    def hasFalsePositives = false
+    def falsePositiveMessages = []
 
     // For the moment, only run this test on master until we're sure it works fine
     def branchName = env['BRANCH_NAME']
-    if (branchName != null && branchName.equals("master")) {
+    if (branchName != null && isMasterBranch(branchName)) {
         def messages = [
             [".*Error setting up the XWiki testing environment on agent.*", "Docker test setup issue"]
         ]
         messages.each { message ->
             if (manager.logContains(message.get(0))) {
-                manager.addWarningBadge(message.get(1))
-                manager.createSummary("warning.gif").appendText("<h1>${message.get(2)}</h1>", false, false, false, "red")
-                manager.buildUnstable()
                 echoXWiki "False positive detected [${message.get(2)}] ..."
-                hasFalsePositives = true
+                falsePositiveMessages.add(message)
             }
         }
-        if (hasFalsePositives) {
+        if (falsePositiveMessages) {
+            // Display the badges
+            falsePositiveMessages.each() { message ->
+                // Only add the badge once since this code can be called several times (e.g. we run several builds, one
+                // for each tested environment).
+                def badgeText = message.get(1)
+                def badgeFound = isBadgeFound(currentBuild.getRawBuild(), badgeText)
+                if (!badgeFound) {
+                    manager.addWarningBadge(badgeText)
+                }
+            }
+            // Display the info on the job results page
+            // Replace the existing summary with the accrued list of false positives found
+            manager.removeSummaries()
+            def summary = manager.createSummary("warning.gif")
+            summary.appendText("False positives found<ul>", false, false, false, 'red')
+            falsePositiveMessages.each() { message ->
+                summary.appendText("<li>${message.get(2)}</li>", false, false, false, 'red')
+            }
+            summary.appendText("</ul>", false, false, false, 'red')
             // Persist badge changes
             currentBuild.rawBuild.save()
         }
     }
 
-    return hasFalsePositives
+    return !falsePositiveMessages.isEmpty()
 }
 
 /*

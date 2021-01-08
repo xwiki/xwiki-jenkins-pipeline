@@ -1,0 +1,3 @@
+Returns:
+
+* True if the passed branch name is the master branch (named "master" or "main") or false otherwise

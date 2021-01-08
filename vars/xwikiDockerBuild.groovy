@@ -35,7 +35,7 @@ void call(boolean isParallel = true, body)
     def badgeFound = isBadgeFound(currentBuild.getRawBuild(), badgeText)
     if (!badgeFound) {
         manager.addInfoBadge(badgeText)
-        manager.createSummary('green.gif').appendText("<h1>${badgeText}</h1>", false, false, false, 'green')
+        manager.createSummary('green.gif').appendText("${badgeText}", false, false, false, 'green')
         currentBuild.rawBuild.save()
     }
 
