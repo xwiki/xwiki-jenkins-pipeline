@@ -335,12 +335,11 @@ private def computeMavenGoals(config)
 {
     def goals = config.goals
     if (!goals) {
-        // Use "deploy" goal for "master", "main" and "stable-*" branches only and "install" for the rest.
-        // This is to avoid having branches with the same version polluting the maven snapshot repo, overwriting one
-        // another. We support both "master" and "main" because GitHub has changed the default branch name from "master" 
-        // to "main" and we need to support both old repos (created with "master") and new ones (created with "main").
+        // Use "deploy" goal for the master branch and the "stable-*" branches only and "install" for all branches.
+        // This is to avoid having branches with the same version in pom.xml, polluting the maven snapshot repo,
+        // overwriting one another.
         def branchName = env['BRANCH_NAME']
-        if (branchName != null && (branchName.equals("master") || branchName.equals("main") || branchName.startsWith('stable-'))) {
+        if (branchName != null && (isMasterBranch(branchName) || isStableBranch(branchName))) {
             goals = "deploy"
         } else {
             goals = "install"
@@ -348,6 +347,19 @@ private def computeMavenGoals(config)
         goals = "clean ${goals}"
     }
     return goals
+}
+
+private def isStableBranch(def branchName)
+{
+    return branchName.startsWith('stable-')
+}
+
+private def isMasterBranch(def branchName)
+{
+    // Note: We support both "master" and "main" as valid names for the master branch because GitHub has changed the
+    // default branch name from "master" to "main" and we need to support both old repos (created with "master") and
+    // new ones (created with "main").
+    return branchName.equals("master") || branchName.equals("main")
 }
 
 /**
