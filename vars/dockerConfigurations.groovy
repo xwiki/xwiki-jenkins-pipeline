@@ -38,7 +38,7 @@ def call(configurationName, xwikiVersion)
         'mysql' : [ 'latest' : '8.0', 'lts' : '5.7' ],
         'mariadb' : [ 'latest' : '10.5', 'lts' : '10.4' ],
         // Note: for postgreSQL latest is the last cycle and LTS the previous one. Thus, we don't specify the minor to
-        // be always up to date in our tests. We also specify the Debian version since it doesn't match latest or LTS.
+        // be always up to date in our tests.
         'postgresql' : [ 'latest' : '13', 'lts' : '12' ],
         'oracle' : [ 'latest' : '19.3.0-se2' ],
         'tomcat' : [ 'latest' : '9', 'lts' : '8.5-jdk8', 'special' : '9-jdk8' ],
@@ -124,14 +124,6 @@ def getAllConfigurations(def xwikiVersion, def versions)
             'servletEngineTag' : versions.tomcat.lts,
             'browser' : 'firefox'
         ],
-        "MariaDB ${versions.mariadb.debian} (Debian), Tomcat ${versions.tomcat.lts}, Firefox": [
-            'database' : 'mariadb',
-            'databaseTag' : versions.mariadb.debian,
-            'jdbcVersion' : 'pom',
-            'servletEngine' : 'tomcat',
-            'servletEngineTag' : versions.tomcat.lts,
-            'browser' : 'firefox'
-        ],
         "PostgreSQL ${versions.postgresql.lts}, Jetty ${versions.jetty.lts}, Chrome": [
             'database' : 'postgresql',
             'databaseTag' : versions.postgresql.lts,
@@ -151,18 +143,6 @@ def getAllConfigurations(def xwikiVersion, def versions)
             'servletEngine' : 'tomcat',
             'servletEngineTag' : versions.tomcat.special,
             'browser' : 'chrome'
-        ],
-        // Special case for Debian: Debian "stable" for PostgreSQL is still on 11.7.x. At the same time test with
-        // latest Tomcat on Java11 to potentially discover problem in advance (to add more value since we're doing
-        // another config test).
-        // TOD: Remove as soon as Debian upgrades.
-        "PostgreSQL ${versions.postgresql.debian} (Debian), Tomcat ${versions.tomcat.latest}, Firefox": [
-            'database' : 'postgresql',
-            'databaseTag' : versions.postgresql.debian,
-            'jdbcVersion' : 'pom',
-            'servletEngine' : 'tomcat',
-            'servletEngineTag' : versions.tomcat.latest,
-            'browser' : 'firefox'
         ]
     ]
 
