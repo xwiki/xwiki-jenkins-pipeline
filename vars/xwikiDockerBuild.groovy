@@ -87,9 +87,6 @@ void call(boolean isParallel = true, body)
 
 }
 
-@NonCPS
-private
-
 private def getTestConfigurationName(def testConfig)
 {
     def databasePart =
