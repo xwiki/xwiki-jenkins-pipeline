@@ -112,7 +112,7 @@ void call(baselineDefinitions)
                 def summaryText = "<h1>${badgeText} See <a href='${cloverReportsURL}'>report</a></h1>"
                 manager.createSummary('red.gif').appendText(summaryText, false, false, false, 'red')
                 // Persist changes
-                currentBuild.rawBuild.save()
+                saveCurrentBuildChanges()
             } else {
                 // Add a badge to indicate all ok
                 def badgeText = 'Global test coverage is similar or increased!'
@@ -121,7 +121,7 @@ void call(baselineDefinitions)
                 def summaryText = "<h1>${badgeText} See <a href='${cloverReportsURL}'>report</a></h1>"
                 manager.createSummary('green.gif').appendText(summaryText, false, false, false, 'green')
                 // Persist changes
-                currentBuild.rawBuild.save()
+                saveCurrentBuildChanges()
             }
 
             // Update the latest.json file if the version has changed and a version was specified.

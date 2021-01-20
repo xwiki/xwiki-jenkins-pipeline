@@ -19,7 +19,6 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-import java.util.regex.Pattern
 
 def call()
 {
@@ -87,7 +86,7 @@ def call()
                 // Only add the badge once since this code can be called several times (e.g. we run several builds, one
                 // for each tested environment).
                 def badgeText = message.get(1)
-                def badgeFound = isBadgeFound(currentBuild.getRawBuild(), badgeText)
+                def badgeFound = isBadgeFound(badgeText)
                 if (!badgeFound) {
                     manager.addWarningBadge(badgeText)
                 }
@@ -102,12 +101,13 @@ def call()
             }
             summary.appendText("</ul>", false, false, false, 'red')
             // Persist badge changes
-            currentBuild.rawBuild.save()
+            saveCurrentBuildChanges()
         }
     }
 
     return !falsePositiveMessages.isEmpty()
 }
+
 
 /*
 private def logContains(regexp)

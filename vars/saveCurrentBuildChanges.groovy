@@ -19,21 +19,13 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-import com.jenkinsci.plugins.badge.action.BadgeAction
 import com.cloudbees.groovy.cps.NonCPS
 
 // currentBuild.rawBuild is non-serializable which is why we need the @NonCPS annotation.
 // Search for "rawBuild" on https://ci.xwiki.org/pipeline-syntax/globals#currentBuild
 // Otherwise we get: Caused: java.io.NotSerializableException: org.jenkinsci.plugins.workflow.job.WorkflowRun
 @NonCPS
-def call(badgeText)
+def call()
 {
-    def result = false
-    def badgeActionItems = currentBuild.rawBuild.getActions(BadgeAction.class)
-    badgeActionItems.each() {
-        if (it.getText().contains(badgeText)) {
-            result = true
-        }
-    }
-    return result
+    currentBuild.rawBuild.save()
 }

@@ -32,11 +32,11 @@ void call(boolean isParallel = true, body)
 
     // Mark build as a Docker build in the Jenkins UI to differentiate it from others "standard" builds
     def badgeText = 'Docker Build'
-    def badgeFound = isBadgeFound(currentBuild.getRawBuild(), badgeText)
+    def badgeFound = isBadgeFound(badgeText)
     if (!badgeFound) {
         manager.addInfoBadge(badgeText)
         manager.createSummary('green.gif').appendText("${badgeText}", false, false, false, 'green')
-        currentBuild.rawBuild.save()
+        saveCurrentBuildChanges()
     }
 
     // Start by building the test framework in case there have been recent changes not yet push to the Maven remote
@@ -86,6 +86,9 @@ void call(boolean isParallel = true, body)
     }
 
 }
+
+@NonCPS
+private
 
 private def getTestConfigurationName(def testConfig)
 {

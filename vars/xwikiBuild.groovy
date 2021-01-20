@@ -438,7 +438,7 @@ private def attachScreenshotToFailingTests(def failingTests)
                 // Clear potentially problematic non-serializable object reference, after we've used it.
                 // See https://github.com/jenkinsci/pipeline-plugin/blob/master/TUTORIAL.md#serializing-local-variables
                 testResultAction = null
-                currentBuild.rawBuild.save()
+                saveCurrentBuildChanges()
             }
         } else {
             def locationText = "[${imageAbsolutePath1}], [${imageAbsolutePath2}] or [${imageAbsolutePath3}]"
@@ -531,7 +531,7 @@ private def checkForFlickers(def failingTests)
 
     if (foundFlickers) {
         def badgeText = 'Contains some flickering tests'
-        def badgeFound = isBadgeFound(currentBuild.getRawBuild(), badgeText)
+        def badgeFound = isBadgeFound(badgeText)
         if (!badgeFound) {
             manager.addWarningBadge(badgeText)
         }
@@ -548,7 +548,7 @@ private def checkForFlickers(def failingTests)
 
     if (isModified) {
         // Persist changes
-        currentBuild.rawBuild.save()
+        saveCurrentBuildChanges()
     }
 
     return containsOnlyFlickers
@@ -599,6 +599,10 @@ private def getKnownFlickeringTests()
 /**
  * @return the failing tests for the current build as a list of {@code hudson.tasks.junit.CaseResult} objects.
  */
+// currentBuild.rawBuild is non-serializable which is why we need the @NonCPS annotation.
+// Search for "rawBuild" on https://ci.xwiki.org/pipeline-syntax/globals#currentBuild
+// Otherwise we get: Caused: java.io.NotSerializableException: org.jenkinsci.plugins.workflow.job.WorkflowRun
+@NonCPS
 private def getFailingTests()
 {
     def failingTests

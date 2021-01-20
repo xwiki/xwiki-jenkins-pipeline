@@ -1,0 +1,1 @@
+Saves the current build changes (for example when adding a badge).
