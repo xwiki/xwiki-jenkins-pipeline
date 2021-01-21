@@ -71,12 +71,15 @@ def call()
     // For the moment, only run this test on master until we're sure it works fine
     def branchName = env['BRANCH_NAME']
     if (branchName != null && isMasterBranch(branchName)) {
+        // Format is:
+        // - first element: the pattern to recognize the false positive in the logs.
+        // - second element: the text used in the badge and on the job summary page
         def messages = [
-            [".*Error setting up the XWiki testing environment on agent.*", "Docker test setup issue", "Docker test setup issue"]
+            [".*Error setting up the XWiki testing environment on agent.*", "Docker test setup issue"]
         ]
         messages.each { message ->
             if (manager.logContains(message.get(0))) {
-                echoXWiki "False positive detected [${message.get(2)}] ..."
+                echoXWiki "False positive detected [${message.get(1)}] ..."
                 falsePositiveMessages.add(message)
             }
         }
@@ -97,7 +100,7 @@ def call()
             def summary = manager.createSummary("warning.gif")
             summary.appendText("False positives found<ul>", false, false, false, 'red')
             falsePositiveMessages.each() { message ->
-                summary.appendText("<li>${message.get(2)}</li>", false, false, false, 'red')
+                summary.appendText("<li>${message.get(1)}</li>", false, false, false, 'red')
             }
             summary.appendText("</ul>", false, false, false, 'red')
             // Persist badge changes
