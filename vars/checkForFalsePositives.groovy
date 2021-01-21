@@ -72,7 +72,7 @@ def call()
     def branchName = env['BRANCH_NAME']
     if (branchName != null && isMasterBranch(branchName)) {
         def messages = [
-            [".*Error setting up the XWiki testing environment on agent.*", "Docker test setup issue"]
+            [".*Error setting up the XWiki testing environment on agent.*", "Docker test setup issue", "Docker test setup issue"]
         ]
         messages.each { message ->
             if (manager.logContains(message.get(0))) {
