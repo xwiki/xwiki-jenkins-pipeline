@@ -42,7 +42,7 @@ def call(configurationName, xwikiVersion)
         'postgresql' : [ 'latest' : '13', 'lts' : '12' ],
         'oracle' : [ 'latest' : '19.3.0-se2' ],
         'tomcat' : [ 'latest' : '9', 'lts' : '8.5-jdk8', 'special' : '9-jdk8' ],
-        'jetty' : [ 'latest' : '9', 'lts' : '9.3-jre8' ]
+        'jetty' : [ 'latest' : '10.0.0-jre11', 'lts' : '9-jre11' ]
     ]
 
     def configurations = [:]
@@ -173,7 +173,11 @@ def getUnsupportedConfigurations(def xwikiVersion, def versions)
             'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : 'latest',
+            // Note 1: we should use 'latest' but currently 'latest' is 9.4.x for jetty on dockerhub, see
+            // https://hub.docker.com/_/jetty. Put back once latest is 10.x.
+            // Note 2: we cannot use 11.x right now since that corresponds to a package change for JakartaEE and we'll
+            // need XWiki to move to the new packages first.
+            'servletEngineTag' : '10.0.0-jre11',
             'browser' : 'chrome'
         ],
         // Verify XWiki works on the latest released Java version in order to prepare for the next Java LTS (which
