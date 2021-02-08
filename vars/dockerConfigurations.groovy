@@ -41,7 +41,11 @@ def call(configurationName, xwikiVersion)
         // be always up to date in our tests.
         'postgresql' : [ 'latest' : '13', 'lts' : '12' ],
         'oracle' : [ 'latest' : '19.3.0-se2' ],
-        'tomcat' : [ 'latest' : '9', 'lts' : '8.5-jdk8', 'special' : '9-jdk8' ],
+        // Note : we cannot use Tomcat 10.x right now as the latest version since that corresponds to a package change
+        // for JakartaEE and we'll need XWiki to move to the new packages first. This is why LTS = latest FTM.
+        'tomcat' : [ 'latest' : '9', 'lts' : '9', 'special' : '10-jdk8' ],
+        // Note : we cannot use Jetty 11.x right now as the latest version since that corresponds to a package change
+        // for JakartaEE and we'll need XWiki to move to the new packages first.
         'jetty' : [ 'latest' : '10.0.0-jre11', 'lts' : '9-jre11' ]
     ]
 
@@ -133,7 +137,7 @@ def getAllConfigurations(def xwikiVersion, def versions)
             'browser' : 'chrome'
         ],
         // Special case: verify we still support utf8 for MySQL and at the same time test with latest Tomcat on Java8
-        // to potentially discover problem in advance (to add more value since we're doing another config test).
+        // (to verify XWiki still works on java 8).
         "MySQL ${versions.mysql.lts} (utf8), Tomcat ${versions.tomcat.special} (latest on Java 8), Chrome": [
             'database' : 'mysql',
             'database.commands.character-set-server' : 'utf8',
