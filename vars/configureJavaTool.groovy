@@ -28,6 +28,7 @@ void call(config, pom)
     }
     // NOTE: The Java tool Needs to be configured in the Jenkins global configuration.
     env.JAVA_HOME="${tool javaTool}"
+    echoXWiki "JAVA_HOME: ${env.JAVA_HOME}"
     env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
 
     // Configure MAVEN_OPTS based on the java version found and whether users have configured the mavenOpts or not
