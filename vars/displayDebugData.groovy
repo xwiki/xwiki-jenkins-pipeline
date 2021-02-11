@@ -34,4 +34,6 @@ void call()
     sh script: 'docker ps | awk "{ print $1 }" | tail +2 | xargs -n 1 \
         docker inspect -f "{{ .ID}}:{{ .NetworkSettings.IPAddress }}"', returnStatus: true
     sh script: "docker events --since '15m' --until '0m'", returnStatus: true
+    // Temporary check for debugging phantomJS issue
+    sh script: 'echo "OPENSSL_CONF VALUE: $OPENSSL_CONF"', returnStatus: true
 }
