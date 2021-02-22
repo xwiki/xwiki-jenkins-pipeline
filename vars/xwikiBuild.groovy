@@ -327,8 +327,6 @@ private def wrapInXvnc(config, closure)
     }
 }
 
-private
-
 private def wrapInSonarQube(config, closure)
 {
     if (config.sonar) {
