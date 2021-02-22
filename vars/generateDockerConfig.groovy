@@ -25,8 +25,9 @@ void call()
     // TODO: The try/catch is a protection to avoid failing the build. Remove it when the code inside is proved to work.
     try {
         withCredentials([string(credentialsId: 'xwikiorgci', variable: 'SECRET')]) {
+            sh 'mkdir ~/.docker', returnStatus: true
             sh 'echo "{\\"auths\\":{\\"https://index.docker.io/v1/\\":{\\"auth\\": \\"\$(echo -n xwikiorgci:\$SECRET | base64)\\"}}}" > ~/.docker/config.json'
-                }
+        }
     } catch(Exception e) {
         echoXWiki "Failed to generate config.json file: ${e.message}"
     }
