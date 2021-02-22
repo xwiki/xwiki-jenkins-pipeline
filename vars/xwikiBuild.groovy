@@ -108,6 +108,10 @@ void call(name = 'Default', body)
         def pom = readMavenPom file: getPOMFile(config)
         configureJavaTool(config, pom)
 
+        // Generate a ~/.docker/config.json file containing authentication data for Dockerhub so that all operations
+        // done on Dockerhub are done while authenticated, which prevents the pull-rate issue.
+        generateDockerConfig()
+
         // Display some environmental information that can be useful to debug some failures
         // Note: if the executables don't exist, this won't fail the step thanks to "returnStatus: true".
         sh script: 'ps -ef', returnStatus: true
@@ -322,6 +326,8 @@ private def wrapInXvnc(config, closure)
         closure()
     }
 }
+
+private
 
 private def wrapInSonarQube(config, closure)
 {

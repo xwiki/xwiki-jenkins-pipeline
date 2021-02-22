@@ -1,0 +1,3 @@
+Generate a `~/.docker/config.json}` file containing authentication data to authenticate against DockerHub.
+
+Note: Jenkins must have a `xwikiorgci` credentials [defined](https://ci.xwiki.org/credentials/).
