@@ -90,8 +90,10 @@ void call(name = 'Default', body)
     def mavenTool
     stage("Preparation for ${name}") {
         // Get the Maven tool.
-        // NOTE: The Maven tool Needs to be configured in the Jenkins global configuration.
-        mavenTool = config.mavenTool ?: 'Maven'
+        // Note: We use an empty string by default, in order to not use the Global tools from Jenkins. We run our
+        // builds on the XWiki Docker build image which has Maven pre-installed. If the caller passes a non-empty string
+        // then the Maven setup will need to be defined in Jenkins's Global tools.
+        mavenTool = config.mavenTool ?: ''
 
         // Check if the build should be aborted
         if (config.disabled) {
