@@ -93,7 +93,7 @@ void call(name = 'Default', body)
         // Note: We use an empty string by default, in order to not use the Global tools from Jenkins. We run our
         // builds on the XWiki Docker build image which has Maven pre-installed. If the caller passes a non-empty string
         // then the Maven setup will need to be defined in Jenkins's Global tools.
-        mavenTool = config.mavenTool ?: ''
+        mavenTool = config.mavenTool?.trim() ?: ''
 
         // Check if the build should be aborted
         if (config.disabled) {
@@ -137,7 +137,7 @@ void call(name = 'Default', body)
             // - Publish a report of the tasks ("FIXME" and "TODO") found in the java source code
             //   (if the Jenkins Tasks Scanner Plugin is installed)
             echoXWiki "JAVA_HOME: ${env.JAVA_HOME}"
-            echoXWiki "Using Maven tool: ${mavenTool}"
+            echoXWiki "Using Maven tool: ${mavenTool ?: 'None, using pre-installed mvn executable on host'}"
             echoXWiki "Using Maven options: ${env.MAVEN_OPTS}"
             def archiveArtifacts = config.archiveArtifacts == null ? false : config.archiveArtifacts
             echoXWiki "Artifact archiving: ${archiveArtifacts}"
