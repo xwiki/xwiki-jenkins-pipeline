@@ -448,7 +448,7 @@ private def attachScreenshotToFailingTests(def failingTests)
             }
         } else {
             def locationText = "[${imageAbsolutePath1}], [${imageAbsolutePath2}] or [${imageAbsolutePath3}]"
-            echo "No screenshot found for test [${testClass}#${testName}] in ${locationText}"
+            echo "No screenshot found for test [${testClass}#${testName}] in ${locationText}, on ${NODE_NAME}"
             sh script: "ls -alg ${targetDirectory}", returnStatus: true
         }
     }
