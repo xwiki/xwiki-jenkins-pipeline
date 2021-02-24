@@ -22,13 +22,11 @@
 
 void call()
 {
-    // TODO: The try/catch is a protection to avoid failing the build. Remove it when the code inside is proved to work.
-    try {
-        withCredentials([string(credentialsId: 'xwikiorgci', variable: 'SECRET')]) {
-            sh 'mkdir -p ~/.docker'
-            sh 'echo "{\\"auths\\":{\\"https://index.docker.io/v1/\\":{\\"auth\\": \\"\$(echo -n xwikiorgci:\$SECRET | base64)\\"}}}" > ~/.docker/config.json'
-        }
-    } catch(Exception e) {
-        echoXWiki "Failed to generate config.json file: ${e.message}"
+    withCredentials([string(credentialsId: 'xwikiorgci', variable: 'SECRET')]) {
+        sh 'mkdir -p ~/.docker'
+        // Note: By default Jenkins starts shell scripts with flags -xe. -x enables additional logging. -e makes
+        // the script exit if any command inside returns non-zero exit status.
+        // Since we don't want to have the secret printed in the CI logs, we disable passing -x
+        sh '#!/bin/sh -e\n' + 'echo "{\\"auths\\":{\\"https://index.docker.io/v1/\\":{\\"auth\\": \\"\$(echo -n xwikiorgci:\$SECRET | base64)\\"}}}" > ~/.docker/config.json'
     }
 }
