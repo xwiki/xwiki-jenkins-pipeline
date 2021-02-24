@@ -176,9 +176,9 @@ private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cl
         def pom = readMavenPom file: 'pom.xml'
         // Note: With 2048m we got a OOM.
         def config = ['mavenOpts' : '-Xmx4096m']
-        configureJavaTool(config, pom)
-        withMaven(maven: 'Maven', options: [artifactsPublisher(disabled: true),
-            dependenciesFingerprintPublisher(disabled: true)])
+        def javaMavenConfig = configureJavaTool(config, pom)
+        withMaven(maven: 'Maven', jdk: javaMavenConfig.jdk, mavenOpts: javaMavenConfig.mavenOpts,
+            options: [artifactsPublisher(disabled: true), dependenciesFingerprintPublisher(disabled: true)])
         {
             def commonPropertiesString = getSystemPropertiesAsString([
                     'maven.repo.local' : "'${localRepository}'",

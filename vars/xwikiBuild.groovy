@@ -88,6 +88,7 @@ void call(name = 'Default', body)
     properties(allProperties)
 
     def mavenTool
+    def javaMavenConfig
     stage("Preparation for ${name}") {
         // Get the Maven tool.
         // Note: We use an empty string by default, in order to not use the Global tools from Jenkins. We run our
@@ -108,7 +109,7 @@ void call(name = 'Default', body)
 
         // Configure the version of Java to use
         def pom = readMavenPom file: getPOMFile(config)
-        configureJavaTool(config, pom)
+        javaMavenConfig = configureJavaTool(config, pom)
 
         // Generate a ~/.docker/config.json file containing authentication data for Dockerhub so that all operations
         // done on Dockerhub are done while authenticated, which prevents the pull-rate issue.
@@ -136,9 +137,9 @@ void call(name = 'Default', body)
             // - Publish Findbugs reports (if the Jenkins FindBugs Plugin is installed)
             // - Publish a report of the tasks ("FIXME" and "TODO") found in the java source code
             //   (if the Jenkins Tasks Scanner Plugin is installed)
-            echoXWiki "JAVA_HOME: ${env.JAVA_HOME}"
+            echoXWiki "Using Java tool: ${javaMavenConfig.jdk}"
             echoXWiki "Using Maven tool: ${mavenTool ?: 'None, using pre-installed mvn executable on host'}"
-            echoXWiki "Using Maven options: ${env.MAVEN_OPTS}"
+            echoXWiki "Using Maven options: ${javaMavenConfig.mavenOpts}"
             def archiveArtifacts = config.archiveArtifacts == null ? false : config.archiveArtifacts
             echoXWiki "Artifact archiving: ${archiveArtifacts}"
             def fingerprintDependencies = config.fingerprintDependencies == null ? false :
@@ -149,7 +150,11 @@ void call(name = 'Default', body)
                 artifactsPublisher(disabled: !archiveArtifacts),
                 dependenciesFingerprintPublisher(disabled: !fingerprintDependencies)
             ]
-            withMaven(maven: mavenTool, options: publishers)
+            // Note: withMaven is concatenating any passed "mavenOpts" with env.MAVEN_OPTS. Thus in order to fully
+            // control the maven options used we set env.MAVEN_OPTS to empty.
+            env.MAVEN_OPTS = ''
+            withMaven(maven: mavenTool, jdk: javaMavenConfig.jdk, mavenOpts: javaMavenConfig.mavenOpts,
+                options: publishers)
             {
                 try {
                     def goals = computeMavenGoals(config)

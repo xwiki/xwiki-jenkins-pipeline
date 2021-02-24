@@ -20,16 +20,16 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-void call(config, pom)
+def call(config, pom)
 {
+    def results = [:]
     def javaTool = config.javaTool
     if (!javaTool) {
         javaTool = getJavaTool(pom)
     }
     // NOTE: The Java tool Needs to be configured in the Jenkins global configuration.
-    env.JAVA_HOME="${tool javaTool}"
-    echoXWiki "JAVA_HOME: ${env.JAVA_HOME}"
-    env.PATH="${env.JAVA_HOME}/bin:${env.PATH}"
+    results.jdk = javaTool
+    echoXWiki "JavaTool used: ${results.jdk}"
 
     // Configure MAVEN_OPTS based on the java version found and whether users have configured the mavenOpts or not
     echoXWiki "Found overridden Maven options: ${config.mavenOpts}"
@@ -40,10 +40,8 @@ void call(config, pom)
             mavenOpts = "${mavenOpts} -XX:MaxPermSize=512m"
         }
     }
-    // Note: withMaven is concatenating any passed "mavenOpts" with env.MAVEN_OPTS. Thus in order to fully
-    // control the maven options used we only set env.MAVEN_OPTS and don't pass "mavenOpts" when using withMaven.
-    // See http://bit.ly/2zwl4IU
-    env.MAVEN_OPTS = mavenOpts
+    results.mavenOpts = mavenOpts
+    return results
 }
 
 /**
