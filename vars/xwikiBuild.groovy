@@ -516,7 +516,7 @@ private def checkForFlickers(def failingTests)
         // (since otherwise equals() will fail between a String and a GString)
         def normalizedTestName = normalizeTestName(testResult.name)
         def testName = "${testResult.className}#${normalizedTestName}".toString()
-        echoXWiki "Analyzing test [${testName}] for flicker (Type = [${testName.class.name}]) ..."
+        echoXWiki "Analyzing test [${testName}] for flicker ..."
         if (knownFlickers.containsKey(testName)) {
             // Add the information that the test is a flicker to the test's description. Only display this
             // once (a Jenkinsfile can contain several builds and thus this code can be called several times
@@ -580,6 +580,7 @@ private def getKnownFlickeringTests()
     // Note: slurper nodes are not serializable, hence the @NonCPS annotation above.
     def packageName = ''
     root.channel.item.customfields.customfield.each() { customfield ->
+
         if (customfield.customfieldname == 'Flickering Test') {
             def trimSpaces = {
                 def trimmedIt = it.trim()
