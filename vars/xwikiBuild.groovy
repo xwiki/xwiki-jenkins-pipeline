@@ -514,8 +514,12 @@ private def checkForFlickers(def failingTests)
         // Construct a normalized test name made of <test class name>#<method name>
         // Note: The call to toString() is important to get a String and not a GString so that contains() will work
         // (since otherwise equals() will fail between a String and a GString)
-        def normalizedTestName = normalizeTestName(testResult.name)
-        def testName = "${testResult.className}#${normalizedTestName}".toString()
+        // TODO: Put it back when we understand why it makes the CI fail with:
+        //   groovy.lang.MissingMethodException: No signature of method: java.lang.String.containsKey() is
+        //   applicable for argument types: (java.lang.String) values: ...
+        //def normalizedTestName = normalizeTestName(testResult.name)
+        //def testName = "${testResult.className}#${normalizedTestName}".toString()
+        def testName = "${testResult.className}#${testResult.name}".toString()
         echoXWiki "Analyzing test [${testName}] for flicker ..."
         if (knownFlickers.containsKey(testName)) {
             // Add the information that the test is a flicker to the test's description. Only display this
@@ -603,7 +607,10 @@ private def getKnownFlickeringTests()
                 // Remove the part between "{" and "}" since we don't use test methods which differ only by their
                 // parameters, and removing this make the jira issues more stable against refactorings. Also prevents
                 // user mistakes.
-                fullName = normalizeTestName(fullName)
+                // TODO: Put it back when we understand why it makes the CI fail with:
+                //   groovy.lang.MissingMethodException: No signature of method: java.lang.String.containsKey() is
+                //   applicable for argument types: (java.lang.String) values: ...
+                //fullName = normalizeTestName(fullName)
                 knownFlickers.put(fullName, customfield.parent().parent().link.text())
             }
         }
