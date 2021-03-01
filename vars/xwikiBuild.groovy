@@ -113,7 +113,9 @@ void call(name = 'Default', body)
 
         // Generate a ~/.docker/config.json file containing authentication data for Dockerhub so that all operations
         // done on Dockerhub are done while authenticated, which prevents the pull-rate issue.
-        generateDockerConfig()
+        def dockerHubSecretId = config.dockerHubSecretId == null ? 'xwikici' : config.dockerHubSecretId
+        def dockerHubUserId = config.dockerHubUserId ?: 'xwikici'
+        generateDockerConfig(dockerHubSecretId, dockerHubUserId)
 
         // Display some environmental information that can be useful to debug some failures
         // Note: if the executables don't exist, this won't fail the step thanks to "returnStatus: true".

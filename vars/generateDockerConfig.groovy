@@ -20,14 +20,16 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-void call()
+void call(def dockerHubSecretId, def dockerHubUserId)
 {
-    withCredentials([string(credentialsId: 'xwikici', variable: 'SECRET')]) {
-        sh 'mkdir -p ~/.docker'
-        // Note: By default Jenkins starts shell scripts with flags -xe. -x enables additional logging. -e makes
-        // the script exit if any command inside returns non-zero exit status.
-        // Since we don't want to have the secret printed in the CI logs, we disable passing -x
-        sh '#!/bin/sh -e\n' + 'echo "{\\"auths\\":{\\"https://index.docker.io/v1/\\":{\\"auth\\": \\"\$(echo -n xwikici:\$SECRET | base64)\\"}}}" > ~/.docker/config.json'
+    // Don't log in if the secret id is not not defined (null or empty string).
+    if (dockerHubSecretId) {
+        withCredentials([string(credentialsId: dockerHubSecretId, variable: 'SECRET')]) {
+            sh 'mkdir -p ~/.docker'
+            // Note: By default Jenkins starts shell scripts with flags -xe. -x enables additional logging. -e makes
+            // the script exit if any command inside returns non-zero exit status.
+            // Since we don't want to have the secret printed in the CI logs, we disable passing -x
+            sh '#!/bin/sh -e\n' + "echo \"{\\\"auths\\\":{\\\"https://index.docker.io/v1/\\\":{\\\"auth\\\": \\\"\$(echo -n ${dockerHubUserId}:\$SECRET | base64)\\\"}}}\" > ~/.docker/config.json"
+        }
     }
 }
-ri

@@ -50,3 +50,7 @@ The following options are available:
   out code. This can be used when calling xwikiBuild several times in a job to avoid duplicate change logs.
 * `daysToKeepStr` = if specified, build records are only kept up to this number of days. The value must be a String.
 * `javadoc` = false (`true` by default). If true build and validate the javadoc.
+* `dockerHubSecretId` = `secretId` (by default it's `xwikici`). Id of the text secret defined in Jenkins that contains
+  the Personal Access Token (PAT) for the `dockerHubUserId` user id on DockerHub. This is used to log into DockerHub
+  to increase the docker image pull rate limit. Use an empty string to not log in against DockerHub.
+* `dockerHubUserId` = `userId` (by default it's `xwikici`). Id of the DockerHub user. See `dockerHubSecretId` above.
