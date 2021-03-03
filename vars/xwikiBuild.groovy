@@ -509,7 +509,7 @@ private def checkForFlickers(def failingTests)
     echoXWiki "Known flickering tests: ${knownFlickers}"
 
     // For each failed test, check if it's in the known flicker list.
-    def foundFlickers = []
+    Set foundFlickers = []
     boolean containsOnlyFlickers = true
     boolean isModified = false
     failingTests.each() { testResult ->
