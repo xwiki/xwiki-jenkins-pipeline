@@ -30,6 +30,5 @@ def call(firefoxVersion = '32.0.1')
     // where "<prefix>" is the path before "/firefox" in the result of "which firefox" (see above).
     def ffpath = sh script: 'which firefox', returnStdout: true
     def newffpath = "${ffpath.substring(0, ffpath.indexOf('/firefox') + 8)}-${firefoxVersion}/firefox"
-    echoXWiki "Using Firefox [${newffpath}]"
     return "-Dwebdriver.firefox.bin=${newffpath}"
 }
