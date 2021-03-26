@@ -44,6 +44,10 @@ void call(boolean isParallel = true, body)
     buildTestFramework()
 
     // Run docker tests on all modules for all supported configurations
+    // Note: We don't rebuild the -pageobjects modules for performance reasons and because any commit in a -pageobjects
+    // module will have triggered the main build (which rebuilds the -pageobjects modules). This could fail if the main
+    // build fails before reaching the -pageobects with the changes but the likelihood is low and we consider that the
+    // tradeoff is acceptable.
     def builds = [:]
     config.configurations.eachWithIndex() { testConfig, i ->
         def systemProperties = []
