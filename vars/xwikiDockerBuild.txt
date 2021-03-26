@@ -23,7 +23,7 @@ The following options are available:
 * `configurations`: The list of XWiki configurations on which to execute the Docker/TestContainers-based tests.
 * `modules`: The list of Maven modules on which to execute the Docker/TestContainers-based tests. If not specified,
   then look for all modules matching the pattern `*-test-docker`.
-* `jobPropeties` = `[parameters([string(defaultValue: 'standard', description: 'Job type', name: 'type')])]`. Sets
+* `jobProperties` = `[parameters([string(defaultValue: 'standard', description: 'Job type', name: 'type')])]`. Sets
   properties that will be merged (and take precedence when on the same content) with the default ones. This allows
   adding some crons, parameters, etc.
 * `skipMail` = true (default is `false`). If true then don't send emails when the job or tests fail.
