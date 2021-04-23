@@ -70,6 +70,7 @@ def call()
 
     // For the moment, only run this test on master until we're sure it works fine
     def branchName = env['BRANCH_NAME']
+    echoXWiki "False positives - Branch: [${branchName}]"
     if (branchName != null && isMasterBranch(branchName)) {
         // Format is:
         // - first element: the pattern to recognize the false positive in the logs.
@@ -79,12 +80,14 @@ def call()
             [".*Java heap space.*", "Memory issue"]
         ]
         messages.each { message ->
+            echoXWiki "False positive - Looking for message: [${message.get(0)}]"
             if (manager.logContains(message.get(0))) {
                 echoXWiki "False positive detected [${message.get(1)}] ..."
                 falsePositiveMessages.add(message)
             }
         }
         if (falsePositiveMessages) {
+            echoXWiki "False positives found!"
             // Display the badges
             falsePositiveMessages.each() { message ->
                 // Only add the badge once since this code can be called several times (e.g. we run several builds, one
