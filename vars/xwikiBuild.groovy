@@ -340,7 +340,17 @@ private def wrapInSonarQube(config, closure)
 {
     if (config.sonar) {
         withSonarQubeEnv('sonar') {
+            // Note: SonarQube taskId is automatically attached to the pipeline context
             closure()
+        }
+        // Check the SonarQube quality gates
+        // Note: the timeout is just in case something goes wrong
+        timeout(time: 1, unit: 'HOURS') {
+            // Reuse taskId previously collected by withSonarQubeEnv
+            def qg = waitForQualityGate()
+            if (qg.status != 'OK') {
+                error "Pipeline aborted due to quality gate failure: ${qg.status}"
+            }
         }
     } else {
         closure()
