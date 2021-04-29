@@ -76,7 +76,6 @@ def call()
         [".*Java heap space.*", "Memory issue"]
     ]
     messages.each { message ->
-        echoXWiki "False positive - Looking for message: [${message.get(0)}]"
         if (manager.logContains(message.get(0))) {
             echoXWiki "False positive detected [${message.get(1)}] ..."
             falsePositiveMessages.add(message)
