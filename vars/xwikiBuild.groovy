@@ -414,33 +414,18 @@ private def attachScreenshotToFailingTests(def failingTests)
     for (def failedTest : failingTests) {
         // Compute the test's screenshot file name.
         def testClass = failedTest.className
-        def testSimpleClass = failedTest.simpleName
         def testName = failedTest.name
 
         def targetDirectory = computeTargetDirectoryForTest(failedTest)
         if (!targetDirectory) {
             // We couldn't compute the target directory, move to the next test!
-            echo "Failed to find target directory for test [${failedTest.className}#${failedTest.name}]"
+            echo "Failed to find target directory for test [${testClass}#${testName}]"
             continue
         }
+        def imageAbsolutePath = findScreenshotFile(targetDirectory)
 
-        // The screenshot can have several possible file names and locations, we check all.
-        // Selenium 1 test screenshots.
-        def imageAbsolutePath1 = new FilePath(targetDirectory, "selenium-screenshots/${testClass}-${testName}.png")
-        // Selenium 2 test screenshots.
-        def imageAbsolutePath2 = new FilePath(targetDirectory, "screenshots/${testSimpleClass}-${testName}.png")
-        // If screenshotDirectory system property is not defined we save screenshots in the tmp dir so we must also
-        // support this.
-        def imageAbsolutePath3 =
-            new FilePath(createFilePath(System.getProperty("java.io.tmpdir")), "${testSimpleClass}-${testName}.png")
-
-        // Determine which one exists, if any.
-        def imageAbsolutePath = imageAbsolutePath1.exists() ?
-            imageAbsolutePath1 : (imageAbsolutePath2.exists() ? imageAbsolutePath2 :
-            (imageAbsolutePath3.exists() ? imageAbsolutePath3 : null))
-
-        // If the screenshot exists...
-        if (imageAbsolutePath != null) {
+        // If a screenshot exists...
+        if (imageAbsolutePath) {
             echo "Attaching screenshot to description: [${imageAbsolutePath}]"
 
             // Build a base64 string of the image's content.
@@ -468,6 +453,40 @@ private def attachScreenshotToFailingTests(def failingTests)
             echo "No screenshot found for test [${testClass}#${testName}] in ${locationText}, on ${NODE_NAME}"
             sh script: "ls -alg ${targetDirectory}", returnStatus: true
         }
+    }
+}
+
+private def findScreenshotFile(def targetDirectory)
+{
+    // The screenshot can have several possible file names and locations, we check all.
+    // Selenium 1 test screenshots.
+    def imageAbsolutePath1 = new FilePath(targetDirectory, "selenium-screenshots")
+    // Selenium 2 test screenshots.
+    def imageAbsolutePath2 = new FilePath(targetDirectory, "screenshots")
+    // If screenshotDirectory system property is not defined we save screenshots in the tmp dir so we must also
+    // support this.
+    def imageAbsolutePath3 = createFilePath(System.getProperty("java.io.tmpdir"))
+
+    // Determine which one exists, if any.
+    return findScreenshotFile(imageAbsolutePath1, failedTest) ?:
+        findScreenshotFile(imageAbsolutePath2, failedTest) ?: findScreenshotFile(imageAbsolutePath3, failedTest)
+}
+
+private def findScreenshotFile(def directoryFilePath, def failedTest)
+{
+    def files = []
+    files << directoryFilePath.list("*${failedTest.className}-${failedTest.name}*.png")
+    files << directoryFilePath.list("*${failedTest.simpleName}-${failedTest.name}*.png")
+    if (files.length > 1) {
+        echo "Found several matching screenshots which should not happen (something needs to be fixed):"
+        for (def file : files) {
+            echo "- ${file}"
+            return null
+        }
+    } else if (files.length == 1) {
+        return files[0]
+    } else {
+        return null
     }
 }
 
