@@ -422,7 +422,7 @@ private def attachScreenshotToFailingTests(def failingTests)
             echo "Failed to find target directory for test [${testClass}#${testName}]"
             continue
         }
-        def imageAbsolutePath = findScreenshotFile(targetDirectory)
+        def imageAbsolutePath = findScreenshotFile(failedTest, targetDirectory)
 
         // If a screenshot exists...
         if (imageAbsolutePath) {
@@ -456,7 +456,7 @@ private def attachScreenshotToFailingTests(def failingTests)
     }
 }
 
-private def findScreenshotFile(def targetDirectory)
+private def findScreenshotFile(def failedTest, def targetDirectory)
 {
     // The screenshot can have several possible file names and locations, we check all.
     // Selenium 1 test screenshots.
@@ -468,11 +468,12 @@ private def findScreenshotFile(def targetDirectory)
     def imageAbsolutePath3 = createFilePath(System.getProperty("java.io.tmpdir"))
 
     // Determine which one exists, if any.
-    return findScreenshotFile(imageAbsolutePath1, failedTest) ?:
-        findScreenshotFile(imageAbsolutePath2, failedTest) ?: findScreenshotFile(imageAbsolutePath3, failedTest)
+    return findScreenshotFileForPattern(imageAbsolutePath1, failedTest) ?:
+        findScreenshotFileForPattern(imageAbsolutePath2, failedTest) ?:
+            findScreenshotFileForPattern(imageAbsolutePath3, failedTest)
 }
 
-private def findScreenshotFile(def directoryFilePath, def failedTest)
+private def findScreenshotFileForPattern(def directoryFilePath, def failedTest)
 {
     def files = []
     files << directoryFilePath.list("*${failedTest.className}-${failedTest.name}*.png")
