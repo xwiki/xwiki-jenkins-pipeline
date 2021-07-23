@@ -449,8 +449,7 @@ private def attachScreenshotToFailingTests(def failingTests)
                 saveCurrentBuildChanges()
             }
         } else {
-            def locationText = "[${imageAbsolutePath1}], [${imageAbsolutePath2}] or [${imageAbsolutePath3}]"
-            echo "No screenshot found for test [${testClass}#${testName}] in ${locationText}, on ${NODE_NAME}"
+            echo "No screenshot found for test [${testClass}#${testName}] on ${NODE_NAME}"
             sh script: "ls -alg ${targetDirectory}", returnStatus: true
         }
     }
@@ -483,7 +482,7 @@ private def findScreenshotFileForPattern(def directoryFilePath, def failedTest)
     if (files.size() > 1) {
         echo "Found several matching screenshots which should not happen (something needs to be fixed):"
         for (def file : files) {
-            echo "- ${file}"
+            echo "- ${file.remote}"
             return null
         }
     } else if (files.size() == 1) {
