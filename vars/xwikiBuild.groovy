@@ -476,8 +476,10 @@ private def findScreenshotFile(def failedTest, def targetDirectory)
 private def findScreenshotFileForPattern(def directoryFilePath, def failedTest)
 {
     def files = []
-    files << directoryFilePath.list("*${failedTest.className}-${failedTest.name}*.png")
-    files << directoryFilePath.list("*${failedTest.simpleName}-${failedTest.name}*.png")
+    if (directoryFilePath.exists()) {
+        files << directoryFilePath.list("*${failedTest.className}-${failedTest.name}*.png")
+        files << directoryFilePath.list("*${failedTest.simpleName}-${failedTest.name}*.png")
+    }
     if (files.length > 1) {
         echo "Found several matching screenshots which should not happen (something needs to be fixed):"
         for (def file : files) {
