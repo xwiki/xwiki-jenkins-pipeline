@@ -480,11 +480,8 @@ private def findScreenshotFileForPattern(def directoryFilePath, def failedTest)
         files << directoryFilePath.list("*${failedTest.simpleName}-${failedTest.name}*.png")
     }
     if (files.size() > 1) {
-        echo "Found several matching screenshots which should not happen (something needs to be fixed):"
-        for (def file : files) {
-            echo "- ${file.remote}"
-            return null
-        }
+        echo "Found several matching screenshots which should not happen (something needs to be fixed): ${files}"
+        return null
     } else if (files.size() == 1) {
         return files[0]
     } else {
