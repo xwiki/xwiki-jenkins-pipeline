@@ -483,9 +483,9 @@ private def findScreenshotFileForPattern(def directoryFilePath, def failedTest)
         echo "Found several matching screenshots which should not happen (something needs to be fixed): ${files}"
         return null
     } else if (files.size() == 1) {
-        echo "No matching screenshot found for [*${failedTest.className}-${failedTest.name}*.png] or [*${failedTest.simpleName}-${failedTest.name}*.png] inside [${directoryFilePath.remote}]"
         return files[0]
     } else {
+        echo "No matching screenshot found for [*${failedTest.className}-${failedTest.name}*.png] or [*${failedTest.simpleName}-${failedTest.name}*.png] inside [${directoryFilePath.remote}]"
         return null
     }
 }
