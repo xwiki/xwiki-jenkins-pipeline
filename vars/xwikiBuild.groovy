@@ -506,7 +506,19 @@ private def computeTargetDirectoryForTest(def caseResult)
     // Compute the screenshot's location on the build agent.
     // Example of target folder path:
     //   /Users/vmassol/.jenkins/workspace/blog/application-blog-test/application-blog-test-tests/target
-    return createFilePath(suiteResultFile).getParent().getParent()
+    def targetDirectory = createFilePath(suiteResultFile).getParent().getParent()
+
+    // When executing docker-based tests as part of the main build (ie with the default configuration), we use a
+    // subdirectory inside the target directory, and it's in it that we save the screenshots and videos. Thus we need
+    // to test for that directory's existence and if it exists, return it.
+    if (targetDirectory.exists()) {
+        def subDirectory = targetDirectory.child("hsqldb_embedded-default-default-jetty_standalone-default-firefox")
+        if (subDirectory.exists()) {
+            targetDirectory = subDirectory
+        }
+    }
+
+    return targetDirectory;
 }
 
 /**
