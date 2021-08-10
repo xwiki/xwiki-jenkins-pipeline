@@ -26,7 +26,7 @@ def call(choices)
 
     // If a user is manually triggering this job, then ask what to build
     if (currentBuild.rawBuild.getCauses()[0].toString().contains('UserIdCause')) {
-        echo "Build triggered by user, asking question..."
+        echoXWiki "Build triggered by user, asking question..."
         try {
             timeout(time: 60, unit: 'SECONDS') {
                 selection = input(id: 'selection', message: 'Select what to build', parameters: [
@@ -43,7 +43,7 @@ def call(choices)
             }
         }
     } else {
-        echo "Build triggered automatically, building 'All'..."
+        echoXWiki "Build triggered automatically, building 'All'..."
         selection = 'All'
     }
 

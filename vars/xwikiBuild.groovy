@@ -419,14 +419,14 @@ private def attachScreenshotToFailingTests(def failingTests)
         def targetDirectory = computeTargetDirectoryForTest(failedTest)
         if (!targetDirectory) {
             // We couldn't compute the target directory, move to the next test!
-            echo "Failed to find target directory for test [${testClass}#${testName}]"
+            echoXWiki "Failed to find target directory for test [${testClass}#${testName}]"
             continue
         }
         def imageAbsolutePath = findScreenshotFile(failedTest, targetDirectory)
 
         // If a screenshot exists...
         if (imageAbsolutePath) {
-            echo "Attaching screenshot to description: [${imageAbsolutePath}]"
+            echoXWiki "Attaching screenshot to description: [${imageAbsolutePath}]"
 
             // Build a base64 string of the image's content.
             def imageDataStream = imageAbsolutePath.read()
@@ -449,7 +449,7 @@ private def attachScreenshotToFailingTests(def failingTests)
                 saveCurrentBuildChanges()
             }
         } else {
-            echo "No screenshot found for test [${testClass}#${testName}] on ${NODE_NAME}"
+            echoXWiki "No screenshot found for test [${testClass}#${testName}] on ${NODE_NAME}"
             sh script: "ls -alg ${targetDirectory}", returnStatus: true
         }
     }
@@ -480,12 +480,12 @@ private def findScreenshotFileForPattern(def directoryFilePath, def failedTest)
         files.addAll(directoryFilePath.list("*${failedTest.simpleName}-${failedTest.name}*.png"))
     }
     if (files.size() > 1) {
-        echo "Found several matching screenshots which should not happen (something needs to be fixed): ${files}"
+        echoXWiki "Found several matching screenshots which should not happen (something needs to be fixed): ${files}"
         return null
     } else if (files.size() == 1) {
         return files[0]
     } else {
-        echo "No matching screenshot found for [*${failedTest.className}-${failedTest.name}*.png] or [*${failedTest.simpleName}-${failedTest.name}*.png] inside [${directoryFilePath.remote}]"
+        echoXWiki "No matching screenshot found for [*${failedTest.className}-${failedTest.name}*.png] or [*${failedTest.simpleName}-${failedTest.name}*.png] inside [${directoryFilePath.remote}]"
         return null
     }
 }
@@ -565,12 +565,12 @@ private def checkForFlickers(def failingTests)
                 isModified = true
             } else {
                 // For debugging
-                echo "Flicker [${testName}] - Description = [${testResult.getDescription()}]"
+                echoXWiki "Flicker [${testName}] - Description = [${testResult.getDescription()}]"
             }
-            echo "   [${testName}] is a flicker!"
+            echoXWiki "   [${testName}] is a flicker!"
             foundFlickers.add(testName)
         } else {
-            echo "   [${testName}] is not a flicker"
+            echoXWiki "   [${testName}] is not a flicker"
             // This is a real failing test, thus we'll need to send the notification email...
             containsOnlyFlickers = false
         }
