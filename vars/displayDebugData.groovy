@@ -29,7 +29,7 @@ void call()
     sh script: 'lsof -i -P -n', returnStatus: true
     sh script: 'docker ps -a', returnStatus: true
     sh script: 'docker run --cap-add=NET_ADMIN --network=host --rm --entrypoint "/bin/sh" vimagick/iptables\
-         -c "/sbin/iptables -S"', returnStatus: true
+         -c "/sbin/iptables-nft -S"', returnStatus: true
     // Display IPs of docker containers so that we can debug iptable rules
     sh script: 'docker ps | awk \'{ print $1 }\' | tail +2 | xargs -n 1 \
         docker inspect -f "{{ .ID}}:{{ .NetworkSettings.IPAddress }}"', returnStatus: true
