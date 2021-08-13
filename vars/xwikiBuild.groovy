@@ -478,7 +478,11 @@ private def findScreenshotFileForPattern(def directoryFilePath, def failedTest)
     // Remove the serialized parameters from the test name FTM since we output failing test image names without it.
     // The best fix would be to modify the Docker-based test framework to add the parameters but I don't know how to do
     // that ATM (i.e. what JUnit API to call to get it).
-    def normalizedTestName = failedTest.name.substring(0, failedTest.name.indexOf("{"))
+    def normalizedTestName = failedTest.name
+    def pos = normalizedTestName.indexOf("{")
+    if (pos > -1) {
+        normalizedTestName = normalizedTestName.substring(0, pos)
+    }
     if (directoryFilePath.exists()) {
         files.addAll(directoryFilePath.list("*${failedTest.className}-${normalizedTestName}*.png"))
         files.addAll(directoryFilePath.list("*${failedTest.simpleName}-${normalizedTestName}*.png"))
