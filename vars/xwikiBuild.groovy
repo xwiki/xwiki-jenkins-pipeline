@@ -475,9 +475,13 @@ private def findScreenshotFile(def failedTest, def targetDirectory)
 private def findScreenshotFileForPattern(def directoryFilePath, def failedTest)
 {
     def files = []
+    // Remove the serialized parameters from the test name FTM since we output failing test image names without it.
+    // The best fix would be to modify the Docker-based test framework to add the parameters but I don't know how to do
+    // that ATM (i.e. what JUnit API to call to get it).
+    def normalizedTestName = failedTest.name.substring(0, failedTest.name.indexOf("{"))
     if (directoryFilePath.exists()) {
-        files.addAll(directoryFilePath.list("*${failedTest.className}-${failedTest.name}*.png"))
-        files.addAll(directoryFilePath.list("*${failedTest.simpleName}-${failedTest.name}*.png"))
+        files.addAll(directoryFilePath.list("*${failedTest.className}-${normalizedTestName}*.png"))
+        files.addAll(directoryFilePath.list("*${failedTest.simpleName}-${normalizedTestName}*.png"))
     }
     if (files.size() > 1) {
         echoXWiki "Found several matching screenshots which should not happen (something needs to be fixed): ${files}"
@@ -485,7 +489,7 @@ private def findScreenshotFileForPattern(def directoryFilePath, def failedTest)
     } else if (files.size() == 1) {
         return files[0]
     } else {
-        echoXWiki "No matching screenshot found for [*${failedTest.className}-${failedTest.name}*.png] or [*${failedTest.simpleName}-${failedTest.name}*.png] inside [${directoryFilePath.remote}]"
+        echoXWiki "No matching screenshot found for [*${failedTest.className}-${normalizedTestName}*.png] or [*${failedTest.simpleName}-${normalizedTestName}*.png] inside [${directoryFilePath.remote}]"
         return null
     }
 }
@@ -683,6 +687,8 @@ private def normalizeTestName(value)
 /**
  * @return the failing tests for the current build as a list of {@code hudson.tasks.junit.CaseResult} objects.
  */
+// TODO: Note that this is currently not workig as it returns all failing tests from all maven executions so far.
+// See also https://issues.jenkins.io/browse/JENKINS-49339
 // currentBuild.rawBuild is non-serializable which is why we need the @NonCPS annotation.
 // Search for "rawBuild" on https://ci.xwiki.org/pipeline-syntax/globals#currentBuild
 // Otherwise we get: Caused: java.io.NotSerializableException: org.jenkinsci.plugins.workflow.job.WorkflowRun
@@ -690,8 +696,10 @@ private def normalizeTestName(value)
 private def getFailingTests()
 {
     def failingTests
-    AbstractTestResultAction testResultAction = currentBuild.rawBuild.getAction(AbstractTestResultAction.class)
+    def currentRun = currentBuild.rawBuild
+    AbstractTestResultAction testResultAction = currentRun.getAction(AbstractTestResultAction.class)
     if (testResultAction != null) {
+        // Note: getResultInRun() returns a https://javadoc.jenkins.io/plugin/junit/hudson/tasks/test/TestResult.html
         failingTests = testResultAction.getResult().getResultInRun(currentBuild.rawBuild).getFailedTests()
     } else {
         // No tests were run in this build, nothing left to do.
