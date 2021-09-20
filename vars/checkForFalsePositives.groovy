@@ -73,7 +73,8 @@ def call()
     // - second element: the text used in the badge and on the job summary page
     def messages = [
         [".*Error setting up the XWiki testing environment on agent.*", "Docker test setup issue"],
-        [".*Java heap space.*", "Memory issue"]
+        [".*Java heap space.*", "Memory issue"],
+        [".*Connection refused (Connection refused).*", "Network issue"]
     ]
     messages.each { message ->
         if (manager.logContains(message.get(0))) {
