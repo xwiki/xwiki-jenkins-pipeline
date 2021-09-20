@@ -74,8 +74,9 @@ def call()
     def messages = [
         [".*Error setting up the XWiki testing environment on agent.*", "Docker test setup issue"],
         [".*Java heap space.*", "Memory issue"],
-        [".*Connection refused (Connection refused).*", "Communication issue"],
-        [".*Reached error page: about:neterror.*", "Communication issue"]
+        [".*Connection refused.*", "Communication issue"],
+        [".*Reached error page: about:neterror.*", "Communication issue"],
+        [".*ContainerLaunchException: Timed out waiting for URL to be accessible.*"]
     ]
     messages.each { message ->
         if (manager.logContains(message.get(0))) {
