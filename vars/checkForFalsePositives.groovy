@@ -76,7 +76,7 @@ def call()
         [".*Java heap space.*", "Memory issue"],
         [".*Connection refused.*", "Communication issue"],
         [".*Reached error page: about:neterror.*", "Communication issue"],
-        [".*ContainerLaunchException: Timed out waiting for URL to be accessible.*"]
+        [".*ContainerLaunchException: Timed out waiting for URL to be accessible.*", "Timed out waiting for URL to be accessible"]
     ]
     messages.each { message ->
         if (manager.logContains(message.get(0))) {
