@@ -40,6 +40,15 @@ def call(config, pom)
             mavenOpts = "${mavenOpts} -XX:MaxPermSize=512m"
         }
     }
+    // Make sure Maven logs timestamps to help debug issues:
+    //   -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss,SSS -Dorg.slf4j.simpleLogger.showDateTime=true
+    if (!mavenOpts.contains('org.slf4j.simpleLogger.dateTimeFormat')) {
+        mavenOpts = "${mavenOpts} -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss,SSS"
+    }
+    if (!mavenOpts.contains('org.slf4j.simpleLogger.showDateTime')) {
+        mavenOpts = "${mavenOpts} -Dorg.slf4j.simpleLogger.showDateTime=true"
+    }
+
     results.mavenOpts = mavenOpts
     return results
 }
