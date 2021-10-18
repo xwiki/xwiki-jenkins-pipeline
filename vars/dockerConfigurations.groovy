@@ -177,11 +177,11 @@ def getUnsupportedConfigurations(def xwikiVersion, def versions)
             'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            // Note 1: we should use 'latest' but currently 'latest' is 9.4.x for jetty on dockerhub, see
+            // Note 1: we should use 'latest' but currently 'latest' is 9.x for jetty on dockerhub, see
             // https://hub.docker.com/_/jetty. Put back once latest is 10.x.
             // Note 2: we cannot use 11.x right now since that corresponds to a package change for JakartaEE and we'll
             // need XWiki to move to the new packages first.
-            'servletEngineTag' : '10.0.0-jre11',
+            'servletEngineTag' : '10-jre11',
             'browser' : 'chrome'
         ],
         // Verify XWiki works on the latest released Java version in order to prepare for the next Java LTS (which
