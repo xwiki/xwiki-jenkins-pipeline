@@ -39,14 +39,14 @@ def call(configurationName, xwikiVersion)
         'mariadb' : [ 'latest' : '10.6', 'lts' : '10.5' ],
         // Note: for postgreSQL latest is the last cycle and LTS the previous one. Thus, we don't specify the minor to
         // be always up to date in our tests.
-        'postgresql' : [ 'latest' : '13', 'lts' : '12' ],
+        'postgresql' : [ 'latest' : '14', 'lts' : '13' ],
         'oracle' : [ 'latest' : '19.3.0-se2' ],
         // Note : we cannot use Tomcat 10.x right now as the latest version since that corresponds to a package change
         // for JakartaEE and we'll need XWiki to move to the new packages first. This is why LTS = latest FTM.
         'tomcat' : [ 'latest' : '9', 'lts' : '9', 'special' : '9-jdk8' ],
         // Note : we cannot use Jetty 11.x right now as the latest version since that corresponds to a package change
         // for JakartaEE and we'll need XWiki to move to the new packages first.
-        'jetty' : [ 'latest' : '10.0.0-jre11', 'lts' : '9-jre11' ]
+        'jetty' : [ 'latest' : '10-jre11', 'lts' : '9-jre11' ]
     ]
 
     def configurations = [:]
