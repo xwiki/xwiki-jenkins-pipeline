@@ -184,15 +184,14 @@ def getUnsupportedConfigurations(def xwikiVersion, def versions)
             'servletEngineTag' : '10-jre11',
             'browser' : 'chrome'
         ],
-        // Verify XWiki works on the latest released Java version in order to prepare for the next Java LTS (which
-        // will be Java 17 in 2021).
+        // Verify XWiki works on the latest released Java version
         // Also test latest MariaDB at the same time.
-        'MariaDB latest, Tomcat latest (Java 14), Firefox': [
+        'MariaDB latest, Tomcat latest (Java 17), Firefox': [
             'database' : 'mariadb',
             'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : 'jdk14-openjdk-oracle',
+            'servletEngineTag' : '9-jdk17',
             'browser' : 'firefox'
         ]
     ]
