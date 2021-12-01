@@ -55,7 +55,11 @@ def call(config, pom)
 
 /**
  * Read the parent pom to try to guess the java tool to use based on the parent pom version.
- * XWiki versions < 8 should use Java 7.
+ * <ul>
+ *   <li>XWiki versions < 8 should use Java 7.</li>
+ *   <li>XWiki versions >= 8 and < 14 should use Java 8.</li>
+ *   <li>XWiki versions >= 14 should use the official java version
+ *  </ul>
  */
 def getJavaTool(pom)
 {
@@ -79,6 +83,8 @@ def getJavaTool(pom)
         def major = version.substring(0, version.indexOf('.'))
         if (major.toInteger() < 8) {
             return 'java7'
+        } else if (major.toInteger() >= 8 && major.toInteger() < 14) {
+            return 'java8'
         }
     }
     return 'official'
