@@ -43,10 +43,10 @@ def call(configurationName, xwikiVersion)
         'oracle' : [ 'latest' : '19.3.0-se2' ],
         // Note : we cannot use Tomcat 10.x right now as the latest version since that corresponds to a package change
         // for JakartaEE and we'll need XWiki to move to the new packages first. This is why LTS = latest FTM.
-        'tomcat' : [ 'latest' : '9', 'lts' : '9', 'special' : '9-jdk8' ],
+        'tomcat' : [ 'latest' : '9-jdk11', 'lts' : '9-jdk11', 'special' : '9-jdk8' ],
         // Note : we cannot use Jetty 11.x right now as the latest version since that corresponds to a package change
         // for JakartaEE and we'll need XWiki to move to the new packages first.
-        'jetty' : [ 'latest' : '10-jre11', 'lts' : '9-jre11' ]
+        'jetty' : [ 'latest' : '10-jdk11', 'lts' : '9-jdk11' ]
     ]
 
     def configurations = [:]
@@ -168,7 +168,9 @@ def getUnsupportedConfigurations(def xwikiVersion, def versions)
             'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : 'latest',
+            // Note: we cannot use 10.x right now since that corresponds to a package change for JakartaEE and we'll
+            // need XWiki to move to the new packages first.
+            'servletEngineTag' : '9-jdk17',
             'browser' : 'chrome'
         ],
         // Test on latest PostgreSQL, latest Jetty, Java LTS
@@ -181,16 +183,16 @@ def getUnsupportedConfigurations(def xwikiVersion, def versions)
             // https://hub.docker.com/_/jetty. Put back once latest is 10.x.
             // Note 2: we cannot use 11.x right now since that corresponds to a package change for JakartaEE and we'll
             // need XWiki to move to the new packages first.
-            'servletEngineTag' : '10-jre11',
+            'servletEngineTag' : '10-jdk17',
             'browser' : 'chrome'
         ],
-        // Verify XWiki works on the latest released Java version
-        // Also test latest MariaDB at the same time.
+        // Test on latest MariaDB, Tomcat LTS, latest Java
         'MariaDB latest, Tomcat latest (Java 17), Firefox': [
             'database' : 'mariadb',
             'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
+             // Note: Java LTS == Java latest ATM (1/12/2021). Once Java 18 is released, update the tag.
             'servletEngineTag' : '9-jdk17',
             'browser' : 'firefox'
         ]
