@@ -79,7 +79,6 @@ def getJavaTool(pom)
 
     }
     if (isKnownParent(groupId, artifactId)) {
-        // If version < 8 then use Java7, otherwise official
         def major = version.substring(0, version.indexOf('.'))
         if (major.toInteger() < 8) {
             return 'java7'
@@ -91,16 +90,16 @@ def getJavaTool(pom)
 }
 
 /**
- * Since we're trying to guess the Java version to use based on the parent POM version, we need to ensure that the
- * parent POM points to an XWiki core module (there are several possible) so that we can compare with the version 8.
+ * Check that the parent is XWiki commons, rendering or platform since we know the java requirements for these
+ * modules based on their versions.
  */
 def isKnownParent(parentGroupId, parentArtifactId)
 {
     return (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-platform') ||
-            (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-commons') ||
-            (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-rendering') ||
-            (parentGroupId == 'org.xwiki.commons' && parentArtifactId == 'xwiki-commons-pom') ||
-            (parentGroupId == 'org.xwiki.rendering' && parentArtifactId == 'xwiki-rendering') ||
-            (parentGroupId == 'org.xwiki.platform' && parentArtifactId == 'xwiki-platform') ||
-            (parentGroupId == 'org.xwiki.platform' && parentArtifactId == 'xwiki-platform-distribution')
+           (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-commons') ||
+           (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-rendering') ||
+           (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-platform-distribution') ||
+           parentGroupId == 'org.xwiki.commons' ||
+           parentGroupId == 'org.xwiki.rendering' ||
+           parentGroupId == 'org.xwiki.platform'
 }
