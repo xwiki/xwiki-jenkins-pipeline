@@ -181,22 +181,6 @@ void call(name = 'Default', body)
                     timeout(timeoutThreshold) {
                         def pom = getPOMFile(config)
                         echoXWiki "Using POM file: ${pom}"
-                        // Note: We use -Dmaven.test.failure.ignore so that the maven build continues till the
-                        // end and is not stopped by the first failing test. This allows to get more info from the
-                        // build (see all failing tests for all modules built). Also note that the build is marked
-                        // unstable when there are failing tests by the JUnit Archiver executed during the
-                        // 'Post Build' stage below.
-                        // Note: "--no-transfer-progress" is used to avoid the download progress indicators which do
-                        // not display well in a non-interactive shell and which use a lot of console log space.
-                        def fullProperties = "--no-transfer-progress -Dmaven.test.failure.ignore ${properties}"
-                        // GE uses the local and remote build cache to cache fingerprinting. That means on stateless
-                        // CI agent, it causes a lot of requests to the build cache node. The XWiki build cache node
-                        // (ge.xwiki.org) being hosted in the US (Virginia) and ci.xwiki.org being histed in France,
-                        // http requests are not that fast. An internal ticket has been created by Gradle Inc. to
-                        // work on a smarter solution. For the time being, we force recomputation of fingerprints
-                        // instead of caching them by passing the following system property.
-                        // Set Maven flags to use
-                        fullProperties = "${fullProperties} -Dgradle.internal.cacheFingerprintsInBuildCache=false"
                         def mavenFlags = config.mavenFlags ?: '-U -e'
                         wrapInSonarQube(config) {
                             sh "mvn -f ${pom} ${goals} -P${profiles} ${mavenFlags} ${fullProperties} ${javadoc}"
@@ -306,6 +290,31 @@ private def getMavenSystemProperties(config, nodeName)
     // on which it is executed in order to make it easier for debugging (it'll appear in the jenkins page for the
     // failing test (see XWikiDockerExtension which prints it).
     properties = "${properties} -DjenkinsAgentName=\"${nodeName}\""
+
+    // Note: We use -Dmaven.test.failure.ignore so that the maven build continues till the
+    // end and is not stopped by the first failing test. This allows to get more info from the
+    // build (see all failing tests for all modules built). Also note that the build is marked
+    // unstable when there are failing tests by the JUnit Archiver executed during the
+    // 'Post Build' stage below.
+    // Note: "--no-transfer-progress" is used to avoid the download progress indicators which do
+    // not display well in a non-interactive shell and which use a lot of console log space.
+    properties = "--no-transfer-progress -Dmaven.test.failure.ignore ${properties}"
+    // GE uses the local and remote build cache to cache fingerprinting. That means on stateless
+    // CI agent, it causes a lot of requests to the build cache node. The XWiki build cache node
+    // (ge.xwiki.org) being hosted in the US (Virginia) and ci.xwiki.org being histed in France,
+    // http requests are not that fast. An internal ticket has been created by Gradle Inc. to
+    // work on a smarter solution. For the time being, we force recomputation of fingerprints
+    // instead of caching them by passing the following system property.
+    // Set Maven flags to use
+    properties = "${properties} -Dgradle.internal.cacheFingerprintsInBuildCache=false"
+
+    // When sonar is active (sonar = true) then also pass the "sonar.branch.name" maven property so that SonarQube
+    // pushes the analysis to the right branch on sonarcloud. Note that we only pass it when not analyzing the main
+    // branch as suggested by https://community.sonarsource.com/t/clarify-the-use-of-sonar-branch-name/18872/3
+    def branchName = env['BRANCH_NAME']
+    if (config.sonar && !isMasterBranch(branchName)) {
+        properties = "${properties} -Dsonar.branch.name=${branchName}"
+    }
 
     // Have functional tests retry twice in case of error. This is done to try to reduce the quantity of flickers.
     // TODO: put back the retry when the build is in a better shape and when Surefirex 3.x doesn't fail anymore in
