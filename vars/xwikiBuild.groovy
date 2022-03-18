@@ -183,7 +183,7 @@ void call(name = 'Default', body)
                         echoXWiki "Using POM file: ${pom}"
                         def mavenFlags = config.mavenFlags ?: '-U -e'
                         wrapInSonarQube(config) {
-                            sh "mvn -f ${pom} ${goals} -P${profiles} ${mavenFlags} ${javadoc}"
+                            sh "mvn -f ${pom} ${goals} -P${profiles} ${mavenFlags} ${properties} ${javadoc}"
                         }
                     }
                 } catch (InterruptedException e) {
