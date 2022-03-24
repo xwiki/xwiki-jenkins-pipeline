@@ -299,14 +299,6 @@ private def getMavenSystemProperties(config, nodeName)
     // Note: "--no-transfer-progress" is used to avoid the download progress indicators which do
     // not display well in a non-interactive shell and which use a lot of console log space.
     properties = "--no-transfer-progress -Dmaven.test.failure.ignore ${properties}"
-    // GE uses the local and remote build cache to cache fingerprinting. That means on stateless
-    // CI agent, it causes a lot of requests to the build cache node. The XWiki build cache node
-    // (ge.xwiki.org) being hosted in the US (Virginia) and ci.xwiki.org being histed in France,
-    // http requests are not that fast. An internal ticket has been created by Gradle Inc. to
-    // work on a smarter solution. For the time being, we force recomputation of fingerprints
-    // instead of caching them by passing the following system property.
-    // Set Maven flags to use
-    properties = "${properties} -Dgradle.internal.cacheFingerprintsInBuildCache=false"
 
     // When sonar is active (sonar = true) then also pass the "sonar.branch.name" maven property so that SonarQube
     // pushes the analysis to the right branch on sonarcloud. Note that we only pass it when not analyzing the main
