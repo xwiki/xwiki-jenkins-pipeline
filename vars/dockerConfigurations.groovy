@@ -88,7 +88,7 @@ def getLatestConfigurations(def xwikiVersion, def versions)
             'servletEngine' : 'tomcat',
             'servletEngineTag' : versions.tomcat.latest,
             'browser' : 'chrome'
-        ]/*,
+        ],
         "Oracle ${versions.oracle.latest}, Jetty ${versions.jetty.latest}, Firefox": [
             'database' : 'oracle',
             'databaseTag' : versions.oracle.latest,
@@ -96,7 +96,7 @@ def getLatestConfigurations(def xwikiVersion, def versions)
             'servletEngine' : 'jetty',
             'servletEngineTag' : versions.jetty.latest,
             'browser' : 'firefox'
-        ]*/
+        ]
     ]
     return configurations
 }
