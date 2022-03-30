@@ -118,7 +118,11 @@ private def getSystemProperties()
         '-Dxwiki.surefire.captureconsole.skip=true',
         '-Dxwiki.revapi.skip=true',
         '-Dxwiki.spoon.skip=true',
-        '-Dxwiki.enforcer.skip=true'
+        '-Dxwiki.enforcer.skip=true',
+        // Disabling gradle cache for docker tests, since it does not distinguish the tests 
+        // performed on different configurations.
+        '-Dgradle.cache.local.enabled=false',
+        '-Dgradle.cache.remote.enabled=false'
     ]
 }
 
