@@ -185,6 +185,7 @@ private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cl
                     'maven.clover.cloverDatabase' : "${cloverDir}/clover.db"
             ])
             // Skip the maximum number of checks to speed up the build
+            // Skip Gradle plugin capture since they break clover
             def propertiesString = getSystemPropertiesAsString([
                     'xwiki.revapi.skip' : 'true',
                     'xwiki.checkstyle.skip' : 'true',
@@ -192,7 +193,9 @@ private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cl
                     'xwiki.license.skip' : 'true',
                     'xwiki.surefire.captureconsole.skip' : 'true',
                     'xwiki.test.validateconsole.skip' : 'true',
-                    'maven.test.failure.ignore' : 'true'
+                    'maven.test.failure.ignore' : 'true',
+                    'gradle.scan.captureBuildLogging' : 'false',
+                    'gradle.scan.captureTestLogging' : 'false'
             ])
             def profiles = "-Pclover,integration-tests,flavor-integration-tests,distribution,docker"
             // Use "nice" to reduce priority of the Maven process so that Jenkins stays as responsive as possible during
