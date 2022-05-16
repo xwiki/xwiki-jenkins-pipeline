@@ -112,14 +112,6 @@ def getLatestConfigurations(def xwikiVersion, def versions)
 def getAllConfigurations(def xwikiVersion, def versions)
 {
     def configurations = [
-        "MySQL ${versions.mysql.lts}, Tomcat ${versions.tomcat.lts}, Chrome": [
-            'database' : 'mysql',
-            'databaseTag' : versions.mysql.lts,
-            'jdbcVersion' : 'pom',
-            'servletEngine' : 'tomcat',
-            'servletEngineTag' : versions.tomcat.lts,
-            'browser' : 'chrome'
-        ],
         "MariaDB ${versions.mariadb.lts}, Tomcat ${versions.tomcat.lts}, Firefox": [
             'database' : 'mariadb',
             'databaseTag' : versions.mariadb.lts,
@@ -135,20 +127,37 @@ def getAllConfigurations(def xwikiVersion, def versions)
             'servletEngine' : 'jetty',
             'servletEngineTag' : versions.jetty.lts,
             'browser' : 'chrome'
-        ],
-        // Special case: verify we still support utf8 for MySQL and at the same time test with latest Tomcat on Java8
-        // (to verify XWiki still works on java 8).
-        "MySQL ${versions.mysql.lts} (utf8), Tomcat ${versions.tomcat.special} (latest on Java 8), Chrome": [
-            'database' : 'mysql',
-            'database.commands.character-set-server' : 'utf8',
-            'database.commands.collation-server' : 'utf8_bin',
-            'databaseTag' : versions.mysql.lts,
-            'jdbcVersion' : 'pom',
-            'servletEngine' : 'tomcat',
-            'servletEngineTag' : versions.tomcat.special,
-            'browser' : 'chrome'
         ]
     ]
+
+    if (xwikiVersion.startsWith("14.")) {
+        // Verify MySQL LTS on Tomcat LTS and at the same time we verify that we still support utf8 for MySQL.
+        // Note: MySQL on utmb4 is tested in latest configurations.
+        configurations.addAll([
+            "MySQL ${versions.mysql.lts} (utf8), Tomcat ${versions.tomcat.lts}, Chrome": [
+                'database' : 'mysql',
+                'database.commands.character-set-server' : 'utf8',
+                'database.commands.collation-server' : 'utf8_bin',
+                'databaseTag' : versions.mysql.lts,
+                'jdbcVersion' : 'pom',
+                'servletEngine' : 'tomcat',
+                'servletEngineTag' : versions.tomcat.lts,
+                'browser' : 'chrome'
+            ]
+        ])
+    } else {
+        // Special case: verify we can still run XWiki < 14 with Java 8
+        configurations.addAll([
+            "MySQL ${versions.mysql.lts}, Tomcat ${versions.tomcat.special} (latest on Java 8), Chrome": [
+                'database' : 'mysql',
+                'databaseTag' : versions.mysql.lts,
+                'jdbcVersion' : 'pom',
+                'servletEngine' : 'tomcat',
+                'servletEngineTag' : versions.tomcat.special,
+                'browser' : 'chrome'
+                ]
+        ])
+    }
 
     return configurations
 }
