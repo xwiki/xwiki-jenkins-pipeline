@@ -118,6 +118,11 @@ void call(name = 'Default', body)
         def dockerHubUserId = config.dockerHubUserId ?: 'xwikici'
         generateDockerConfig(dockerHubSecretId, dockerHubUserId)
 
+        // Manually force the removal of dead docker networks to avoid hitting
+        // https://github.com/testcontainers/testcontainers-java/issues/5667
+        // TODO: Remove once the issue is fixed.
+        sh script: 'docker network prune -f', returnStatus: true
+
         // Display some environmental information that can be useful to debug some failures
         // Note: if the executables don't exist, this won't fail the step thanks to "returnStatus: true".
         sh script: 'ps -ef', returnStatus: true
