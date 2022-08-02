@@ -123,6 +123,12 @@ void call(name = 'Default', body)
         // TODO: Remove once the issue is fixed.
         sh script: 'docker network prune -f', returnStatus: true
 
+        // Manually force the removal of dead docker containers to avoid hitting
+        // https://github.com/testcontainers/testcontainers-java/issues/3558
+        // TODO: Remove once the issue if fixed
+        sh script: 'docker rm -v $(docker ps -q -f status=exited -f label=org.xwiki.docker.libreoffice=true)',
+            returnStatus= true
+
         // Display some environmental information that can be useful to debug some failures
         // Note: if the executables don't exist, this won't fail the step thanks to "returnStatus: true".
         sh script: 'ps -ef', returnStatus: true
