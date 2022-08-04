@@ -75,7 +75,10 @@ void call(boolean isParallel = true, body)
                     goals: 'clean verify',
                     skipMail: config.skipMail,
                     jobProperties: config.jobProperties,
-                    label: config.label ?: 'docker'
+                    label: config.label ?: 'docker',
+                    // Keep builds for 30 days since we want to be able to see all builds if there are a lot at a given
+                    // time, to be able to identify flickers, etc.
+                    daysToKeepStr: env.BRANCH_NAME == 'master' ? '30' : null
                 )
             }
         }
