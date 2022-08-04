@@ -60,7 +60,12 @@ void call(name = 'Default', body)
     printConfigurationProperties(config)
 
     // Does the following:
-    // - Only keep builds for the last configured number of days (7 by default)
+    // - By default keep the last 20 builds
+    //   - This behavior can be overridden by using the "daysToKeepStr" property, in which case the builds are kept for
+    //     that many number of days
+    // - Only keep builds for the last configured number of days (30 by default)
+    //   - Special handling for contrib projects which have a lot less activity and for which we prefer to keep a number
+    //     of builds instead rather than be time-based. We keep 20 builds.
     // - Disable concurrent builds to avoid rebuilding whenever a new commit is made. The commits will accumulate till
     //   the previous build is finished before starting a new one.
     //   Note 1: this is limiting concurrency per branch only.
@@ -68,10 +73,17 @@ void call(name = 'Default', body)
     //   See https://thepracticalsysadmin.com/limit-jenkins-multibranch-pipeline-builds/ for details.
     // -  Make sure projects are built at least once a month because SNAPSHOT older than one month are deleted
     //    by the Nexus scheduler.
-    def computedDaysToKeepStr = config.daysToKeepStr ?: '7'
-    echoXWiki "Only keep the builds for the last $computedDaysToKeepStr days + disable concurrent builds"
+    def buildDiscardStrategy = [$class: 'LogRotator']
+    if (config.daysToKeepStr) {
+        buildDiscardStrategy.put('daysToKeepStr', config.daysToKeepStr)
+        echoXWiki "Keep the builds for the last ${config.daysToKeepStr} days"
+    } else {
+        def buildsToKeep = 20
+        buildDiscardStrategy.put('numToKeepStr', buildsToKeep)
+        echoXWiki "Keep the last $buildsToKeep builds"
+    }
     def projectProperties = [
-        [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', daysToKeepStr: computedDaysToKeepStr]],
+        [$class: 'BuildDiscarderProperty', strategy: buildDiscardStrategy],
         disableConcurrentBuilds(),
         pipelineTriggers([cron("@monthly")])
     ]
