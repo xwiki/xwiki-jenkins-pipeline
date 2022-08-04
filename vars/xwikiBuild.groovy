@@ -121,7 +121,7 @@ void call(name = 'Default', body)
         // Force removal of unused docker containers, networks, dangling images, volumes to avoid Docker taking more and
         // more space over time due to leftovers (e.g. https://github.com/testcontainers/testcontainers-java/issues/5667
         // and https://github.com/testcontainers/testcontainers-java/issues/3558)
-        sh script: 'docker system prune --volumes -f', returnStatus= true
+        sh script: 'docker system prune --volumes -f', returnStatus: true
 
         // Display some environmental information that can be useful to debug some failures
         // Note: if the executables don't exist, this won't fail the step thanks to "returnStatus: true".
