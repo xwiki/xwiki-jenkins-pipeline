@@ -75,11 +75,11 @@ void call(name = 'Default', body)
     //    by the Nexus scheduler.
     def buildDiscardStrategy = [$class: 'LogRotator']
     if (config.daysToKeepStr) {
-        buildDiscardStrategy.put('daysToKeepStr', config.daysToKeepStr)
+        buildDiscardStrategy.put('daysToKeepStr', config.daysToKeepStr.toString())
         echoXWiki "Keep the builds for the last ${config.daysToKeepStr} days"
     } else {
         def buildsToKeep = 20
-        buildDiscardStrategy.put('numToKeepStr', buildsToKeep)
+        buildDiscardStrategy.put('numToKeepStr', buildsToKeep.toString())
         echoXWiki "Keep the last $buildsToKeep builds"
     }
     def projectProperties = [
