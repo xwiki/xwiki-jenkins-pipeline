@@ -173,8 +173,8 @@ void call(name = 'Default', body)
             // Note: withMaven is concatenating any passed "mavenOpts" with env.MAVEN_OPTS. Thus in order to fully
             // control the maven options used we set env.MAVEN_OPTS to empty.
             env.MAVEN_OPTS = ''
-            withMaven(maven: mavenTool, jdk: javaMavenConfig.jdk, mavenOpts: javaMavenConfig.mavenOpts,
-                options: publishers)
+            wrapInWithMaven(maven: mavenTool, jdk: javaMavenConfig.jdk, mavenOpts: javaMavenConfig.mavenOpts,
+                    options: publishers)
             {
                 try {
                     def goals = computeMavenGoals(config)
@@ -348,6 +348,22 @@ private def getMavenProfiles(config, env)
         profiles = "${profiles},docker"
     }
     return profiles
+}
+
+private def wrapInWithMaven(config, closure)
+{
+    try {
+        withMaven(config) {
+            closure()
+        }
+    } catch (Exception e) {
+        // Unexpected error. Since we execute all tests with -Dmaven.test.failure.ignore (ignore test failures), if
+        // the withMaven step exits with an exception, the junit publisher may not be executed and thus the build may
+        // be marked as successful when in reality it's not.
+        echoXWiki "The withMaven step has stopped unexpectedly and the JUnit test results may not be accurate."
+        echoXWiki "Marking the build in error since something very wrong happened."
+        currentBuild.result = 'ERROR'
+    }
 }
 
 private def wrapInXvnc(config, closure)
