@@ -356,13 +356,14 @@ private def wrapInWithMaven(config, closure)
         withMaven(config) {
             closure()
         }
-    } catch (Exception e) {
+    } catch (Throwable e) {
         // Unexpected error. Since we execute all tests with -Dmaven.test.failure.ignore (ignore test failures), if
         // the withMaven step exits with an exception, the junit publisher may not be executed and thus the build may
         // be marked as successful when in reality it's not.
         echoXWiki "The withMaven step has stopped unexpectedly and the JUnit test results may not be accurate."
         echoXWiki "Marking the build in error since something very wrong happened."
         currentBuild.result = 'ERROR'
+        throw e;
     }
 }
 
