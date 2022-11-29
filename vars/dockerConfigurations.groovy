@@ -45,8 +45,8 @@ def call(configurationName, xwikiVersion)
         // for JakartaEE and we'll need XWiki to move to the new packages first. This is why LTS = latest FTM.
         'tomcat' : [ 'latest' : '9-jdk11', 'lts' : '9-jdk11', 'special' : '9-jdk8' ],
         // Note : we cannot use Jetty 11.x right now as the latest version since that corresponds to a package change
-        // for JakartaEE and we'll need XWiki to move to the new packages first.
-        'jetty' : [ 'latest' : '10-jdk11', 'lts' : '9-jdk11' ]
+        // for JakartaEE and we'll need XWiki to move to the new packages first. This is why LTS = latest FTM.
+        'jetty' : [ 'latest' : '10-jdk11', 'lts' : '10-jdk11' ]
     ]
 
     def configurations = [:]
