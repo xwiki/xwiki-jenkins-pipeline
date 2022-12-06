@@ -71,6 +71,7 @@ void call(name = 'Default', body)
     //   Note 1: this is limiting concurrency per branch only.
     //   Note 2: This needs to be one of the first code executed which is why it's the first step we execute.
     //   See https://thepracticalsysadmin.com/limit-jenkins-multibranch-pipeline-builds/ for details.
+    // - Skip default checkout since we do the checkout explicitly to control it (see below).
     // -  Make sure projects are built at least once a month because SNAPSHOT older than one month are deleted
     //    by the Nexus scheduler.
     def buildDiscardStrategy = [$class: 'LogRotator']
@@ -85,6 +86,7 @@ void call(name = 'Default', body)
     def projectProperties = [
         [$class: 'BuildDiscarderProperty', strategy: buildDiscardStrategy],
         disableConcurrentBuilds(),
+        skipDefaultCheckout(),
         pipelineTriggers([cron("@monthly")])
     ]
 
