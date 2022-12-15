@@ -24,6 +24,6 @@ void call(text)
 {
     // Note: since Jenkins doesn't disambiguate logs on agents (we don't know on what agent a log is output), we have
     // to do it ourselves by prefixing the message with the agent name.
-    def nodeName = env['NODE_NAME']
+    def nodeName = env['NODE_NAME'] ?: 'No node'
     echo "\u27A1 [${nodeName}] ${text}"
 }
