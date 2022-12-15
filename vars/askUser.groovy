@@ -20,13 +20,14 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-def call(choices)
+def call(choices, defaultValue)
 {
     def selection
+    def resolvedDefaultValue = defaultValue ?: 'All'
 
     // If a user is manually triggering this job, then ask what to build
     if (currentBuild.rawBuild.getCauses()[0].toString().contains('UserIdCause')) {
-        echoXWiki "Build triggered by user, asking question..."
+        echoXWiki "Build triggered by user, asking the user which build to execute..."
         try {
             timeout(time: 60, unit: 'SECONDS') {
                 selection = input(id: 'selection', message: 'Select what to build', parameters: [
@@ -36,15 +37,15 @@ def call(choices)
         } catch(err) {
             def user = err.getCauses()[0].getUser()
             if ('SYSTEM' == user.toString()) { // SYSTEM means timeout.
-                selection = 'All'
+                selection = resolvedDefaultValue
             } else {
                 // Aborted by user
                 throw err
             }
         }
     } else {
-        echoXWiki "Build triggered automatically, building 'All'..."
-        selection = 'All'
+        echoXWiki "Build triggered automatically, selecting build '${resolvedDefaultValue}'..."
+        selection = resolvedDefaultValue
     }
 
     return selection
