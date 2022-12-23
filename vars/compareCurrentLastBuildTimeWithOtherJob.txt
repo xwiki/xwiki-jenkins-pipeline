@@ -1,0 +1,12 @@
+Compare a job's last build time vs the current job's last build time.
+
+Parameters:
+
+* `otherJobName`: The other job's name (e.g. "XWiki/xwiki-platform/master")
+
+Returns:
+
+* A long value which is the difference between the time (in millis) of the other job's last completed build and the
+  current build's last completed build
+* or null if an error happened (no job exists for the passed name, no last completion)
+
