@@ -168,7 +168,9 @@ void call(name = 'Default', body)
             // Note: We're not passing "mavenOpts" voluntarily, see configureJavaTool()
             def publishers = [
                 artifactsPublisher(disabled: !archiveArtifacts),
-                dependenciesFingerprintPublisher(disabled: !fingerprintDependencies)
+                dependenciesFingerprintPublisher(disabled: !fingerprintDependencies),
+                // TODO: Remove once https://jira.xwiki.org/browse/XINFRA-382 is fixed
+                invokerPublisher(disabled: true)
             ]
             // Note: withMaven is concatenating any passed "mavenOpts" with env.MAVEN_OPTS. Thus in order to fully
             // control the maven options used we set env.MAVEN_OPTS to empty.
