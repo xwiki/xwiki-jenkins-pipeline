@@ -28,9 +28,9 @@ def call(otherJobName) {
     def otherJob = jenkins.getItemByFullName(otherJobName)
     def lastOtherJobBuild = otherJob?.getLastCompletedBuild()
     def lastOtherJobBuildTime = lastOtherJobBuild?.getTimeInMillis()
-    echoXWiki "Last build time for job ${lastOtherJobBuild}: ${lastOtherJobBuildTime}"
+    echoXWiki "Last build time for compared job ${lastOtherJobBuild}: ${lastOtherJobBuildTime}"
     def lastCurrentJobBuildTime = currentBuild.rawBuild.getPreviousBuild()?.getTimeInMillis()
-    echoXWiki "Last build time for job ${currentBuild.rawBuild.getPreviousBuild()}: ${lastCurrentJobBuildTime}"
+    echoXWiki "Last build time for current job ${currentBuild.rawBuild.getPreviousBuild()}: ${lastCurrentJobBuildTime}"
     if (lastCurrentJobBuildTime != null && lastOtherJobBuild != null) {
         return lastOtherJobBuildTime - lastCurrentJobBuildTime
     } else {
