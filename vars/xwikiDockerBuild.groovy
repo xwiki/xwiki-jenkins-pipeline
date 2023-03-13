@@ -55,6 +55,16 @@ void call(boolean isParallel = true, body)
         for (def entry in testConfig.value) {
             systemProperties.add("-Dxwiki.test.ui.${entry.key}=${entry.value}")
         }
+
+        // Execute WCAG tests for the 1st configuration only (executing on several configurations would not result in
+        // additional validations but would cost a lot more in time spent).
+        // Note that we don't execute WAG tests on the standard build (ie the non-environment tests build) since that
+        // would mean executing the WCAG tests at each commit and they take too long to execute and would lengthen a
+        // a lot the build. Running them on "docker-latest" means executing WCAG tests only once per day.
+        if (i == 0 && config.type == 'docker-latest') {
+            systemProperties.add("-Dxwiki.test.ui.wcag=true")
+        }
+
         def testConfigurationName = getTestConfigurationName(testConfig.value)
         config.modules.each() { modulePath ->
             def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())

@@ -29,6 +29,7 @@ The following options are available:
 * `skipMail` = true (default is `false`). If true then don't send emails when the job or tests fail.
 * `label` = `docker-outside-docker` (default is `docker`). If specified will use that label to identify on which node
   to execute the Docker-based tests.
+* `type` = the job type. Valid values are `docker-latest`, `docker-all` and `docker-unsupported`
 
 Notes:
 
