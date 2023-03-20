@@ -524,11 +524,7 @@ private def findScreenshotFileForPattern(def directoryFilePath, def failedTest)
     // Remove the serialized parameters from the test name FTM since we output failing test image names without it.
     // The best fix would be to modify the Docker-based test framework to add the parameters but I don't know how to do
     // that ATM (i.e. what JUnit API to call to get it).
-    def normalizedTestName = failedTest.name
-    def pos = normalizedTestName.indexOf("{")
-    if (pos > -1) {
-        normalizedTestName = normalizedTestName.substring(0, pos)
-    }
+    def normalizedTestName = normalizeTestName(failedTest.name.toString())
     if (directoryFilePath.exists()) {
         files.addAll(directoryFilePath.list("*${failedTest.className}-${normalizedTestName}*.png"))
         files.addAll(directoryFilePath.list("*${failedTest.simpleName}-${normalizedTestName}*.png"))
@@ -611,12 +607,8 @@ private def checkForFlickers(def failingTests)
         // Construct a normalized test name made of <test class name>#<method name>
         // Note: The call to toString() is important to get a String and not a GString so that contains() will work
         // (since otherwise equals() will fail between a String and a GString)
-        // TODO: Put it back when we understand why it makes the CI fail with:
-        //   groovy.lang.MissingMethodException: No signature of method: java.lang.String.containsKey() is
-        //   applicable for argument types: (java.lang.String) values: ...
-        //def normalizedTestName = normalizeTestName(testResult.name)
-        //def testName = "${testResult.className}#${normalizedTestName}".toString()
-        def testName = "${testResult.className}#${testResult.name}".toString()
+        def normalizedTestName = normalizeTestName(testResult.name.toString())
+        def testName = "${testResult.className}#${normalizedTestName}".toString()
         echoXWiki "Analyzing test [${testName}] for flicker ..."
         if (knownFlickers.containsKey(testName)) {
             // Add the information that the test is a flicker to the test's description. Only display this
@@ -719,15 +711,15 @@ private def getKnownFlickeringTests()
 private def normalizeTestName(value)
 {
     def newValue
-    def pos1 = value.indexOf('{')
-    if (pos1 > -1) {
-        def pos2 = value.lastIndexOf('}', pos1)
-        if (pos2 > -1) {
-            newValue = new StringBuilder().append(value, 0, pos1).append(value, pos2).toString()
-        } else {
-            // Remove till end of string
-            newValue = value.substring(0, pos1)
-        }
+    // Support both <test name prefix{...}> and <test name prefix(...)> since it seems that Jenkins could have changed
+    // the way it reports test names (Jenkins or JUnit).
+    def pos = value.indexOf('{')
+    if (pos < 0) {
+        pos = value.indexOf('(')
+    }
+    if (pos > -1) {
+        // Remove till end of string
+        newValue = value.substring(0, pos)
     } else {
         newValue = value
     }
@@ -737,7 +729,7 @@ private def normalizeTestName(value)
 /**
  * @return the failing tests for the current build as a list of {@code hudson.tasks.junit.CaseResult} objects.
  */
-// TODO: Note that this is currently not workig as it returns all failing tests from all maven executions so far.
+// TODO: Note that this is currently not working as it returns all failing tests from all maven executions so far.
 // See also https://issues.jenkins.io/browse/JENKINS-49339
 // currentBuild.rawBuild is non-serializable which is why we need the @NonCPS annotation.
 // Search for "rawBuild" on https://ci.xwiki.org/pipeline-syntax/globals#currentBuild
