@@ -61,6 +61,7 @@ void call(boolean isParallel = true, body)
         // Note that we don't execute WAG tests on the standard build (ie the non-environment tests build) since that
         // would mean executing the WCAG tests at each commit and they take too long to execute and would lengthen a
         // a lot the build. Running them on "docker-latest" means executing WCAG tests only once per day.
+        echoXWiki "Docker build type: ${config.type}"
         if (i == 0 && config.type == 'docker-latest') {
             systemProperties.add("-Dxwiki.test.ui.wcag=true")
         }
