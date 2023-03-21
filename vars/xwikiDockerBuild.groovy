@@ -61,9 +61,8 @@ void call(boolean isParallel = true, body)
         // Note that we don't execute WAG tests on the standard build (ie the non-environment tests build) since that
         // would mean executing the WCAG tests at each commit and they take too long to execute and would lengthen a
         // a lot the build. Running them on "docker-latest" means executing WCAG tests only once per day.
-        echoXWiki "Docker build type: ${config.type}"
         if (i == 0 && config.type == 'docker-latest') {
-            systemProperties.add("-Dxwiki.test.ui.wcag=true")
+            systemProperties.add('-Dxwiki.test.ui.wcag=true')
         }
 
         def testConfigurationName = getTestConfigurationName(testConfig.value)
@@ -118,7 +117,7 @@ private void buildTestFramework()
 {
     build(
         name: 'Test Framework',
-        profiles: "docker,integration-tests",
+        profiles: 'docker,integration-tests',
         properties: "${getSystemProperties().join(' ')}",
         pom: 'xwiki-platform-core/xwiki-platform-test/pom.xml',
         xvnc: false
@@ -144,7 +143,7 @@ private void build(map)
 {
     node(map.label) {
         xwikiBuild(map.name) {
-            mavenOpts = map.mavenOpts ?: "-Xmx2048m -Xms512m"
+            mavenOpts = map.mavenOpts ?: '-Xmx2048m -Xms512m'
             // Javadoc execution is on by default but we don't need it for the docker tests.
             javadoc = false
             if (map.goals != null) {
@@ -174,6 +173,14 @@ private void build(map)
             if (map.jobProperties != null) {
                 jobProperties = map.jobProperties
             }
+        }
+
+        // Archive WCAG reports, if any.
+        // Note: This can generate some not nice stack trace in the logs,
+        // see https://issues.jenkins-ci.org/browse/JENKINS-51913
+        if (map.properties.contains('-Dxwiki.test.ui.wcag=true')) {
+            echoXWiki "Looking for WCAG test results in ${pwd()}"
+            archiveArtifacts artifacts: '**/target/wcag-reports/wcag*.txt', allowEmptyArchive: true
         }
     }
 }
