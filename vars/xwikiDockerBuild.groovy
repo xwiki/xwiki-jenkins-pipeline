@@ -174,13 +174,5 @@ private void build(map)
                 jobProperties = map.jobProperties
             }
         }
-
-        // Archive WCAG reports, if any.
-        // Note: This can generate some not nice stack trace in the logs,
-        // see https://issues.jenkins-ci.org/browse/JENKINS-51913
-        if (map.properties.contains('-Dxwiki.test.ui.wcag=true')) {
-            echoXWiki "Looking for WCAG test results in ${pwd()}"
-            archiveArtifacts artifacts: '**/target/wcag-reports/wcag*.txt', allowEmptyArchive: true
-        }
     }
 }
