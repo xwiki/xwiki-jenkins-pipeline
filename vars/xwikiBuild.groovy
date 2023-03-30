@@ -256,7 +256,7 @@ void call(name = 'Default', body)
         // Archive WCAG reports, if any.
         // Note: This can generate some not nice stack trace in the logs,
         // see https://issues.jenkins-ci.org/browse/JENKINS-51913
-        if (config.properties.contains('-Dxwiki.test.ui.wcag=true')) {
+        if (config.properties && config.properties.contains('-Dxwiki.test.ui.wcag=true')) {
             echoXWiki "Looking for WCAG test results in ${pwd()}"
             archiveArtifacts artifacts: '**/target/wcag-reports/wcag*.txt', allowEmptyArchive: true
             sh script: "ls -alg ${pwd()}", returnStatus: true
