@@ -259,7 +259,7 @@ void call(name = 'Default', body)
         if (config.properties && config.properties.contains('-Dxwiki.test.ui.wcag=true')) {
             echoXWiki "Looking for WCAG test results in ${pwd()}"
             archiveArtifacts artifacts: '**/target/wcag-reports/wcag*.txt', allowEmptyArchive: true
-            sh script: "ls -alg ${pwd()}", returnStatus: true
+            sh script: "find ${pwd()} -name 'wcag*.txt'", returnStatus: true
         }
 
         echoXWiki "Current build status after withMaven execution: ${currentBuild.result}"
