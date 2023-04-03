@@ -704,10 +704,7 @@ private def getKnownFlickeringTests()
                 // Remove the part between "{" and "}" since we don't use test methods which differ only by their
                 // parameters, and removing this make the jira issues more stable against refactorings. Also prevents
                 // user mistakes.
-                // TODO: Put it back when we understand why it makes the CI fail with:
-                //   groovy.lang.MissingMethodException: No signature of method: java.lang.String.containsKey() is
-                //   applicable for argument types: (java.lang.String) values: ...
-                //fullName = normalizeTestName(fullName)
+                fullName = normalizeTestName(fullName)
                 knownFlickers.put(fullName, customfield.parent().parent().link.text())
             }
         }
