@@ -258,8 +258,7 @@ void call(name = 'Default', body)
         // see https://issues.jenkins-ci.org/browse/JENKINS-51913
         if (config.properties && config.properties.contains('-Dxwiki.test.ui.wcag=true')) {
             echoXWiki "Looking for WCAG test results in ${pwd()}"
-            archiveArtifacts artifacts: '**/target/wcag-reports/wcag*.txt', allowEmptyArchive: true
-            sh script: "find ${pwd()} -name 'wcag*.txt'", returnStatus: true
+            archiveArtifacts artifacts: '**/target/**/wcag-reports/wcag*.txt', allowEmptyArchive: true
         }
 
         echoXWiki "Current build status after withMaven execution: ${currentBuild.result}"
