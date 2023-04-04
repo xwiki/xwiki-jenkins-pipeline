@@ -704,7 +704,9 @@ private def getKnownFlickeringTests()
                 // Remove the part between "{" and "}" since we don't use test methods which differ only by their
                 // parameters, and removing this make the jira issues more stable against refactorings. Also prevents
                 // user mistakes.
-                fullName = normalizeTestName(fullName)
+                // Note: the toString() is there to convert from a GString to a String. Without it, we're getting some
+                // "No signature of method: java.lang.String.containsKey() is applicable for argument types" error.
+                fullName = normalizeTestName(fullName.toString())
                 knownFlickers.put(fullName, customfield.parent().parent().link.text())
             }
         }
