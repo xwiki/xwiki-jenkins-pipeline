@@ -681,7 +681,6 @@ private def getKnownFlickeringTests()
     // Note: slurper nodes are not serializable, hence the @NonCPS annotation above.
     def packageName = ''
     root.channel.item.customfields.customfield.each() { customfield ->
-
         if (customfield.customfieldname == 'Flickering Test') {
             def trimSpaces = {
                 def trimmedIt = it.trim()
@@ -715,6 +714,7 @@ private def getKnownFlickeringTests()
     return knownFlickers
 }
 
+@NonCPS
 private def normalizeTestName(value)
 {
     def newValue
