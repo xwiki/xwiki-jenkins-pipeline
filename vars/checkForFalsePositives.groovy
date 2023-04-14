@@ -76,7 +76,8 @@ def call()
         [".*Java heap space.*", "Memory issue"],
         [".*Connection refused.*", "Communication issue"],
         [".*Reached error page: about:neterror.*", "Communication issue"],
-        [".*ContainerLaunchException: Timed out waiting for URL to be accessible.*", "Timed out waiting for URL to be accessible"]
+        [".*ContainerLaunchException: Timed out waiting for URL to be accessible.*", "Timed out waiting for URL to be accessible"],
+        [".*The archive file .* is corrupted and will be deleted\\. Please try the build again.*", "nodejs.org problem"]
     ]
     messages.each { message ->
         if (manager.logContains(message.get(0))) {
