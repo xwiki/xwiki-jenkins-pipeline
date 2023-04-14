@@ -75,9 +75,10 @@ def call()
         [".*Error setting up the XWiki testing environment on agent.*", "Docker test setup issue"],
         [".*Java heap space.*", "Memory issue"],
         [".*Connection refused.*", "Communication issue"],
-        [".*Reached error page: about:neterror.*", "Communication issue"],
-        [".*ContainerLaunchException: Timed out waiting for URL to be accessible.*", "Timed out waiting for URL to be accessible"],
-        [".*The archive file .* is corrupted and will be deleted\\. Please try the build again.*", "nodejs.org problem"]
+        [".*\\QReached error page: about:neterror\\E.*", "Communication issue"],
+        [".*\\QContainerLaunchException: Timed out waiting for URL to be accessible\\E.*", "Timed out waiting for URL to be accessible"],
+        [".*\\QThe archive file .* is corrupted and will be deleted. Please try the build again\\E.*", "nodejs.org problem"],
+        [".*\\Qtransfer failed for https://nexus.xwiki.org\\E.*\\Q, status: 503 Service Unavailable\\E.*", "nexus.xwiki.org problem"]
     ]
     messages.each { message ->
         if (manager.logContains(message.get(0))) {
