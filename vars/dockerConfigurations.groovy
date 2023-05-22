@@ -43,7 +43,7 @@ def call(configurationName, xwikiVersion)
         'oracle' : [ 'latest' : '19.3.0-se2' ],
         // Note : we cannot use Tomcat 10.x right now as the latest version since that corresponds to a package change
         // for JakartaEE and we'll need XWiki to move to the new packages first. This is why LTS = latest FTM.
-        'tomcat' : [ 'latest' : '9-jdk11', 'lts' : '9-jdk11', 'special' : '9-jdk8' ],
+        'tomcat' : [ 'latest' : '9-jdk11', 'lts' : '9-jdk11'],
         // Note : we cannot use Jetty 11.x right now as the latest version since that corresponds to a package change
         // for JakartaEE and we'll need XWiki to move to the new packages first. This is why LTS = latest FTM.
         'jetty' : [ 'latest' : '10-jdk11', 'lts' : '10-jdk11' ]
