@@ -130,34 +130,20 @@ def getAllConfigurations(def xwikiVersion, def versions)
         ]
     ]
 
-    if (xwikiVersion.startsWith("14.")) {
-        // Verify MySQL LTS on Tomcat LTS and at the same time we verify that we still support utf8 for MySQL.
-        // Note: MySQL on utmb4 is tested in latest configurations.
-        configurations.putAll([
-            "MySQL ${versions.mysql.lts} (utf8), Tomcat ${versions.tomcat.lts}, Chrome": [
-                'database' : 'mysql',
-                'database.commands.character-set-server' : 'utf8',
-                'database.commands.collation-server' : 'utf8_bin',
-                'databaseTag' : versions.mysql.lts,
-                'jdbcVersion' : 'pom',
-                'servletEngine' : 'tomcat',
-                'servletEngineTag' : versions.tomcat.lts,
-                'browser' : 'chrome'
-            ]
-        ])
-    } else {
-        // Special case: verify we can still run XWiki < 14 with Java 8
-        configurations.putAll([
-            "MySQL ${versions.mysql.lts}, Tomcat ${versions.tomcat.special} (latest on Java 8), Chrome": [
-                'database' : 'mysql',
-                'databaseTag' : versions.mysql.lts,
-                'jdbcVersion' : 'pom',
-                'servletEngine' : 'tomcat',
-                'servletEngineTag' : versions.tomcat.special,
-                'browser' : 'chrome'
-                ]
-        ])
-    }
+    // Verify MySQL LTS on Tomcat LTS and at the same time we verify that we still support utf8 for MySQL.
+    // Note: MySQL on utmb4 is tested in latest configurations.
+    configurations.putAll([
+        "MySQL ${versions.mysql.lts} (utf8), Tomcat ${versions.tomcat.lts}, Chrome": [
+            'database' : 'mysql',
+            'database.commands.character-set-server' : 'utf8',
+            'database.commands.collation-server' : 'utf8_bin',
+            'databaseTag' : versions.mysql.lts,
+            'jdbcVersion' : 'pom',
+            'servletEngine' : 'tomcat',
+            'servletEngineTag' : versions.tomcat.lts,
+            'browser' : 'chrome'
+        ]
+    ])
 
     return configurations
 }
