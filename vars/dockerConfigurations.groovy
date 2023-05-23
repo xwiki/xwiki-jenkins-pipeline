@@ -43,10 +43,10 @@ def call(configurationName, xwikiVersion)
         'oracle' : [ 'latest' : '19.3.0-se2' ],
         // Note : we cannot use Tomcat 10.x right now as the latest version since that corresponds to a package change
         // for JakartaEE and we'll need XWiki to move to the new packages first. This is why LTS = latest FTM.
-        'tomcat' : [ 'latest' : '9-jdk11', 'lts' : '9-jdk11'],
+        'tomcat' : [ 'latest' : '9-jdk17', 'lts' : '9-jdk17', 'special' : '9-jdk11'],
         // Note : we cannot use Jetty 11.x right now as the latest version since that corresponds to a package change
         // for JakartaEE and we'll need XWiki to move to the new packages first. This is why LTS = latest FTM.
-        'jetty' : [ 'latest' : '10-jdk11', 'lts' : '10-jdk11' ]
+        'jetty' : [ 'latest' : '10-jdk17', 'lts' : '10-jdk17' ]
     ]
 
     def configurations = [:]
@@ -131,16 +131,21 @@ def getAllConfigurations(def xwikiVersion, def versions)
     ]
 
     // Verify MySQL LTS on Tomcat LTS and at the same time we verify that we still support utf8 for MySQL.
-    // Note: MySQL on utmb4 is tested in latest configurations.
+    // Note 1: MySQL on utmb4 is tested in latest configurations.
+    // Note 2: We run these tests on Tomcat/Java 11 for XWiki 15.x to make sure we still support Java 11.
+    def tomcatVersion = versions.tomcat.lts
+    if (xwikiVersion.startsWith("15.")) {
+        tomcatVersion = versions.tomcat.special
+    }
     configurations.putAll([
-        "MySQL ${versions.mysql.lts} (utf8), Tomcat ${versions.tomcat.lts}, Chrome": [
+        "MySQL ${versions.mysql.lts} (utf8), Tomcat ${tomcatVersion}, Chrome": [
             'database' : 'mysql',
             'database.commands.character-set-server' : 'utf8',
             'database.commands.collation-server' : 'utf8_bin',
             'databaseTag' : versions.mysql.lts,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : versions.tomcat.lts,
+            'servletEngineTag' : tomcatVersion,
             'browser' : 'chrome'
         ]
     ])
