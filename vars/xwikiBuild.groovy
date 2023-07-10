@@ -183,6 +183,8 @@ void call(name = 'Default', body)
                     echoXWiki "Using Maven goals: ${goals}"
                     def profiles = getMavenProfiles(config, env)
                     echoXWiki "Using Maven profiles: ${profiles}"
+                    def pom = getPOMFile(config)
+                    echoXWiki "Using POM file: ${pom}"
                     def branchName = env['BRANCH_NAME']
                     // If we're building a feature branch that needs to be deployed, we set first its version so that
                     // it's deployed with a specific version based on the branch name.
@@ -207,8 +209,6 @@ void call(name = 'Default', body)
                     sh script: 'java -version', returnStatus: true
                     // Abort the build if it takes more than the timeout threshold (in minutes).
                     timeout(timeoutThreshold) {
-                        def pom = getPOMFile(config)
-                        echoXWiki "Using POM file: ${pom}"
                         def mavenFlags = config.mavenFlags ?: '-U -e'
                         wrapInSonarQube(config) {
                             sh "mvn -f ${pom} ${goals} -P${profiles} ${mavenFlags} ${properties} ${javadoc}"
