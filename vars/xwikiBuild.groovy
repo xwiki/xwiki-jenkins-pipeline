@@ -179,18 +179,21 @@ void call(name = 'Default', body)
                     options: publishers)
             {
                 try {
-                    def branchName = env['BRANCH_NAME']
-                    // If we're building a feature branch (not master and not stable) we want to set a specific version
-                    // for it so that we don't mess up the snapshot repository.
-                    if (!isMasterBranch(branchName) && !isStableBranch(branchName)) {
-                        def branchVersion = "${pom.version}-${branchName}"
-                        echoXWiki "Setting version to: ${branchVersion}"
-                        sh script: "mvn -f ${pom} versions:set -DnewVersion=${branchVersion}"
-                    }
                     def goals = computeMavenGoals(config)
                     echoXWiki "Using Maven goals: ${goals}"
                     def profiles = getMavenProfiles(config, env)
                     echoXWiki "Using Maven profiles: ${profiles}"
+                    def pom = getPOMFile(config)
+                    echoXWiki "Using POM file: ${pom}"
+                    def branchName = env['BRANCH_NAME']
+                    // If we're building a feature branch that needs to be deployed, we set first its version so that
+                    // it's deployed with a specific version based on the branch name.
+                    if (isFeatureDeploymentBranch(branchName)) {
+                        def branchVersion = "${pom.version}-${branchName}"
+                        echoXWiki "Setting version to: ${branchVersion}"
+                        sh script: "mvn -f ${pom} versions:set -DnewVersion=${branchVersion} -DprocessParent=true -P${profiles}"
+                    }
+
                     def properties = getMavenSystemProperties(config, "${NODE_NAME}")
                     echoXWiki "Using Maven properties: ${properties}"
                     def javadoc = ''
@@ -206,8 +209,6 @@ void call(name = 'Default', body)
                     sh script: 'java -version', returnStatus: true
                     // Abort the build if it takes more than the timeout threshold (in minutes).
                     timeout(timeoutThreshold) {
-                        def pom = getPOMFile(config)
-                        echoXWiki "Using POM file: ${pom}"
                         def mavenFlags = config.mavenFlags ?: '-U -e'
                         wrapInSonarQube(config) {
                             sh "mvn -f ${pom} ${goals} -P${profiles} ${mavenFlags} ${properties} ${javadoc}"
@@ -427,7 +428,7 @@ private def computeMavenGoals(config)
         // This is to avoid having branches with the same version in pom.xml, polluting the maven snapshot repo,
         // overwriting one another.
         def branchName = env['BRANCH_NAME']
-        if (branchName != null && (isMasterBranch(branchName) || isStableBranch(branchName))) {
+        if (branchName != null && (isMasterBranch(branchName) || isStableBranch(branchName) || isFeatureDeploymentBranch(branchName))) {
             goals = "deploy"
         } else {
             goals = "install"
@@ -440,6 +441,13 @@ private def computeMavenGoals(config)
 private def isStableBranch(def branchName)
 {
     return branchName.startsWith('stable-')
+}
+
+/**
+ * Test if a branch is about a feature that needs to be deployed, and not just installed.
+ */
+private def isFeatureDeploymentBranch(def branchName) {
+    return branchName.startsWith('feature-deploy-');
 }
 
 /**
