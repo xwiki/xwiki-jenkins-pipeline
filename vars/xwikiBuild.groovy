@@ -179,6 +179,14 @@ void call(name = 'Default', body)
                     options: publishers)
             {
                 try {
+                    def branchName = env['BRANCH_NAME']
+                    // If we're building a feature branch (not master and not stable) we want to set a specific version
+                    // for it so that we don't mess up the snapshot repository.
+                    if (!isMasterBranch(branchName) && !isStableBranch(branchName)) {
+                        def branchVersion = "${pom.version}-${branchName}"
+                        echoXWiki "Setting version to: ${branchVersion}"
+                        sh script: "mvn -f ${pom} versions:set -DnewVersion=${branchVersion}"
+                    }
                     def goals = computeMavenGoals(config)
                     echoXWiki "Using Maven goals: ${goals}"
                     def profiles = getMavenProfiles(config, env)
