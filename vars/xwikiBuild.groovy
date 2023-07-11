@@ -183,7 +183,8 @@ void call(name = 'Default', body)
                     echoXWiki "Using Maven goals: ${goals}"
                     def profiles = getMavenProfiles(config, env)
                     echoXWiki "Using Maven profiles: ${profiles}"
-                    def pom = getPOMFile(config)
+                    def pomFile = getPOMFile(config)
+                    def pom = readMavenPom file: pomFile
                     echoXWiki "Using POM file: ${pom}"
                     def branchName = env['BRANCH_NAME']
                     // If we're building a feature branch that needs to be deployed, we set first its version so that
@@ -211,7 +212,7 @@ void call(name = 'Default', body)
                     timeout(timeoutThreshold) {
                         def mavenFlags = config.mavenFlags ?: '-U -e'
                         wrapInSonarQube(config) {
-                            sh "mvn -f ${pom} ${goals} -P${profiles} ${mavenFlags} ${properties} ${javadoc}"
+                            sh "mvn -f ${pomFile} ${goals} -P${profiles} ${mavenFlags} ${properties} ${javadoc}"
                         }
                     }
                 } catch (InterruptedException e) {
