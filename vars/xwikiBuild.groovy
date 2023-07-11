@@ -192,7 +192,7 @@ void call(name = 'Default', body)
                     if (isFeatureDeploymentBranch(branchName)) {
                         def branchVersion = "${pom.version}-${branchName}"
                         echoXWiki "Setting version to: ${branchVersion}"
-                        sh script: "mvn -f ${pom} versions:set -DnewVersion=${branchVersion} -DprocessParent=true -P${profiles}"
+                        sh script: "mvn -f ${pomFile} versions:set -DnewVersion=${branchVersion} -DprocessParent=true -P${profiles}"
                     }
 
                     def properties = getMavenSystemProperties(config, "${NODE_NAME}")
