@@ -190,7 +190,9 @@ void call(name = 'Default', body)
                     // If we're building a feature branch that needs to be deployed, we set first its version so that
                     // it's deployed with a specific version based on the branch name.
                     if (isFeatureDeploymentBranch(branchName)) {
-                        def branchVersion = "${pom.version}-${branchName}"
+                        def index = pom.version.size() - "-SNAPSHOT".size();
+                        def actualVersion = pom.version.substring(0, index)
+                        def branchVersion = "${actualVersion}-${branchName}-SNAPSHOT"
                         echoXWiki "Setting version to: ${branchVersion}"
                         sh script: "mvn -f ${pomFile} versions:set -DnewVersion=${branchVersion} -DprocessParent=true -P${profiles}"
                     }
