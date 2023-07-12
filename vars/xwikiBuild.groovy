@@ -195,6 +195,10 @@ void call(name = 'Default', body)
                         def branchVersion = "${actualVersion}-${branchName}-SNAPSHOT"
                         echoXWiki "Setting version to: ${branchVersion}"
                         sh script: "mvn -f ${pomFile} versions:set -DnewVersion=${branchVersion} -DprocessParent=true -P${profiles}"
+                        // We need to also reset the commons.version property from the pom.xml if it's building commons.
+                        // The sed command is inspired from the release script, we don't want it to fail the build if
+                        // the property cannot be found hence the returnStatus: true
+                        sh script: "sed -e  \"s/<commons.version>.*<\\/commons.version>/<commons.version>${branchVersion}<\\/commons.version>/\" -i pom.xml", returnStatus: true
                     }
 
                     def properties = getMavenSystemProperties(config, "${NODE_NAME}")
