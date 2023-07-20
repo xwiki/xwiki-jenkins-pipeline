@@ -209,8 +209,7 @@ void call(name = 'Default', body)
                         echoXWiki "Enabling javadoc validation"
                     }
                     def timeoutThreshold = config.timeout ?: 240
-                    def sdf = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss')
-                    echoXWiki "Using timeout: [${timeoutThreshold}] minutes. Starting at [${sdf.format(new Date())}]"
+                    echoXWiki "Using timeout: [${timeoutThreshold}] minutes"
                     // Display the java version for information (in case it's useful to debug some specific issue)
                     echoXWiki 'Java version used:'
                     sh script: 'java -version', returnStatus: true
