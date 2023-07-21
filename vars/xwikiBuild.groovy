@@ -224,6 +224,10 @@ void call(name = 'Default', body)
                     // This can happen when the timeout() step reaches the timeout. We need to let this bubble up so
                     // that Jenkins can coordinate the stopping of all threads & builds that execute in parallel.
                     echoXWiki "XWiki build [${name}] interrupted due to timeout"
+                    StringWriter sw = new StringWriter();
+                    PrintWriter pw = new PrintWriter(sw);
+                    e.printStackTrace(pw);
+                    echoXWiki "[DEBUG] Cause for the timeout:\n${sw.toString()}"
                     displayDebugData()
                     Thread.currentThread().interrupt();
                     // Note: Don't send email on an interrupted build.
