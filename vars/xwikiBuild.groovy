@@ -194,7 +194,9 @@ void call(name = 'Default', body)
                         def actualVersion = pom.version.substring(0, index)
                         def branchVersion = "${actualVersion}-${branchName}-SNAPSHOT"
                         echoXWiki "Setting version to: ${branchVersion}"
-                        sh script: "mvn -f ${pomFile} versions:set -DnewVersion=${branchVersion} -DprocessParent=true -P${profiles}"
+                        sh script: "mvn -f ${pomFile} versions:set -DnewVersion=${branchVersion} -P${profiles}"
+                        echoXWiki "Setting parent to: ${branchVersion}"
+                        sh script: "mvn -f ${pomFile} versions:update-parent -DallowSnapshots=true -DparentVersion=${branchVersion} -N"
                         // We need to also reset the commons.version property from the pom.xml if it's building commons.
                         // The sed command is inspired from the release script, we don't want it to fail the build if
                         // the property cannot be found hence the returnStatus: true
