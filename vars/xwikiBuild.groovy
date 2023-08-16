@@ -201,7 +201,7 @@ void call(name = 'Default', body)
                         echoXWiki "Setting version to: ${branchVersion}"
                         sh script: "mvn versions:set -DnewVersion=${branchVersion} -P${profiles}"
                         echoXWiki "Setting parent to: ${branchVersion}"
-                        sh script: "mvn versions:update-parent -DallowSnapshots=true -DparentVersion=${branchVersion} -N"
+                        sh script: "mvn versions:update-parent -DallowSnapshots=true -DparentVersion=[${branchVersion}] -N"
                         // We need to also reset the commons.version property from the pom.xml if it's building commons.
                         // The sed command is inspired from the release script, we don't want it to fail the build if
                         // the property cannot be found hence the returnStatus: true
