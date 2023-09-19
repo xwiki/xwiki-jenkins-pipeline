@@ -1,4 +1,5 @@
 #!/usr/bin/env groovy
+import com.cloudbees.groovy.cps.NonCPS
 import java.text.SimpleDateFormat
 
 /*
@@ -21,6 +22,10 @@ import java.text.SimpleDateFormat
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
+// Use @NonCPS since it seems that without it, a step implementation using @NonCPS will not be able to call echoXWiki
+// several times in a row without failing. For example: compareCurrentLastBuildTimeWithOtherJob.groovy is calling
+// echoXWiki several times and the second call fails and makes the method return null.
+@NonCPS
 void call(text)
 {
     // Note: since Jenkins doesn't disambiguate logs on agents (we don't know on what agent a log is output), we have
