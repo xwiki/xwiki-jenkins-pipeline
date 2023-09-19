@@ -35,6 +35,7 @@ def call(otherJobName) {
     def lastCurrentJobBuildTime = previousBuild?.getTimeInMillis()
     echoXWiki "Last build time for current job ${previousBuild}: ${lastCurrentJobBuildTime}"
     if (lastCurrentJobBuildTime != null && lastOtherJobBuild != null) {
+        echoXWiki "DEBUG: Time difference returned: ${lastOtherJobBuildTime - lastCurrentJobBuildTime}"
         return lastOtherJobBuildTime - lastCurrentJobBuildTime
     } else {
         return null
