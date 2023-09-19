@@ -38,6 +38,7 @@ def call(otherJobName) {
         echoXWiki "DEBUG: Time difference returned: ${lastOtherJobBuildTime - lastCurrentJobBuildTime}"
         return lastOtherJobBuildTime - lastCurrentJobBuildTime
     } else {
+        echoXWiki "DEBUG: Returning null because 'lastCurrentJobBuildTime' (${lastCurrentJobBuildTime}) or 'lastOtherJobBuild' (${lastOtherJobBuild}) is null"
         return null
     }
 }
