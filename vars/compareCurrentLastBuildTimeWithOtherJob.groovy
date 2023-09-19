@@ -29,7 +29,6 @@ def call(otherJobName) {
     def lastOtherJobBuild = otherJob?.getLastCompletedBuild()
     def lastOtherJobBuildTime = lastOtherJobBuild?.getTimeInMillis()
     echoXWiki "Last build time for compared job ${lastOtherJobBuild}: ${lastOtherJobBuildTime}"
-    echoXWiki "DEBUG: Current build: ${currentBuild}"
     echoXWiki "DEBUG: Current raw build: ${currentBuild.rawBuild}"
     echoXWiki "DEBUG: Previous build: ${currentBuild.rawBuild.getPreviousBuild()}"
     def previousBuild = currentBuild.rawBuild.getPreviousBuild()
