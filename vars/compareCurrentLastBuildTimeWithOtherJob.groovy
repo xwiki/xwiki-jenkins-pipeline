@@ -27,13 +27,16 @@ def call(otherJobName) {
     def jenkins = Jenkins.getInstanceOrNull().get()
     def otherJob = jenkins.getItemByFullName(otherJobName)
     def lastOtherJobBuild = otherJob?.getLastCompletedBuild()
-    def lastOtherJobBuildTime = lastOtherJobBuild?.getTimeInMillis()
-    echoXWiki "Last build time for compared job ${lastOtherJobBuild}: ${lastOtherJobBuildTime}"
-    echoXWiki "DEBUG: Current raw build: ${currentBuild.rawBuild}"
-    echoXWiki "DEBUG: Previous build: ${currentBuild.rawBuild.getPreviousBuild()}"
+    // We compare the finish date of the last completed other job with the start date of the last completed current job
+    // (since if we compared with the start date of the last completed other job, there could be a running job in
+    // progress not finished).
+    def lastOtherJobBuildTime = lastOtherJobBuild?.getTimeInMillis() + lastOtherJobBuild?.getDuration()
+    echoXWiki "Last finish build time for compared job [${lastOtherJobBuild}]: ${lastOtherJobBuildTime}"
+    echoXWiki "DEBUG: Current raw build: [${currentBuild.rawBuild}]"
+    echoXWiki "DEBUG: Previous build: [${currentBuild.rawBuild.getPreviousBuild()}]"
     def previousBuild = currentBuild.rawBuild.getPreviousBuild()
     def lastCurrentJobBuildTime = previousBuild?.getTimeInMillis()
-    echoXWiki "Last build time for current job ${previousBuild}: ${lastCurrentJobBuildTime}"
+    echoXWiki "Last start build time for current job [${previousBuild}]: ${lastCurrentJobBuildTime}"
     if (lastCurrentJobBuildTime != null && lastOtherJobBuild != null) {
         echoXWiki "DEBUG: Time difference returned: ${lastOtherJobBuildTime - lastCurrentJobBuildTime}"
         return lastOtherJobBuildTime - lastCurrentJobBuildTime
