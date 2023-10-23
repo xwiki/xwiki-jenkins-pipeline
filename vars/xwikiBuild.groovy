@@ -382,12 +382,7 @@ private void printConfigurationProperties(config)
 
 private def getMavenProfiles(config, env)
 {
-    def profiles = config.profiles ?: 'quality,legacy,integration-tests,jetty,hsqldb,firefox'
-    // If we're on a node supporting docker, also build the docker-based tests (i.e. for the default configuration)
-    if (env.NODE_LABELS.split().contains('docker')) {
-        profiles = "${profiles},docker"
-    }
-    return profiles
+    return config.profiles ?: 'quality,legacy,integration-tests,docker,jetty,hsqldb,firefox'
 }
 
 private def wrapInWithMaven(config, closure)
