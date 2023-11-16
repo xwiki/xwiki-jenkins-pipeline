@@ -145,6 +145,11 @@ void call(name = 'Default', body)
         if (firefoxVersion) {
             echoXWiki "Firefox version installed: ${firefoxVersion}"
         }
+
+        // Set config.sonar = true if the sonar:sonar goal is set in config.goals.
+        if (config.goals?.contains('sonar:sonar')) {
+            config.sonar = true
+        }
     }
     stage("Build for ${name}") {
         // Execute the XVNC plugin (useful for integration-tests)
