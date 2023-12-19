@@ -163,37 +163,34 @@ def getUnsupportedConfigurations(def xwikiVersion, def versions)
 {
     def configurations = [
         // Test on latest MySQL, latest Tomcat, Java LTS
-        'MySQL latest, Tomcat latest (Java LTS), Chrome': [
+        'MySQL latest, Tomcat latest 9.x (Java LTS), Chrome': [
             'database' : 'mysql',
             'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             // Note: we cannot use 10.x right now since that corresponds to a package change for JakartaEE and we'll
             // need XWiki to move to the new packages first.
-            'servletEngineTag' : '9-jdk17',
+            'servletEngineTag' : '9-jdk21',
             'browser' : 'chrome'
         ],
         // Test on latest PostgreSQL, latest Jetty, Java LTS
-        'PostgreSQL latest, Jetty latest (Java LTS), Chrome': [
+        'PostgreSQL latest, Jetty latest 10.x (Java LTS), Chrome': [
             'database' : 'postgresql',
             'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            // Note 1: we should use 'latest' but currently 'latest' is 9.x for jetty on dockerhub, see
-            // https://hub.docker.com/_/jetty. Put back once latest is 10.x.
-            // Note 2: we cannot use 11.x right now since that corresponds to a package change for JakartaEE and we'll
+            // Note: we cannot use 11.x right now since that corresponds to a package change for JakartaEE and we'll
             // need XWiki to move to the new packages first.
-            'servletEngineTag' : '10-jdk17',
+            'servletEngineTag' : '10-jdk21',
             'browser' : 'chrome'
         ],
         // Test on latest MariaDB, Tomcat LTS, latest Java
-        'MariaDB latest, Tomcat latest (Java 17), Firefox': [
+        'MariaDB latest, Tomcat latest 9.x (Java 17), Firefox': [
             'database' : 'mariadb',
             'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-             // Note: Java LTS == Java latest ATM (1/12/2021). Once Java 18 is released, update the tag.
-            'servletEngineTag' : '9-jdk17',
+            'servletEngineTag' : '9-jdk21',
             'browser' : 'firefox'
         ]
     ]
