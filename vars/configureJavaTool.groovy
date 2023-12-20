@@ -58,7 +58,8 @@ def call(config, pom)
  * <ul>
  *   <li>XWiki versions < 8 should use Java 7.</li>
  *   <li>XWiki versions >= 8 and < 14 should use Java 8.</li>
- *   <li>XWiki versions >= 14 should use the official java version
+ *   <li>XWiki versions >= 14 and < 16 should use Java 11.</li>
+ *   <li>XWiki versions >= 16 should use the official java version</li>
  *  </ul>
  */
 def getJavaTool(pom)
