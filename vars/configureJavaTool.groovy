@@ -83,9 +83,9 @@ def getJavaTool(pom)
         def major = version.substring(0, version.indexOf('.'))
         if (major.toInteger() < 8) {
             return 'java7'
-        } else if (major.toInteger() >= 8 && major.toInteger() < 14) {
+        } else if (major.toInteger() < 14) {
             return 'java8'
-        } else if (major.toInteger() >= 8 && major.toInteger() < 16) {
+        } else if (major.toInteger() < 16) {
             return 'java11'
         }
     }
