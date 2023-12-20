@@ -79,8 +79,12 @@ def getJavaTool(pom)
         version = pom.version
 
     }
+    echoXWiki "GroupID: ${groupId}"
+    echoXWiki "ArtifactID: ${artifactId}"
+    echoXWiki "Version: ${version}"
     if (isKnownParent(groupId, artifactId)) {
         def major = version.substring(0, version.indexOf('.'))
+        echoXWiki "Major version: ${major}"
         if (major.toInteger() < 8) {
             return 'java7'
         } else if (major.toInteger() < 14) {
