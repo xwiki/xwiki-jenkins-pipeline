@@ -140,7 +140,7 @@ private void build(map)
     node(map.label) {
         xwikiBuild(map.name) {
             // TODO: Remove once https://github.com/testcontainers/testcontainers-java/issues/4203 is fixed.
-            mavenOpts = map.mavenOpts ?: '-Xmx2500m -Xms512m'
+            mavenOpts = map.mavenOpts ?: '-Xmx3076m -Xms512m'
             // Javadoc execution is on by default but we don't need it for the docker tests.
             javadoc = false
             if (map.goals != null) {
