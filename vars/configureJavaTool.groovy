@@ -56,8 +56,7 @@ def call(config, pom)
 /**
  * Read the parent pom to try to guess the java tool to use based on the parent pom version.
  * <ul>
- *   <li>XWiki versions < 8 should use Java 7.</li>
- *   <li>XWiki versions >= 8 and < 14 should use Java 8.</li>
+ *   <li>XWiki versions < 14 should use Java 8.</li>
  *   <li>XWiki versions >= 14 and < 16 should use Java 11.</li>
  *   <li>XWiki versions >= 16 should use the official java version</li>
  *  </ul>
@@ -85,9 +84,7 @@ def getJavaTool(pom)
     if (isKnownParent(groupId, artifactId)) {
         def major = version.substring(0, version.indexOf('.'))
         echoXWiki "Major version: ${major}"
-        if (major.toInteger() < 8) {
-            return 'java7'
-        } else if (major.toInteger() < 14) {
+        if (major.toInteger() < 14) {
             return 'java8'
         } else if (major.toInteger() < 16) {
             return 'java11'
