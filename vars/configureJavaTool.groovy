@@ -25,7 +25,12 @@ def call(config, pom)
     def results = [:]
     def javaTool = config.javaTool
     if (!javaTool) {
-        javaTool = getJavaTool(pom)
+        if (config.sonar) {
+            // Sonar require current Java version
+            javaTool = 'official'
+        } else {
+            javaTool = getJavaTool(pom)
+        }
     }
     // NOTE: The Java tool Needs to be configured in the Jenkins global configuration.
     results.jdk = javaTool
