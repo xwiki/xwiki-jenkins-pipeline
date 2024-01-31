@@ -26,7 +26,7 @@ def call(config, pom)
     def javaTool = config.javaTool
     if (!javaTool) {
         if (config.sonar) {
-            // Sonar require current Java version
+            // Sonar requires Java 17+, and since the "official" Java version we use is now >= Java 17, let's use that.
             javaTool = 'official'
         } else {
             javaTool = getJavaTool(pom)
