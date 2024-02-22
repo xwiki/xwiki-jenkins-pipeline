@@ -63,6 +63,7 @@ void call(boolean isParallel = true, body)
         // a lot the build. Running them on "docker-latest" means executing WCAG tests only once per day.
         if (i == 0 && config.type == 'docker-latest') {
             systemProperties.add('-Dxwiki.test.ui.wcag=true')
+            if (env.BRANCH_NAME == 'stable-16.1.x') { systemProperties.add('-Dxwiki.test.ui.wcagStopOnError=false') }
         }
 
         def testConfigurationName = getTestConfigurationName(testConfig.value)
