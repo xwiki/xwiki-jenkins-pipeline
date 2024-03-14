@@ -215,6 +215,8 @@ void call(name = 'Default', body)
                         // The sed command is inspired from the release script, we don't want it to fail the build if
                         // the property cannot be found hence the returnStatus: true
                         sh script: "sed -e  \"s/<commons.version>.*<\\/commons.version>/<commons.version>${branchVersion}<\\/commons.version>/\" -i pom.xml", returnStatus: true
+                        // In the case of platform it's the platform.version property which needs to be updated (in case it's parent wasn't).
+                        sh script: "sed -e  \"s/<platform.version>.*<\\/platform.version>/<platform.version>${branchVersion}<\\/platform.version>/\" -i pom.xml", returnStatus: true
                     }
 
                     def properties = getMavenSystemProperties(config, "${NODE_NAME}")
