@@ -234,8 +234,12 @@ void call(name = 'Default', body)
                     // Abort the build if it takes more than the timeout threshold (in minutes).
                     timeout(timeoutThreshold) {
                         def mavenFlags = config.mavenFlags ?: '-U -e'
+                        def deployRepository = ''
+                        if (goals.contains('deploy')) {
+                          deployRepository = '-DaltDeploymentRepository=nexus-snapshots.xwiki.org::default::https://nexus-snapshots.xwiki.org/repository/snapshots/'
+                        }
                         wrapInSonarQube(config) {
-                            sh "mvn -f ${pomFile} ${goals} -P${profiles} ${mavenFlags} ${properties} ${javadoc}"
+                            sh "mvn -f ${pomFile} ${goals} -P${profiles} ${mavenFlags} ${properties} ${javadoc} ${deployRepository}"
                         }
                     }
                 } catch (InterruptedException e) {
