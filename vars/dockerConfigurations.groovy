@@ -41,12 +41,16 @@ def call(configurationName, xwikiVersion)
         // be always up to date in our tests.
         'postgresql' : [ 'latest' : '16', 'lts' : '15' ],
         'oracle' : [ 'latest' : '19.3.0-se2' ],
-        // Note : we cannot use Tomcat 10.x right now as the latest version since that corresponds to a package change
-        // for JakartaEE and we'll need XWiki to move to the new packages first. This is why LTS = latest FTM.
-        'tomcat' : [ 'latest' : '9-jdk17', 'lts' : '9-jdk17', 'special' : '9-jdk11'],
-        // Note : we cannot use Jetty 11.x right now as the latest version since that corresponds to a package change
-        // for JakartaEE and we'll need XWiki to move to the new packages first. This is why LTS = latest FTM.
-        'jetty' : [ 'latest' : '10-jdk17', 'lts' : '10-jdk17' ]
+        // Notes:
+        // - We cannot use Tomcat 10.x right now as the latest version since that corresponds to a package change
+        //   for JakartaEE and we'll need XWiki to move to the new packages first. This is why LTS = latest FTM.
+        // - We need to support both Java 17 and Java 21 so we map latest to Java 21 and LTS to java 17 to test both.
+        'tomcat' : [ 'latest' : '9-jdk21', 'lts' : '9-jdk17', 'special' : '9-jdk11'],
+        // Notes:
+        // - We cannot use Jetty 11.x right now as the latest version since that corresponds to a package change
+        //   for JakartaEE and we'll need XWiki to move to the new packages first. This is why LTS = latest FTM.
+        // - We need to support both Java 17 and Java 21 so we map latest to Java 21 and LTS to java 17 to test both.
+        'jetty' : [ 'latest' : '10-jdk21', 'lts' : '10-jdk17' ]
     ]
 
     def configurations = [:]
