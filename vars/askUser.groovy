@@ -34,6 +34,10 @@ def call(choices)
                 ])
             }
         } catch(err) {
+            def sw = new StringWriter()
+            def pw = new PrintWriter(sw)
+            exc.printStackTrace(pw)
+            echoXWiki sw.toString()
             throw err
             def user = err.getCauses()[0].getUser()
             if ('SYSTEM' == user.toString()) { // SYSTEM means timeout.
