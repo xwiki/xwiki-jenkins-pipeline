@@ -34,16 +34,10 @@ def call(choices)
                 ])
             }
         } catch(err) {
-            //def sw = new StringWriter()
-            //def pw = new PrintWriter(sw)
-            //err.getCauses()[0].printStackTrace(pw)
-            echoXWiki err.getCauses()[0]
-            throw err
-            def user = err.getCauses()[0].getUser()
-            if ('SYSTEM' == user.toString()) { // SYSTEM means timeout.
+            if (err.getCauses()[0] instanceof org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution.ExceededTimeout) {
+                // In case of timeout, build everything
                 selection = 'All'
             } else {
-                // Aborted by user
                 throw err
             }
         }
