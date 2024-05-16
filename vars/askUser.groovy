@@ -34,6 +34,7 @@ def call(choices)
                 ])
             }
         } catch(err) {
+            err.printStackTrace()
             def user = err.getCauses()[0].getUser()
             if ('SYSTEM' == user.toString()) { // SYSTEM means timeout.
                 selection = 'All'
