@@ -36,7 +36,7 @@ def call(choices)
         } catch(err) {
             def sw = new StringWriter()
             def pw = new PrintWriter(sw)
-            err.printStackTrace(pw)
+            err.getCauses()[0].printStackTrace(pw)
             echoXWiki sw.toString()
             throw err
             def user = err.getCauses()[0].getUser()
