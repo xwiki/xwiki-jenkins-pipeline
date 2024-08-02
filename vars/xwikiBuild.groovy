@@ -236,7 +236,14 @@ void call(name = 'Default', body)
                         def mavenFlags = config.mavenFlags ?: '-U -e'
                         def deployRepository = ''
                         if (goals.contains('deploy')) {
-                          deployRepository = '-DaltDeploymentRepository=nexus-snapshots.xwiki.org::default::https://nexus-snapshots.xwiki.org/repository/snapshots/'
+                            // Make sure all org.xwiki.* projects are deployed on the right repository
+                            def groupId = pom.groupId
+                            if (groupId == null) {
+                                groupId = pom.parent.groupId
+                            }
+                            if (groupId.startsWith('org.xwiki')) {
+                                deployRepository = '-DaltDeploymentRepository=nexus-snapshots.xwiki.org::default::https://nexus-snapshots.xwiki.org/repository/snapshots/'
+                            }
                         }
                         wrapInSonarQube(config) {
                             sh "mvn -f ${pomFile} ${goals} -P${profiles} ${mavenFlags} ${properties} ${javadoc} ${deployRepository}"
