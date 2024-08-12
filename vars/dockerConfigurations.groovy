@@ -50,7 +50,9 @@ def call(configurationName, xwikiVersion)
         // - Starting with Jetty 12, Jetty supports running an EE8 environment (i.e. "javax.servlet") which allows us
         //   to run XWiki on it. This is not supported in Jetty 11.
         // - We need to support both Java 17 and Java 21 so we map latest to Java 21 and LTS to java 17 to test both.
-        'jetty' : [ 'latest' : '12-jdk21', 'lts' : '10-jdk17' ]
+        // - Non-master branches currently don't support executing with Jetty 12 and thus we use Jetty 10 on the older
+        //   branches.
+        'jetty' : [ 'latestmaster' : '12-jdk21', 'latest' : '10-jdk21', 'lts' : '10-jdk17' ]
     ]
 
     def configurations = [:]
@@ -68,6 +70,11 @@ def call(configurationName, xwikiVersion)
  */
 def getLatestConfigurations(def xwikiVersion, def versions)
 {
+    def jettyLatest = versions.jetty.latest
+    if (isXWikiVersionGreaterThan(xwikiVersion, '16', '7')) {
+        jettyLatest = versions.jetty.latestmaster
+    }
+
     def configurations = [
         "MySQL ${versions.mysql.latest}, Tomcat ${versions.tomcat.latest}, Chrome": [
             'database' : 'mysql',
@@ -77,12 +84,12 @@ def getLatestConfigurations(def xwikiVersion, def versions)
             'servletEngineTag' : versions.tomcat.latest,
             'browser' : 'chrome'
         ],
-        "MariaDB ${versions.mariadb.latest}, Jetty ${versions.jetty.latest}, Firefox": [
+        "MariaDB ${versions.mariadb.latest}, Jetty ${jettyLatest}, Firefox": [
             'database' : 'mariadb',
             'databaseTag' : versions.mariadb.latest,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : versions.jetty.latest,
+            'servletEngineTag' : jettyLatest,
             'browser' : 'firefox'
         ],
         "PostgreSQL ${versions.postgresql.latest}, Tomcat ${versions.tomcat.latest}, Chrome": [
@@ -93,12 +100,12 @@ def getLatestConfigurations(def xwikiVersion, def versions)
             'servletEngineTag' : versions.tomcat.latest,
             'browser' : 'chrome'
         ],
-        "Oracle ${versions.oracle.latest}, Jetty ${versions.jetty.latest}, Firefox": [
+        "Oracle ${versions.oracle.latest}, Jetty ${jettyLatest}, Firefox": [
             'database' : 'oracle',
             'databaseTag' : versions.oracle.latest,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : versions.jetty.latest,
+            'servletEngineTag' : jettyLatest,
             'browser' : 'firefox'
         ]
     ]
@@ -199,4 +206,20 @@ def getUnsupportedConfigurations(def xwikiVersion, def versions)
         ]
     ]
     return configurations
+}
+
+private def isXWikiVersionGreaterThan(xwikiVersion, major, minor)
+{
+    def result
+    if (xwikiVersion) {
+        def versionParts = xwikiVersion?.split('\\.')
+        if (versionParts[0] >= major && versionParts[1] >= minor) {
+            result = true
+        } else {
+            result = false
+        }
+    } else {
+        result = true
+    }
+    return result
 }
