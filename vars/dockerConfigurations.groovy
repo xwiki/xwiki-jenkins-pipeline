@@ -47,10 +47,10 @@ def call(configurationName, xwikiVersion)
         // - We need to support both Java 17 and Java 21 so we map latest to Java 21 and LTS to java 17 to test both.
         'tomcat' : [ 'latest' : '9-jdk21', 'lts' : '9-jdk17', 'special' : '9-jdk11'],
         // Notes:
-        // - We cannot use Jetty 11.x right now as the latest version since that corresponds to a package change
-        //   for JakartaEE and we'll need XWiki to move to the new packages first. This is why LTS = latest FTM.
+        // - Starting with Jetty 12, Jetty supports running an EE8 environment (i.e. "javax.servlet") which allows us
+        //   to run XWiki on it. This is not supported in Jetty 11.
         // - We need to support both Java 17 and Java 21 so we map latest to Java 21 and LTS to java 17 to test both.
-        'jetty' : [ 'latest' : '10-jdk21', 'lts' : '10-jdk17' ]
+        'jetty' : [ 'latest' : '12-jdk21', 'lts' : '10-jdk17' ]
     ]
 
     def configurations = [:]
