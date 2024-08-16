@@ -36,7 +36,7 @@ def call(configurationName, xwikiVersion)
     // - we reduce the maintenance (since specifying the bugfix part would mean updating them all the time)
     def versions = [
         'mysql' : [ 'latest' : '9.0', 'lts' : '8.4' ],
-        'mariadb' : [ 'latest' : '11.4', 'lts' : '11.4' ],
+        'mariadb' : [ 'latest' : '11.5', 'lts' : '11.4' ],
         // Note: for postgreSQL latest is the last cycle and LTS the previous one. Thus, we don't specify the minor to
         // be always up to date in our tests.
         'postgresql' : [ 'latest' : '16', 'lts' : '15' ],
