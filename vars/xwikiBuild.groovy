@@ -66,13 +66,6 @@ void call(name = 'Default', body)
     // - Only keep builds for the last configured number of days (30 by default)
     //   - Special handling for contrib projects which have a lot less activity and for which we prefer to keep a number
     //     of builds instead rather than be time-based. We keep 20 builds.
-    // - Disable concurrent builds to avoid rebuilding whenever a new commit is made. The commits will accumulate till
-    //   the previous build is finished before starting a new one.
-    //   Note 1: this is limiting concurrency per branch only.
-    //   Note 2: This needs to be one of the first code executed which is why it's the first step we execute.
-    //   See https://thepracticalsysadmin.com/limit-jenkins-multibranch-pipeline-builds/ for details.
-    // -  Make sure projects are built at least once a month because SNAPSHOT older than one month are deleted
-    //    by the Nexus scheduler.
     def buildDiscardStrategy = [$class: 'LogRotator']
     if (config.daysToKeepStr) {
         buildDiscardStrategy.put('daysToKeepStr', config.daysToKeepStr.toString())
@@ -82,11 +75,27 @@ void call(name = 'Default', body)
         buildDiscardStrategy.put('numToKeepStr', buildsToKeep.toString())
         echoXWiki "Keep the last $buildsToKeep builds"
     }
+
+    // - Disable concurrent builds to avoid rebuilding whenever a new commit is made. The commits will accumulate till
+    //   the previous build is finished before starting a new one.
+    //   Note 1: this is limiting concurrency per branch only.
+    //   Note 2: This needs to be one of the first code executed which is why it's the first step we execute.
+    //   See https://thepracticalsysadmin.com/limit-jenkins-multibranch-pipeline-builds/ for details.
     def projectProperties = [
         [$class: 'BuildDiscarderProperty', strategy: buildDiscardStrategy],
-        disableConcurrentBuilds(),
-        pipelineTriggers([cron("@monthly")])
+        disableConcurrentBuilds())
     ]
+
+    // -  Make sure projects are built at least once a month because SNAPSHOT older than one month are deleted
+    //    by the Nexus scheduler.
+    //    - This behavior can be disabled by using the "monthlyTrigger" property
+    def monthlyTrigger = true
+    if (config.monthlyTrigger != null) {
+        monthlyTrigger = config.monthlyTrigger
+    }
+    if (monthlyTrigger) {
+      projectProperties.add(pipelineTriggers([cron("@monthly")])
+    }
 
     // Process job properties overrides.
     def allProperties = []

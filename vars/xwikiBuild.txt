@@ -47,6 +47,8 @@ The following options are available:
 * `skipChangeLog` = true (by default it's `false`). If true then don't add changelog to display in the UI when checking
   out code. This can be used when calling xwikiBuild several times in a job to avoid duplicate change logs.
 * `daysToKeepStr` = if specified, build records are only kept up to this number of days. The value must be a String.
+* `monthlyTrigger` = by default projects are built at least once a month because SNAPSHOT older than one month are
+deleted by the Nexus scheduler, but it's possible to disable it by setting `monthlyTrigger` to `false`
 * `javadoc` = false (`true` by default). If true build and validate the javadoc.
 * `dockerHubSecretId` = `secretId` (by default it's `xwikici`). Id of the text secret defined in Jenkins that contains
   the Personal Access Token (PAT) for the `dockerHubUserId` user id on DockerHub. This is used to log into DockerHub
