@@ -83,7 +83,7 @@ void call(name = 'Default', body)
     //   See https://thepracticalsysadmin.com/limit-jenkins-multibranch-pipeline-builds/ for details.
     def projectProperties = [
         [$class: 'BuildDiscarderProperty', strategy: buildDiscardStrategy],
-        disableConcurrentBuilds())
+        disableConcurrentBuilds()
     ]
 
     // -  Make sure projects are built at least once a month because SNAPSHOT older than one month are deleted
@@ -94,7 +94,7 @@ void call(name = 'Default', body)
         monthlyTrigger = config.monthlyTrigger
     }
     if (monthlyTrigger) {
-      projectProperties.add(pipelineTriggers([cron("@monthly")])
+      projectProperties.add(pipelineTriggers([cron("@monthly")]))
     }
 
     // Process job properties overrides.
