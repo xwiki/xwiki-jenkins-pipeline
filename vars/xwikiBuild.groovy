@@ -89,10 +89,7 @@ void call(name = 'Default', body)
     // -  Make sure projects are built at least once a month because SNAPSHOT older than one month are deleted
     //    by the Nexus scheduler.
     //    - This behavior can be disabled by using the "monthlyTrigger" property
-    def monthlyTrigger = true
-    if (config.monthlyTrigger != null) {
-        monthlyTrigger = config.monthlyTrigger
-    }
+    def monthlyTrigger = config.monthlyTrigger ?: true
     if (monthlyTrigger) {
       projectProperties.add(pipelineTriggers([cron("@monthly")]))
     }
