@@ -560,7 +560,6 @@ private def attachScreenshotToFailingTests(def failingTests)
             }
         } else {
             echoXWiki "No screenshot found for test [${testClass}#${testName}] on ${NODE_NAME}"
-            sh script: "ls -alg ${targetDirectory}", returnStatus: true
         }
     }
 }
