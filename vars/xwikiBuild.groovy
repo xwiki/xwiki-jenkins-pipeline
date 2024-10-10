@@ -126,6 +126,11 @@ void call(name = 'Default', body)
             checkout changelog: config.skipChangeLog ?: false, scm: scm
         }
 
+        // Set config.sonar = true if the sonar:sonar goal is set in config.goals.
+        if (config.goals?.contains('sonar:sonar')) {
+            config.sonar = true
+        }
+
         // Configure the version of Java to use
         def pom = readMavenPom file: getPOMFile(config)
         javaMavenConfig = configureJavaTool(config, pom)
@@ -150,11 +155,6 @@ void call(name = 'Default', body)
         def firefoxVersion = sh script: 'firefox -version || true', returnStdout: true
         if (firefoxVersion) {
             echoXWiki "Firefox version installed: ${firefoxVersion}"
-        }
-
-        // Set config.sonar = true if the sonar:sonar goal is set in config.goals.
-        if (config.goals?.contains('sonar:sonar')) {
-            config.sonar = true
         }
     }
     stage("Build for ${name}") {
