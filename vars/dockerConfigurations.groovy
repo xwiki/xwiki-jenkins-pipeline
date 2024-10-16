@@ -35,11 +35,11 @@ def call(configurationName, xwikiVersion)
     // - we always test with the latest bugfix version
     // - we reduce the maintenance (since specifying the bugfix part would mean updating them all the time)
     def versions = [
-        'mysql' : [ 'latest' : '9.0', 'lts' : '8.4' ],
+        'mysql' : [ 'latest' : '9.1', 'lts' : '8.4' ],
         'mariadb' : [ 'latest' : '11.5', 'lts' : '11.4' ],
         // Note: for postgreSQL latest is the last cycle and LTS the previous one. Thus, we don't specify the minor to
         // be always up to date in our tests.
-        'postgresql' : [ 'latest' : '16', 'lts' : '15' ],
+        'postgresql' : [ 'latest' : '17', 'lts' : '16' ],
         'oracle' : [ 'latest' : '19.3.0-se2' ],
         // Notes:
         // - We cannot use Tomcat 10.x right now as the latest version since that corresponds to a package change
