@@ -46,7 +46,7 @@ def call(configurationName, xwikiVersion)
     // Java versions
     def javaMaxVersion = 21;
     def javaMinVersion;
-    def major = xwikiVersion.substring(0, version.indexOf('.'))
+    def major = xwikiVersion.substring(0, xwikiVersion.indexOf('.'))
     if (major.toInteger() < 16) {
         javaMinVersion = 11
     } else {
