@@ -40,25 +40,50 @@ def call(configurationName, xwikiVersion)
         // Note: for postgreSQL latest is the last cycle and LTS the previous one. Thus, we don't specify the minor to
         // be always up to date in our tests.
         'postgresql' : [ 'latest' : '17', 'lts' : '16' ],
-        'oracle' : [ 'latest' : '19.3.0-se2' ],
-        // Notes:
-        // - We cannot use Tomcat 10.x right now as the latest version since that corresponds to a package change
-        //   for JakartaEE and we'll need XWiki to move to the new packages first. This is why LTS = latest FTM.
-        // - We need to support both Java 17 and Java 21 so we map latest to Java 21 and LTS to java 17 to test both.
-        'tomcat' : [ 'latest' : '9-jdk21', 'lts' : '9-jdk17', 'special' : '9-jdk11'],
-        // Notes:
-        // - Starting with Jetty 12, Jetty supports running an EE8 environment (i.e. "javax.servlet") which allows us
-        //   to run XWiki on it. This is not supported in Jetty 11.
-        // - We need to support both Java 17 and Java 21 so we map latest to Java 21 and LTS to java 17 to test both.
-        // - Non-master branches currently don't support executing with Jetty 12 and thus we use Jetty 10 on the older
-        //   branches.
-        'jetty' : [ 'latestmaster' : '12-jdk21', 'latest' : '10-jdk21', 'lts' : '10-jdk17' ]
+        'oracle' : [ 'latest' : '19.3.0-se2' ]
     ]
 
+    // Java versions
+    def javaMaxVersion = 21;
+    def javaMinVersion;
+    def major = xwikiVersion.substring(0, version.indexOf('.'))
+    if (major.toInteger() < 16) {
+        javaMinVersion = 11
+    } else {
+        javaMinVersion = 17
+    }
+
+    // Application servers (Tomcat and Jetty) versions
+    def tomcatUnsupportedVersion = 'latest';
+    def tomcatMaxVersion = 11;
+    def tomcatMinVersion = 10;
+    def jettyUnsupportedVersion = 'latest';
+    def jettyMaxVersion = 12;
+    def jettyMinVersion = 11;
+    // javax based branches of XWiki cannot always use the latest versions of Tomcat and Jetty
+    // TODO: change for something like isXWikiVersionAtLeast(xwikiVersion, '17', '0') when the jakarta branch is merged
+    if (!xwikiVersion.contains('feature-deploy-jakarta')) {
+        tomcatMaxVersion = 9
+        tomcatMinVersion = 9
+        tomcatUnsupportedVersion = tomcatMaxVersion
+
+        jettyMinVersion = 10
+        // - Starting with Jetty 12, Jetty supports running an EE8 environment (i.e. "javax.servlet") which allows us
+        //   to run XWiki on it.
+        // - Except for versions of Xwiki lower than 16.7 for which we are stuck with Jetty 10
+        if (!isXWikiVersionAtLeast(xwikiVersion, '16', '7')) {
+            jettyMaxVersion = 10
+            jettyUnsupportedVersion = jettyMaxVersion
+        }
+    }
+
+    versions.'tomcat' = [ 'latest' : "${tomcatMaxVersion}-jdk${javaMaxVersion}", 'lts' : "${tomcatMinVersion}-jdk${javaMinVersion}", 'latestunsupported' : tomcatUnsupportedVersion]
+    versions.'jetty' = [ 'latest' : "${jettyMaxVersion}-jdk${javaMaxVersion}", 'lts' : "${jettyMinVersion}-jdk${javaMinVersion}", 'latestunsupported' : jettyUnsupportedVersion ]
+
     def configurations = [:]
-    configurations.'docker-latest' = getLatestConfigurations(xwikiVersion, versions)
-    configurations.'docker-all' = getAllConfigurations(xwikiVersion, versions)
-    configurations.'docker-unsupported' = getUnsupportedConfigurations(xwikiVersion, versions)
+    configurations.'docker-latest' = getLatestConfigurations(versions)
+    configurations.'docker-all' = getAllConfigurations(versions)
+    configurations.'docker-unsupported' = getUnsupportedConfigurations(versions)
     return configurations.get(configurationName)
 }
 
@@ -68,13 +93,8 @@ def call(configurationName, xwikiVersion)
  *
  * See <a href="https://dev.xwiki.org/xwiki/bin/view/Community/SupportStrategy/">Support Strategy</a>.
  */
-def getLatestConfigurations(def xwikiVersion, def versions)
+def getLatestConfigurations(def versions)
 {
-    def jettyLatest = versions.jetty.latest
-    if (isXWikiVersionGreaterThan(xwikiVersion, '16', '7')) {
-        jettyLatest = versions.jetty.latestmaster
-    }
-
     def configurations = [
         "MySQL ${versions.mysql.latest}, Tomcat ${versions.tomcat.latest}, Chrome": [
             'database' : 'mysql',
@@ -84,12 +104,12 @@ def getLatestConfigurations(def xwikiVersion, def versions)
             'servletEngineTag' : versions.tomcat.latest,
             'browser' : 'chrome'
         ],
-        "MariaDB ${versions.mariadb.latest}, Jetty ${jettyLatest}, Firefox": [
+        "MariaDB ${versions.mariadb.latest}, Jetty ${versions.jetty.latest}, Firefox": [
             'database' : 'mariadb',
             'databaseTag' : versions.mariadb.latest,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : jettyLatest,
+            'servletEngineTag' : versions.jetty.latest,
             'browser' : 'firefox'
         ],
         "PostgreSQL ${versions.postgresql.latest}, Tomcat ${versions.tomcat.latest}, Chrome": [
@@ -100,12 +120,12 @@ def getLatestConfigurations(def xwikiVersion, def versions)
             'servletEngineTag' : versions.tomcat.latest,
             'browser' : 'chrome'
         ],
-        "Oracle ${versions.oracle.latest}, Jetty ${jettyLatest}, Firefox": [
+        "Oracle ${versions.oracle.latest}, Jetty ${versions.jetty.latest}, Firefox": [
             'database' : 'oracle',
             'databaseTag' : versions.oracle.latest,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : jettyLatest,
+            'servletEngineTag' : versions.jetty.latest,
             'browser' : 'firefox'
         ]
     ]
@@ -120,7 +140,7 @@ def getLatestConfigurations(def xwikiVersion, def versions)
  *
  * See <a href="https://dev.xwiki.org/xwiki/bin/view/Community/SupportStrategy/">Support Strategy</a>.
  */
-def getAllConfigurations(def xwikiVersion, def versions)
+def getAllConfigurations(def versions)
 {
     def configurations = [
         "MariaDB ${versions.mariadb.lts}, Tomcat ${versions.tomcat.lts}, Firefox": [
@@ -138,28 +158,19 @@ def getAllConfigurations(def xwikiVersion, def versions)
             'servletEngine' : 'jetty',
             'servletEngineTag' : versions.jetty.lts,
             'browser' : 'chrome'
-        ]
-    ]
-
-    // Verify MySQL LTS on Tomcat LTS and at the same time we verify that we still support utf8 for MySQL.
-    // Note 1: MySQL on utmb4 is tested in latest configurations.
-    // Note 2: We run these tests on Tomcat/Java 11 for XWiki 15.x to make sure we still support Java 11.
-    def tomcatVersion = versions.tomcat.lts
-    if (xwikiVersion.startsWith("15.")) {
-        tomcatVersion = versions.tomcat.special
-    }
-    configurations.putAll([
-        "MySQL ${versions.mysql.lts} (utf8), Tomcat ${tomcatVersion}, Chrome": [
+        ],
+        // Also make sure XWiki keep working with utf8 on MySQL (utf8mb4 is tested in latest configurations)
+        "MySQL ${versions.mysql.lts} (utf8), Tomcat ${versions.tomcat.lts}, Chrome": [
             'database' : 'mysql',
             'database.commands.character-set-server' : 'utf8',
             'database.commands.collation-server' : 'utf8_bin',
             'databaseTag' : versions.mysql.lts,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : tomcatVersion,
+            'servletEngineTag' : versions.tomcat.lts,
             'browser' : 'chrome'
         ]
-    ])
+    ]
 
     return configurations
 }
@@ -174,46 +185,42 @@ def getUnsupportedConfigurations(def xwikiVersion, def versions)
 {
     def configurations = [
         // Test on latest MySQL, latest Tomcat, Java LTS
-        'MySQL latest, Tomcat latest 9.x (Java LTS), Chrome': [
+        "MySQL latest, Tomcat ${versions.tomcat.latestunsupported}, Chrome": [
             'database' : 'mysql',
             'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            // Note: we cannot use 10.x right now since that corresponds to a package change for JakartaEE and we'll
-            // need XWiki to move to the new packages first.
-            'servletEngineTag' : '9-jdk21',
+            'servletEngineTag' : versions.tomcat.latestunsupported,
             'browser' : 'chrome'
         ],
         // Test on latest PostgreSQL, latest Jetty, Java LTS
-        'PostgreSQL latest, Jetty latest 10.x (Java LTS), Chrome': [
+        "PostgreSQL latest, Jetty ${versions.jetty.latestunsupported}, Chrome": [
             'database' : 'postgresql',
             'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            // Note: we cannot use 11.x right now since that corresponds to a package change for JakartaEE and we'll
-            // need XWiki to move to the new packages first.
-            'servletEngineTag' : '10-jdk21',
+            'servletEngineTag' : versions.jetty.latestunsupported,
             'browser' : 'chrome'
         ],
-        // Test on latest MariaDB, Tomcat LTS, latest Java
-        'MariaDB latest, Tomcat latest 9.x (Java 17), Firefox': [
+        // Test on latest MariaDB, Tomcat latest, latest Java
+        "MariaDB latest, Tomcat ${versions.tomcat.latestunsupported}, Firefox": [
             'database' : 'mariadb',
             'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : '9-jdk21',
+            'servletEngineTag' : versions.tomcat.latestunsupported,
             'browser' : 'firefox'
         ]
     ]
     return configurations
 }
 
-private def isXWikiVersionGreaterThan(xwikiVersion, major, minor)
+private def isXWikiVersionAtLeast(xwikiVersion, major, minor)
 {
     def result
     if (xwikiVersion) {
         def versionParts = xwikiVersion?.split('\\.')
-        if (versionParts[0] >= major && versionParts[1] >= minor) {
+        if (versionParts[0] > major || (versionParts[0] == major && versionParts[1] >= minor)) {
             result = true
         } else {
             result = false
