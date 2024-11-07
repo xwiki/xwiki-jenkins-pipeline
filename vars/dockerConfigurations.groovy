@@ -181,7 +181,7 @@ def getAllConfigurations(def versions)
  *
  * See <a href="https://dev.xwiki.org/xwiki/bin/view/Community/SupportStrategy/">Support Strategy</a>.
  */
-def getUnsupportedConfigurations(def xwikiVersion, def versions)
+def getUnsupportedConfigurations(def versions)
 {
     def configurations = [
         // Test on latest MySQL, latest Tomcat, Java LTS
