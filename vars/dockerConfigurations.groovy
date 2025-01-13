@@ -31,9 +31,11 @@ def call(configurationName)
 
 def call(configurationName, xwikiVersion)
 {
-    // Note: these version only specify major and minor (and not bugfix) so that:
+    // Note: these versions only specify major and minor (and not bugfix) so that:
     // - we always test with the latest bugfix version
     // - we reduce the maintenance (since specifying the bugfix part would mean updating them all the time)
+
+    // Database versions
     def versions = [
         'mysql' : [ 'latest' : '9.1', 'lts' : '8.4' ],
         'mariadb' : [ 'latest' : '11.6', 'lts' : '11.4' ],
@@ -54,15 +56,14 @@ def call(configurationName, xwikiVersion)
     }
 
     // Application servers (Tomcat and Jetty) versions
-    def tomcatUnsupportedVersion = 'latest';
     def tomcatMaxVersion = 11;
     def tomcatMinVersion = 10;
-    def jettyUnsupportedVersion = 'latest';
+    def tomcatUnsupportedVersion = 'latest';
     def jettyMaxVersion = 12;
     def jettyMinVersion = 11;
+    def jettyUnsupportedVersion = 'latest';
     // javax based branches of XWiki cannot always use the latest versions of Tomcat and Jetty
-    // TODO: change for something like isXWikiVersionAtLeast(xwikiVersion, '17', '0') when the jakarta branch is merged
-    if (!xwikiVersion.contains('feature-deploy-jakarta')) {
+    if (!isXWikiVersionAtLeast(xwikiVersion, '17', '0')) {
         tomcatMaxVersion = 9
         tomcatMinVersion = 9
         tomcatUnsupportedVersion = tomcatMaxVersion
@@ -70,7 +71,7 @@ def call(configurationName, xwikiVersion)
         jettyMinVersion = 10
         // - Starting with Jetty 12, Jetty supports running an EE8 environment (i.e. "javax.servlet") which allows us
         //   to run XWiki on it.
-        // - Except for versions of Xwiki lower than 16.7 for which we are stuck with Jetty 10
+        // - Except for versions of XWiki lower than 16.7 for which we are stuck with Jetty 10
         if (!isXWikiVersionAtLeast(xwikiVersion, '16', '7')) {
             jettyMaxVersion = 10
             jettyUnsupportedVersion = jettyMaxVersion
