@@ -51,8 +51,10 @@ def call(configurationName, xwikiVersion)
     def major = xwikiVersion.substring(0, xwikiVersion.indexOf('.'))
     if (major.toInteger() < 16) {
         javaMinVersion = 11
-    } else {
+    } else if (major.toInteger() < 18) {
         javaMinVersion = 17
+    } else {
+        javaMinVersion = 21
     }
 
     // Application servers (Tomcat and Jetty) versions
@@ -60,22 +62,17 @@ def call(configurationName, xwikiVersion)
     def tomcatMinVersion = 10;
     def tomcatUnsupportedVersion = 'latest';
     def jettyMaxVersion = 12;
-    def jettyMinVersion = 11;
+    def jettyMinVersion = 12;
     def jettyUnsupportedVersion = 'latest';
-    // javax based branches of XWiki cannot always use the latest versions of Tomcat and Jetty
+    // javax based branches of XWiki cannot always use the latest versions of application servers
     if (!isXWikiVersionAtLeast(xwikiVersion, '17', '0')) {
         tomcatMaxVersion = 9
         tomcatMinVersion = 9
         tomcatUnsupportedVersion = tomcatMaxVersion
 
-        jettyMinVersion = 10
-        // - Starting with Jetty 12, Jetty supports running an EE8 environment (i.e. "javax.servlet") which allows us
-        //   to run XWiki on it.
-        // - Except for versions of XWiki lower than 16.7 for which we are stuck with Jetty 10
-        if (!isXWikiVersionAtLeast(xwikiVersion, '16', '7')) {
-            jettyMaxVersion = 10
-            jettyUnsupportedVersion = jettyMaxVersion
-        }
+        jettyMaxVersion = 12
+        jettyMinVersion = 12
+        jettyUnsupportedVersion = jettyMaxVersion
     }
 
     versions.'tomcat' = [ 'latest' : "${tomcatMaxVersion}-jdk${javaMaxVersion}", 'lts' : "${tomcatMinVersion}-jdk${javaMinVersion}", 'latestunsupported' : tomcatUnsupportedVersion]
