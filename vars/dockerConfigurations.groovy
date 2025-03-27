@@ -37,8 +37,8 @@ def call(configurationName, xwikiVersion)
 
     // Database versions
     def versions = [
-        'mysql' : [ 'latest' : '9.1', 'lts' : '8.4' ],
-        'mariadb' : [ 'latest' : '11.6', 'lts' : '11.4' ],
+        'mysql' : [ 'latest' : '9', 'lts' : '8' ],
+        'mariadb' : [ 'latest' : '11', 'lts' : '11.4' ],
         // Note: for postgreSQL latest is the last cycle and LTS the previous one. Thus, we don't specify the minor to
         // be always up to date in our tests.
         'postgresql' : [ 'latest' : '17', 'lts' : '16' ],
