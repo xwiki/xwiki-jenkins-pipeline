@@ -37,13 +37,13 @@ def call(configurationName, xwikiVersion)
 
     // Database versions
     def versions = [
-        // FIXME: We should use mysql:9 but mysql:9.3 removed a property that were still used in TC, so we need to wait
+        // FIXME: We cannot use 'latest' mysql label as mysql:9.3 removed a property that were still used in TC, so we need to wait
         // until it's fixed on TC side, see also: https://github.com/testcontainers/testcontainers-java/issues/10184
-        'mysql' : [ 'latest' : '9.2', 'lts' : '8' ],
-        'mariadb' : [ 'latest' : '11', 'lts' : '11.4' ],
-        // Note: for postgreSQL latest is the last cycle and LTS the previous one. Thus, we don't specify the minor to
-        // be always up to date in our tests.
-        'postgresql' : [ 'latest' : '17', 'lts' : '16' ],
+        'mysql' : [ 'latest' : '9.2', 'lts' : 'lts' ],
+        'mariadb' : [ 'latest' : 'latest', 'lts' : 'lts' ],
+        // postgresql images don't have the concept of 'lts', we are considering the previous major version to serve this purpose
+        'postgresql' : [ 'latest' : 'latest', 'lts' : '16' ],
+        // TODO: Find a more recent version of Oracle
         'oracle' : [ 'latest' : '19.3.0-se2' ]
     ]
 
