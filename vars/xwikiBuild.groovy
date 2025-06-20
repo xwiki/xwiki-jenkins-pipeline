@@ -248,7 +248,7 @@ void call(name = 'Default', body)
                                 groupId = pom.parent.groupId
                             }
                             if (groupId.startsWith('org.xwiki')) {
-                                deployRepository = '-DaltDeploymentRepository=nexus-snapshots.xwiki.org::https://nexus-snapshots.xwiki.org/repository/snapshots/'
+                                deployRepository = '-DaltDeploymentRepository=nexus-snapshots.xwiki.org::::https://nexus-snapshots.xwiki.org/repository/snapshots/'
                             }
                         }
                         wrapInSonarQube(config) {
