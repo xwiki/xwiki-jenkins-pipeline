@@ -74,7 +74,11 @@ def call()
     def messages = [
         [".*Error setting up the XWiki testing environment on agent.*", "Docker test setup issue"],
         [".*Java heap space.*", "Memory issue"],
-        [".*Connection refused.*", "Communication issue"],
+        // Note: We want to exclude "Connection Refused" errors when they are printed for debug purposes as they're
+        // usually not a problem in this case. For example:
+        //   09:43:38.586 ... DEBUG o.x.e.p.i.c.ChromeManager      - Chrome remote debugging not available.
+        //     Root cause: \[ConnectException: Connection refused\]. Retrying in 2s.
+        ["^(?!.*DEBUG).*Connection refused.*", "Communication issue"],
         [".*\\QReached error page: about:neterror\\E.*", "Communication issue"],
         [".*\\QContainerLaunchException: Timed out waiting for URL to be accessible\\E.*", "Timed out waiting for URL to be accessible"],
         [".*\\QThe archive file .* is corrupted and will be deleted. Please try the build again\\E.*", "nodejs.org problem"],
