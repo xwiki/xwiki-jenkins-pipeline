@@ -72,8 +72,9 @@ def call(configurationName, xwikiVersion)
         tomcatMinVersion = 9
         tomcatUnsupportedVersion = tomcatMaxVersion
 
-        jettyMaxVersion = 12
-        jettyMinVersion = 12
+        // FIXME: Should be reset to 12 once https://jira.xwiki.org/browse/XWIKI-23475 is fixed.
+        jettyMaxVersion = 12.0
+        jettyMinVersion = 12.0
         jettyUnsupportedVersion = jettyMaxVersion
     }
 
