@@ -93,6 +93,12 @@ def getJavaTool(pom)
             return 'java8'
         } else if (major.toInteger() < 16) {
             return 'java11'
+        } else if (major.toInteger() < 18) {
+            return 'java17'
+        } else if (major.toInteger() < 20) {
+            return 'java21'
+        } else if (major.toInteger() < 22) {
+            return 'java25'
         }
     }
     return 'official'
