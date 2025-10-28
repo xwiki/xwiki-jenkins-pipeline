@@ -48,15 +48,17 @@ def call(configurationName, xwikiVersion)
     ]
 
     // Java versions
-    def javaMaxVersion = 21;
+    def javaMaxVersion = 25;
     def javaMinVersion;
     def major = xwikiVersion.substring(0, xwikiVersion.indexOf('.'))
     if (major.toInteger() < 16) {
         javaMinVersion = 11
     } else if (major.toInteger() < 18) {
         javaMinVersion = 17
-    } else {
+    } else if (major.toInteger() < 20) {
         javaMinVersion = 21
+    } else {
+        javaMinVersion = 25
     }
 
     // Application servers (Tomcat and Jetty) versions
