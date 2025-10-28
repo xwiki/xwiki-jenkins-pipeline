@@ -667,6 +667,14 @@ private def checkForFlickers(def failingTests)
     boolean containsOnlyFlickers = true
     boolean isModified = false
     failingTests.each() { testResult ->
+        echoXWiki "DEBUG - class: ${testResult.class}"
+        echoXWiki "DEBUG - className: ${testResult.className}"
+        echoXWiki "DEBUG - name: ${testResult.name}"
+        echoXWiki "DEBUG - fullName: ${testResult.fullName}"
+        echoXWiki "DEBUG - id: ${testResult.id}"
+        echoXWiki "DEBUG - toString: ${testResult.toString()}"
+        echoXWiki "DEBUG - url: ${testResult.url}"
+        echoXWiki "DEBUG - properties: ${testResult.properties}"
         // Construct a normalized test name made of <test class name>#<method name>
         // Note: The call to toString() is important to get a String and not a GString so that contains() will work
         // (since otherwise equals() will fail between a String and a GString)
