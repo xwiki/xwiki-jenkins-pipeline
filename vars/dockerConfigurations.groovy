@@ -65,8 +65,7 @@ def call(configurationName, xwikiVersion)
     def tomcatMaxVersion = 11;
     def tomcatMinVersion = 10;
     def tomcatUnsupportedVersion = 'latest';
-    // FIXME: Should be reset to 12 once https://jira.xwiki.org/browse/XWIKI-23475 is fixed.
-    def jettyMaxVersion = 12.0;
+    def jettyMaxVersion = 12;
     def jettyMinVersion = 12.0;
     def jettyUnsupportedVersion = 'latest';
     // javax based branches of XWiki cannot always use the latest versions of application servers
@@ -75,8 +74,7 @@ def call(configurationName, xwikiVersion)
         tomcatMinVersion = 9
         tomcatUnsupportedVersion = tomcatMaxVersion
 
-        // FIXME: Should be reset to 12 once https://jira.xwiki.org/browse/XWIKI-23475 is fixed.
-        jettyMaxVersion = 12.0
+        jettyMaxVersion = 12
         jettyMinVersion = 12.0
         jettyUnsupportedVersion = jettyMaxVersion
     }
