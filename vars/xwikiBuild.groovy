@@ -675,6 +675,9 @@ private def checkForFlickers(def failingTests)
         echoXWiki "DEBUG - toString: ${testResult.toString()}"
         echoXWiki "DEBUG - url: ${testResult.url}"
         echoXWiki "DEBUG - properties: ${testResult.properties}"
+        if (testResult instanceof hudson.tasks.junit.CaseResult) {
+          echoXWiki "DEBUG - simpleName: ${testResult.simpleName}"
+        }
         // Construct a normalized test name made of <test class name>#<method name>
         // Note: The call to toString() is important to get a String and not a GString so that contains() will work
         // (since otherwise equals() will fail between a String and a GString)
