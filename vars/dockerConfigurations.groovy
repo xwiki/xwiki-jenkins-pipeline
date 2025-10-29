@@ -48,7 +48,8 @@ def call(configurationName, xwikiVersion)
     ]
 
     // Java versions
-    def javaMaxVersion = 25;
+    // TODO: cannot switch to Java 25 until Jetty starts providing Java 25 docker images
+    def javaMaxVersion = 21;
     def javaMinVersion;
     def major = xwikiVersion.substring(0, xwikiVersion.indexOf('.'))
     if (major.toInteger() < 16) {
