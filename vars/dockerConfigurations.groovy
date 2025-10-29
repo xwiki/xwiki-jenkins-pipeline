@@ -42,7 +42,7 @@ def call(configurationName, xwikiVersion)
         'mysql' : [ 'latest' : '9.2', 'lts' : 'lts' ],
         'mariadb' : [ 'latest' : 'latest', 'lts' : 'lts' ],
         // postgresql images don't have the concept of 'lts', we are considering the previous major version to serve this purpose
-        'postgresql' : [ 'latest' : 'latest', 'lts' : '16' ],
+        'postgresql' : [ 'latest' : 'latest', 'lts' : '17' ],
         // TODO: Find a more recent version of Oracle
         'oracle' : [ 'latest' : '19.3.0-se2' ]
     ]
