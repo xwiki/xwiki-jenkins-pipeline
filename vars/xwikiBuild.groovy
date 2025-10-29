@@ -667,14 +667,6 @@ private def checkForFlickers(def failingTests)
     boolean containsOnlyFlickers = true
     boolean isModified = false
     failingTests.each() { testResult ->
-        echoXWiki "DEBUG - class: ${testResult.class}"
-        echoXWiki "DEBUG - className: ${testResult.className}"
-        echoXWiki "DEBUG - name: ${testResult.name}"
-        echoXWiki "DEBUG - fullName: ${testResult.fullName}"
-        echoXWiki "DEBUG - id: ${testResult.id}"
-        echoXWiki "DEBUG - toString: ${testResult.toString()}"
-        echoXWiki "DEBUG - url: ${testResult.url}"
-        echoXWiki "DEBUG - properties: ${testResult.properties}"
         if (testResult instanceof hudson.tasks.junit.CaseResult) {
           echoXWiki "DEBUG - simpleName: ${testResult.simpleName}"
         }
