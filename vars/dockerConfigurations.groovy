@@ -98,7 +98,6 @@ def call(configurationName, xwikiVersion)
  */
 def getLatestConfigurations(def versions)
 {
-    // FIXME: we fix the version of chrome browser to 4.37.0 for now due to a regression with the handling of placeholders
     def configurations = [
         "MySQL ${versions.mysql.latest}, Tomcat ${versions.tomcat.latest}, Chrome": [
             'database' : 'mysql',
@@ -106,8 +105,7 @@ def getLatestConfigurations(def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : versions.tomcat.latest,
-            'browser' : 'chrome',
-            'browserTag': '4.37.0'
+            'browser' : 'chrome'
         ],
         "MariaDB ${versions.mariadb.latest}, Jetty ${versions.jetty.latest}, Firefox": [
             'database' : 'mariadb',
@@ -123,8 +121,7 @@ def getLatestConfigurations(def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
             'servletEngineTag' : versions.tomcat.latest,
-            'browser' : 'chrome',
-            'browserTag': '4.37.0'
+            'browser' : 'chrome'
         ],
         "Oracle ${versions.oracle.latest}, Jetty ${versions.jetty.latest}, Firefox": [
             'database' : 'oracle',
