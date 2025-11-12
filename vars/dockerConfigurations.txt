@@ -3,6 +3,7 @@ Defines various supported configurations supported by XWiki Standard, according 
 * DBs: https://dev.xwiki.org/xwiki/bin/view/Community/DatabaseSupportStrategy
 * Servlet containers: https://dev.xwiki.org/xwiki/bin/view/Community/ServletContainerSupportStrategy/
 * Browsers: https://dev.xwiki.org/xwiki/bin/view/Community/BrowserSupportStrategy
+* Blob stores
 
 Note that for browsers we're constrained to use the version of them supported by the Selenium version we use. Our
 strategy is to always use the latest released Selenium version in order to use the latest browser versions.

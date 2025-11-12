@@ -111,7 +111,9 @@ private def getTestConfigurationName(def testConfig)
         "${testConfig.database}-${testConfig.databaseTag ?: 'default'}-${testConfig.jdbcVersion ?: 'default'}"
     def servletEnginePart = "${testConfig.servletEngine}-${testConfig.servletEngineTag ?: 'default'}"
     def browserPart = "${testConfig.browser}"
-    return "${databasePart}-${servletEnginePart}-${browserPart}"
+    // Don't add a blob store part if blob store is not specified to avoid having it in unsupported versions of XWiki.
+    def blobStorePart = testConfig.blobStore ? "${testConfig.blobStore}-" : ''
+    return "${databasePart}-${servletEnginePart}-${blobStorePart}${browserPart}"
 }
 
 private void buildTestFramework()

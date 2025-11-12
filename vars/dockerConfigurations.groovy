@@ -84,9 +84,9 @@ def call(configurationName, xwikiVersion)
     versions.'jetty' = [ 'latest' : "${jettyMaxVersion}-jdk${javaMaxVersion}", 'lts' : "${jettyMinVersion}-jdk${javaMinVersion}", 'latestunsupported' : jettyUnsupportedVersion ]
 
     def configurations = [:]
-    configurations.'docker-latest' = getLatestConfigurations(versions)
-    configurations.'docker-all' = getAllConfigurations(versions)
-    configurations.'docker-unsupported' = getUnsupportedConfigurations(versions)
+    configurations.'docker-latest' = getLatestConfigurations(xwikiVersion, versions)
+    configurations.'docker-all' = getAllConfigurations(xwikiVersion, versions)
+    configurations.'docker-unsupported' = getUnsupportedConfigurations(xwikiVersion, versions)
     return configurations.get(configurationName)
 }
 
@@ -96,42 +96,62 @@ def call(configurationName, xwikiVersion)
  *
  * See <a href="https://dev.xwiki.org/xwiki/bin/view/Community/SupportStrategy/">Support Strategy</a>.
  */
-def getLatestConfigurations(def versions)
+def getLatestConfigurations(def xwikiVersion, def versions)
 {
-    def configurations = [
-        "MySQL ${versions.mysql.latest}, Tomcat ${versions.tomcat.latest}, Chrome": [
+    def configurations = [:]
+
+    addConfiguration(
+        configurations,
+        "MySQL ${versions.mysql.latest}",
+        "Tomcat ${versions.tomcat.latest}",
+        [
             'database' : 'mysql',
             'databaseTag' : versions.mysql.latest,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : versions.tomcat.latest,
-            'browser' : 'chrome'
-        ],
-        "MariaDB ${versions.mariadb.latest}, Jetty ${versions.jetty.latest}, Firefox": [
+            'servletEngineTag' : versions.tomcat.latest
+        ], 'filesystem', 'chrome', xwikiVersion
+    )
+
+    addConfiguration(
+        configurations,
+        "MariaDB ${versions.mariadb.latest}",
+        "Jetty ${versions.jetty.latest}",
+        [
             'database' : 'mariadb',
             'databaseTag' : versions.mariadb.latest,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : versions.jetty.latest,
-            'browser' : 'firefox'
-        ],
-        "PostgreSQL ${versions.postgresql.latest}, Tomcat ${versions.tomcat.latest}, Chrome": [
+            'servletEngineTag' : versions.jetty.latest
+        ], 'filesystem', 'firefox', xwikiVersion
+    )
+
+    addConfiguration(
+        configurations,
+        "PostgreSQL ${versions.postgresql.latest}",
+        "Tomcat ${versions.tomcat.latest}",
+        [
             'database' : 'postgresql',
             'databaseTag' : versions.postgresql.latest,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : versions.tomcat.latest,
-            'browser' : 'chrome'
-        ],
-        "Oracle ${versions.oracle.latest}, Jetty ${versions.jetty.latest}, Firefox": [
+            'servletEngineTag' : versions.tomcat.latest
+        ], 's3', 'chrome', xwikiVersion
+    )
+
+    addConfiguration(
+        configurations,
+        "Oracle ${versions.oracle.latest}",
+        "Jetty ${versions.jetty.latest}",
+        [
             'database' : 'oracle',
             'databaseTag' : versions.oracle.latest,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : versions.jetty.latest,
-            'browser' : 'firefox'
-        ]
-    ]
+            'servletEngineTag' : versions.jetty.latest
+        ], 's3', 'firefox', xwikiVersion
+    )
+
     return configurations
 }
 
@@ -143,37 +163,51 @@ def getLatestConfigurations(def versions)
  *
  * See <a href="https://dev.xwiki.org/xwiki/bin/view/Community/SupportStrategy/">Support Strategy</a>.
  */
-def getAllConfigurations(def versions)
+def getAllConfigurations(def xwikiVersion, def versions)
 {
-    def configurations = [
-        "MariaDB ${versions.mariadb.lts}, Tomcat ${versions.tomcat.lts}, Firefox": [
+    def configurations = [:]
+
+    addConfiguration(
+        configurations,
+        "MariaDB ${versions.mariadb.lts}",
+        "Tomcat ${versions.tomcat.lts}",
+        [
             'database' : 'mariadb',
             'databaseTag' : versions.mariadb.lts,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : versions.tomcat.lts,
-            'browser' : 'firefox'
-        ],
-        "PostgreSQL ${versions.postgresql.lts}, Jetty ${versions.jetty.lts}, Chrome": [
+            'servletEngineTag' : versions.tomcat.lts
+        ], 'filesystem', 'firefox', xwikiVersion
+    )
+
+    addConfiguration(
+        configurations,
+        "PostgreSQL ${versions.postgresql.lts}",
+        "Jetty ${versions.jetty.lts}",
+        [
             'database' : 'postgresql',
             'databaseTag' : versions.postgresql.lts,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : versions.jetty.lts,
-            'browser' : 'chrome'
-        ],
-        // Also make sure XWiki keep working with utf8 on MySQL (utf8mb4 is tested in latest configurations)
-        "MySQL ${versions.mysql.lts} (utf8), Tomcat ${versions.tomcat.lts}, Chrome": [
+            'servletEngineTag' : versions.jetty.lts
+        ], 's3', 'chrome', xwikiVersion
+    )
+
+    // Also make sure XWiki keep working with utf8 on MySQL (utf8mb4 is tested in latest configurations)
+    addConfiguration(
+        configurations,
+        "MySQL ${versions.mysql.lts} (utf8)",
+        "Tomcat ${versions.tomcat.lts}",
+        [
             'database' : 'mysql',
             'database.commands.character-set-server' : 'utf8',
             'database.commands.collation-server' : 'utf8_bin',
             'databaseTag' : versions.mysql.lts,
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : versions.tomcat.lts,
-            'browser' : 'chrome'
-        ]
-    ]
+            'servletEngineTag' : versions.tomcat.lts
+        ], 'filesystem', 'chrome', xwikiVersion
+    )
 
     return configurations
 }
@@ -184,41 +218,84 @@ def getAllConfigurations(def versions)
  *
  * See <a href="https://dev.xwiki.org/xwiki/bin/view/Community/SupportStrategy/">Support Strategy</a>.
  */
-def getUnsupportedConfigurations(def versions)
+def getUnsupportedConfigurations(def xwikiVersion, def versions)
 {
-    def configurations = [
-        // Test on latest MySQL, latest Tomcat, Java LTS
-        "MySQL latest, Tomcat ${versions.tomcat.latestunsupported}, Chrome": [
+    def configurations = [:]
+
+    // Test on latest MySQL, latest Tomcat, Java LTS
+    addConfiguration(
+        configurations,
+        'MySQL latest',
+        "Tomcat ${versions.tomcat.latestunsupported}",
+        [
             'database' : 'mysql',
             'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : versions.tomcat.latestunsupported,
-            'browser' : 'chrome'
-        ],
-        // Test on latest PostgreSQL, latest Jetty, Java LTS
-        "PostgreSQL latest, Jetty ${versions.jetty.latestunsupported}, Chrome": [
+            'servletEngineTag' : versions.tomcat.latestunsupported
+        ], 'filesystem', 'chrome', xwikiVersion
+    )
+
+    // Test on latest PostgreSQL, latest Jetty, Java LTS
+    addConfiguration(
+        configurations,
+        'PostgreSQL latest',
+        "Jetty ${versions.jetty.latestunsupported}",
+        [
             'database' : 'postgresql',
             'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
-            'servletEngineTag' : versions.jetty.latestunsupported,
-            'browser' : 'chrome'
-        ],
-        // Test on latest MariaDB, Tomcat latest, latest Java
-        "MariaDB latest, Tomcat ${versions.tomcat.latestunsupported}, Firefox": [
+            'servletEngineTag' : versions.jetty.latestunsupported
+        ], 'filesystem', 'chrome', xwikiVersion
+    )
+
+    // Test on latest MariaDB, Tomcat latest, latest Java
+    addConfiguration(
+        configurations,
+        'MariaDB latest',
+        "Tomcat ${versions.tomcat.latestunsupported}",
+        [
             'database' : 'mariadb',
             'databaseTag' : 'latest',
             'jdbcVersion' : 'pom',
             'servletEngine' : 'tomcat',
-            'servletEngineTag' : versions.tomcat.latestunsupported,
-            'browser' : 'firefox'
-        ]
-    ]
+            'servletEngineTag' : versions.tomcat.latestunsupported
+        ], 's3', 'firefox', xwikiVersion
+    )
+
     return configurations
 }
 
-private def isXWikiVersionAtLeast(xwikiVersion, major, minor)
+/**
+ * Adds a configuration to the given map of configurations.
+ *
+ * @param configurations the map of configurations to add the new configuration to
+ * @param databaseName the name of the database
+ * @param servletEngineName the name of the servlet engine
+ * @param configuration the map of configuration properties except for the blob store and browser which are added
+ * automatically
+ * @param blobStore the blob store to use
+ * @param browser the browser to use
+ * @param xwikiVersion the XWiki version
+ */
+private static def addConfiguration(def configurations, def databaseName, def servletEngineName, def configuration,
+    def blobStore, def browser, def xwikiVersion)
+{
+    def configurationName
+    configuration['browser'] = browser
+
+    // Blob store is only supported starting with XWiki 17.10.
+    if (isXWikiVersionAtLeast(xwikiVersion, '17', '10')) {
+        configurationName = "${databaseName}, ${servletEngineName}, ${blobStore.capitalize()}, ${browser.capitalize()}"
+        configuration['blobStore'] = blobStore
+    } else {
+        configurationName = "${databaseName}, ${servletEngineName}, ${browser.capitalize()}"
+    }
+    configurations.put(configurationName, configuration)
+}
+
+private static def isXWikiVersionAtLeast(xwikiVersion, major, minor)
 {
     def result
     if (xwikiVersion) {
