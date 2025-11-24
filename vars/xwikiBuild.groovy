@@ -682,8 +682,9 @@ private def checkForFlickers(def failingTests)
             // for the same tests, as the failing tests passed are the failing tests for the whole job, see
             // getFailingTests(). We haven't found a way to get the failing tests only for the current withMaven
             // execution).
+            def flickeringAnchor = "<a href='${knownFlickers.get(testName)}'>flickering</a>"
             def flickeringText =
-              "<h3 style='color:red'>This is a <a href='${knownFlickers.get(testName)}'>flickering</a> test</h3>"
+              "<h3 style='color:red'>This is a ${flickeringAnchor} test (<tt>${testName}</tt>)</h3>"
             if (testResult.getDescription() == null || !testResult.getDescription().contains(flickeringText)) {
                 testResult.setDescription("${flickeringText}${testResult.getDescription() ?: ''}")
                 isModified = true
