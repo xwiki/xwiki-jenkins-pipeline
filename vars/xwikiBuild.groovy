@@ -679,6 +679,7 @@ private def checkForFlickers(def failingTests)
         def geURLPrefix = 'https://ge.xwiki.org/scans/tests?search.relativeStartTime=P90D&tests.container='
         def geFullURL = "${geURLPrefix}${testResult.className}&tests.test=${normalizedTestName}"
         def geAnchor = "<a href='${geFullURL}'>GE</a>"
+        def descriptionText
         if (knownFlickers.containsKey(testName)) {
             // Add the information that the test is a flicker to the test's description. Only display this
             // once (a Jenkinsfile can contain several builds and thus this code can be called several times
@@ -686,7 +687,7 @@ private def checkForFlickers(def failingTests)
             // getFailingTests(). We haven't found a way to get the failing tests only for the current withMaven
             // execution).
             def jiraAnchor = "<a href='${knownFlickers.get(testName)}'>JIRA</a>"
-            def descriptionText =
+            descriptionText =
               "<h3 style='color:red'>This is a flicker (<tt>${testName}</tt>): ${jiraAnchor}&nbsp;${geAnchor}</h3>"
             echoXWiki "   [${testName}] is a flicker!"
             foundFlickers.add(testName)
@@ -697,7 +698,7 @@ private def checkForFlickers(def failingTests)
             // Add the information about the test to the test's description even if it's not considered a flicker.
             // This can be useful to copy/paste the test reference to create a new JIRA or check GE to check if the
             // test is actually a flicker.
-            def descriptionText =
+            descriptionText =
                 "<h3 style='color:red'>This is a not flicker (<tt>${testName}</tt>): ${geAnchor}</h3>"
         }
         if (testResult.getDescription() == null || !testResult.getDescription().contains(descriptionText)) {
