@@ -53,6 +53,8 @@ def call(config, pom)
     if (!mavenOpts.contains('org.slf4j.simpleLogger.showDateTime')) {
         mavenOpts = "${mavenOpts} -Dorg.slf4j.simpleLogger.showDateTime=true"
     }
+    // Improve retry options in maven to avoid problems in the CI when nexus is not available immediately.
+    mavenOpts = "${mavenOpts} -Dmaven.wagon.http.serviceUnavailableRetryStrategy.class=standard -Dmaven.wagon.http.retryHandler.count=10"
 
     results.mavenOpts = mavenOpts
     return results
