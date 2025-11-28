@@ -54,7 +54,7 @@ def call(config, pom)
         mavenOpts = "${mavenOpts} -Dorg.slf4j.simpleLogger.showDateTime=true"
     }
     // Improve retry options in maven to avoid problems in the CI when nexus is not available immediately.
-    mavenOpts = "${mavenOpts} -Dmaven.wagon.http.serviceUnavailableRetryStrategy.class=standard -Dmaven.wagon.http.retryHandler.count=10"
+    mavenOpts = "${mavenOpts} -Daether.connector.http.retryHandler.serviceUnavailable=429,500,503,502 -Daether.connector.http.retryHandler.count=10"
 
     results.mavenOpts = mavenOpts
     return results
