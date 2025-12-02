@@ -188,6 +188,9 @@ void call(name = 'Default', body)
             env.MAVEN_OPTS = ''
             wrapInWithMaven(maven: mavenTool, jdk: javaMavenConfig.jdk, mavenOpts: javaMavenConfig.mavenOpts,
                     options: publishers)
+            // Defines the location of the npm configuration (https://docs.npmjs.com/cli/v8/using-npm/config) where
+            // authentication information are defined.
+            env.NPM_CONFIG_USERCONFIG = '/home/hudsonagent/.npmrc'
             {
                 try {
                     def goals = computeMavenGoals(config)
