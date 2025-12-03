@@ -692,14 +692,14 @@ private def checkForFlickers(def failingTests)
             echoXWiki "   [${testName}] is a flicker!"
             foundFlickers.add(testName)
         } else {
-            echoXWiki "   [${testName}] is not a flicker"
+            echoXWiki "   [${testName}] is not a known flicker"
             // This is a real failing test, thus we'll need to send the notification email...
             containsOnlyFlickers = false
             // Add the information about the test to the test's description even if it's not considered a flicker.
             // This can be useful to copy/paste the test reference to create a new JIRA or check GE to check if the
             // test is actually a flicker.
             descriptionText =
-                "<h3 style='color:red'>This is not a flicker (<tt>${testName}</tt>): ${geAnchor}</h3>"
+                "<h3 style='color:red'>This is not a known flicker (<tt>${testName}</tt>): ${geAnchor}</h3>"
         }
         if (testResult.getDescription() == null || !testResult.getDescription().contains(descriptionText)) {
             testResult.setDescription("${descriptionText}${testResult.getDescription() ?: ''}")
