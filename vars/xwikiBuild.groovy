@@ -699,7 +699,7 @@ private def checkForFlickers(def failingTests)
             // This can be useful to copy/paste the test reference to create a new JIRA or check GE to check if the
             // test is actually a flicker.
             descriptionText =
-                "<h3 style='color:red'>This is a not flicker (<tt>${testName}</tt>): ${geAnchor}</h3>"
+                "<h3 style='color:red'>This is not a flicker (<tt>${testName}</tt>): ${geAnchor}</h3>"
         }
         if (testResult.getDescription() == null || !testResult.getDescription().contains(descriptionText)) {
             testResult.setDescription("${descriptionText}${testResult.getDescription() ?: ''}")
