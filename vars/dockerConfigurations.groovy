@@ -37,8 +37,7 @@ def call(configurationName, xwikiVersion)
 
     // Database versions
     def versions = [
-        // FIXME: We cannot use 'latest' mysql label as mysql:9.3 removed a property that were still used in TC, so we need to wait
-        // until it's fixed on TC side, see also: https://github.com/testcontainers/testcontainers-java/issues/10184
+        // FIXME: put back 'latest' when all supported branches use testcontainer 2+ (so when 17.10.2 become the LTS)
         'mysql' : [ 'latest' : '9.2', 'lts' : 'lts' ],
         'mariadb' : [ 'latest' : 'latest', 'lts' : 'lts' ],
         // postgresql images don't have the concept of 'lts', we are considering the previous major version to serve this purpose
@@ -62,25 +61,25 @@ def call(configurationName, xwikiVersion)
     }
 
     // Application servers (Tomcat and Jetty) versions
+    def tomcatUnsupportedVersion = "latest";
     def tomcatMaxVersion = 11;
     def tomcatMinVersion = 10;
-    def tomcatUnsupportedVersion = 'latest';
+    def jettyUnsupportedVersion = "latest";
     def jettyMaxVersion = 12;
     def jettyMinVersion = 12.0;
-    def jettyUnsupportedVersion = 'latest';
     // javax based branches of XWiki cannot always use the latest versions of application servers
     if (!isXWikiVersionAtLeast(xwikiVersion, '17', '0')) {
         tomcatMaxVersion = 9
         tomcatMinVersion = 9
         tomcatUnsupportedVersion = tomcatMaxVersion
-
-        jettyMaxVersion = 12
-        jettyMinVersion = 12.0
-        jettyUnsupportedVersion = jettyMaxVersion
     }
 
-    versions.'tomcat' = [ 'latest' : "${tomcatMaxVersion}-jdk${javaMaxVersion}", 'lts' : "${tomcatMinVersion}-jdk${javaMinVersion}", 'latestunsupported' : tomcatUnsupportedVersion]
-    versions.'jetty' = [ 'latest' : "${jettyMaxVersion}-jdk${javaMaxVersion}", 'lts' : "${jettyMinVersion}-jdk${javaMinVersion}", 'latestunsupported' : jettyUnsupportedVersion ]
+    tomcatJavaMaxVersion=javaMaxVersion
+    // TODO: cannot switch to Java 25 until Jetty starts providing proper Java 25 docker images for Jetty 12.1
+    jettyJavaMaxVersion=21
+
+    versions.'tomcat' = [ 'latest' : "${tomcatMaxVersion}-jdk${tomcatJavaMaxVersion}", 'lts' : "${tomcatMinVersion}-jdk${javaMinVersion}", 'latestunsupported' : "${tomcatUnsupportedVersion}"]
+    versions.'jetty' = [ 'latest' : "${jettyMaxVersion}-jdk${jettyJavaMaxVersion}", 'lts' : "${jettyMinVersion}-jdk${javaMinVersion}", 'latestunsupported' : "${jettyUnsupportedVersion}"]
 
     def configurations = [:]
     configurations.'docker-latest' = getLatestConfigurations(xwikiVersion, versions)
