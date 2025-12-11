@@ -45,6 +45,7 @@ def call(config, pom)
             mavenOpts = "${mavenOpts} -XX:MaxPermSize=512m"
         }
     }
+
     // Make sure Maven logs timestamps to help debug issues:
     //   -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss,SSS -Dorg.slf4j.simpleLogger.showDateTime=true
     if (!mavenOpts.contains('org.slf4j.simpleLogger.dateTimeFormat')) {
@@ -53,6 +54,10 @@ def call(config, pom)
     if (!mavenOpts.contains('org.slf4j.simpleLogger.showDateTime')) {
         mavenOpts = "${mavenOpts} -Dorg.slf4j.simpleLogger.showDateTime=true"
     }
+
+    // Make sure to support Docker 2.29+
+    mavenOpts = "${mavenOpts} -Dapi.version=1.44"
+
     // Improve retry options in maven to avoid problems in the CI when nexus is not available immediately.
     mavenOpts = "${mavenOpts} -Daether.connector.http.retryHandler.serviceUnavailable=429,500,503,502 -Daether.connector.http.retryHandler.count=10 -Daether.connector.http.retryHandler.intervalMax=600000"
 
