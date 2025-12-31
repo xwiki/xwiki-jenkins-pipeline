@@ -55,7 +55,7 @@ def call(configurationName, xwikiVersion)
         javaMaxVersion = 17
     } else if (major.toInteger() < 18) {
         javaMinVersion = 17
-        javaMaxVersion = (isXWikiVersionAtLeast(xwikiVersion, '17', '4')) ? 25 : 21
+        javaMaxVersion = (isXWikiVersionAtLeast(xwikiVersion, '17', '10')) ? 25 : 21
     } else if (major.toInteger() < 20) {
         javaMinVersion = 21
         javaMaxVersion = 25
