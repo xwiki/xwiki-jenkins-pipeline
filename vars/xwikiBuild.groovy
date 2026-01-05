@@ -752,14 +752,14 @@ private def getKnownFlickeringTests()
         if (customfield.customfieldname == 'Flickering Test') {
             def trimSpaces = {
                 def trimmedIt = it.trim()
-                // When a leading space is adding in jira, the resulting XML value we get for it is "&nbsp;".
+                // When a leading space is added in jira, the resulting XML value we get for it is "&nbsp;".
                 trimmedIt.startsWith('&nbsp;') ? trimmedIt - '&nbsp;' : trimmedIt
             }
             customfield.customfieldvalues.customfieldvalue.text().split('\\|').each() {
                 def trimmedValue = trimSpaces(it)
                 // Check if a package is specified and if not use the previously found package name
                 // This is an optimization to make it shorter to specify several tests in the same test class.
-                // e.g.: "org.xwiki.test.ui.extension.ExtensionTest#testUpgrade,testUninstall"
+                // e.g.: "org.xwiki.test.ui.extension.ExtensionTest#testUpgrade|testUninstall"
                 def fullName
                 int pos = trimmedValue.indexOf('#')
                 if (pos > -1) {
@@ -768,9 +768,9 @@ private def getKnownFlickeringTests()
                 } else {
                     fullName = "${packageName}#${trimmedValue}"
                 }
-                // Remove the part between "{" and "}" since we don't use test methods which differ only by their
-                // parameters, and removing this make the jira issues more stable against refactorings. Also prevents
-                // user mistakes.
+                // Remove the part between "{" and "}" (and "(" and ")") since we don't use test methods which differ
+                // only by their parameters, and removing this make the jira issues more stable against refactorings.
+                // Also prevents user mistakes.
                 // Note: the toString() is there to convert from a GString to a String. Without it, we're getting some
                 // "No signature of method: java.lang.String.containsKey() is applicable for argument types" error.
                 fullName = normalizeTestName(fullName.toString())
