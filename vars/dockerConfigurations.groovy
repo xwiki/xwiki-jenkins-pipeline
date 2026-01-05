@@ -19,6 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
+import java.lang.module.ModuleDescriptor.Version
 
 /**
  * Assume that the current directory contains a pom.xml from which we'll extract the version.
@@ -55,7 +56,7 @@ def call(configurationName, xwikiVersion)
         javaMaxVersion = 17
     } else if (major.toInteger() < 18) {
         javaMinVersion = 17
-        javaMaxVersion = (isXWikiVersionAtLeast(xwikiVersion, '17', '10')) ? 25 : 21
+        javaMaxVersion = (isXWikiVersionAtLeast(xwikiVersion, '17.10')) ? 25 : 21
     } else if (major.toInteger() < 20) {
         javaMinVersion = 21
         javaMaxVersion = 25
@@ -72,7 +73,7 @@ def call(configurationName, xwikiVersion)
     def jettyMaxVersion = 12;
     def jettyMinVersion = 12.0;
     // javax based branches of XWiki cannot always use the latest versions of application servers
-    if (!isXWikiVersionAtLeast(xwikiVersion, '17', '0')) {
+    if (!isXWikiVersionAtLeast(xwikiVersion, '17.0')) {
         tomcatMaxVersion = 9
         tomcatMinVersion = 9
         tomcatUnsupportedVersion = tomcatMaxVersion
@@ -288,7 +289,7 @@ private static def addConfiguration(def configurations, def databaseName, def se
     configuration['browser'] = browser
 
     // Blob store is only supported starting with XWiki 17.10.
-    if (isXWikiVersionAtLeast(xwikiVersion, '17', '10')) {
+    if (isXWikiVersionAtLeast(xwikiVersion, '17.10')) {
         configurationName = "${databaseName}, ${servletEngineName}, ${blobStore.capitalize()}, ${browser.capitalize()}"
         configuration['blobStore'] = blobStore
     } else {
@@ -297,18 +298,9 @@ private static def addConfiguration(def configurations, def databaseName, def se
     configurations.put(configurationName, configuration)
 }
 
-private static def isXWikiVersionAtLeast(xwikiVersion, major, minor)
+private static def isXWikiVersionAtLeast(String version1, String version2)
 {
-    def result
-    if (xwikiVersion) {
-        def versionParts = xwikiVersion?.split('\\.')
-        if (versionParts[0] > major || (versionParts[0] == major && versionParts[1] >= minor)) {
-            result = true
-        } else {
-            result = false
-        }
-    } else {
-        result = true
-    }
-    return result
+    def v1 = Version.parse(version1)
+    def v2 = Version.parse(version2)
+    return v1.compareTo(v2) >= 0
 }

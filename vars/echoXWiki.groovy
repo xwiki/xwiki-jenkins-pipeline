@@ -1,6 +1,4 @@
 #!/usr/bin/env groovy
-import com.cloudbees.groovy.cps.NonCPS
-import java.text.SimpleDateFormat
 
 /*
  * See the NOTICE file distributed with this work for additional
@@ -21,6 +19,8 @@ import java.text.SimpleDateFormat
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
+import com.cloudbees.groovy.cps.NonCPS
+import java.text.SimpleDateFormat
 
 // Use @NonCPS since it seems that without it, a step implementation using @NonCPS will not be able to call echoXWiki
 // several times in a row without failing. For example: compareCurrentLastBuildTimeWithOtherJob.groovy is calling

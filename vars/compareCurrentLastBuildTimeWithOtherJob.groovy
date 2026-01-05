@@ -1,5 +1,4 @@
 #!/usr/bin/env groovy
-import com.cloudbees.groovy.cps.NonCPS
 
 /*
  * See the NOTICE file distributed with this work for additional
@@ -20,6 +19,7 @@ import com.cloudbees.groovy.cps.NonCPS
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
+import com.cloudbees.groovy.cps.NonCPS
 
 // currentBuild.rawBuild is non-serializable which is why we need the @NonCPS annotation.
 @NonCPS
