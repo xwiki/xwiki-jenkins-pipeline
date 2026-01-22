@@ -5,4 +5,3 @@ Parameters:
 
 * `config`: The configuration map that is passed to the `xwikiBuild` step. Specifically `config.javaTool` and
 `config.mavenOpts` are read and used (if they exist)
-* `pom`: The POM model object, as read by the `readMavenPom` step

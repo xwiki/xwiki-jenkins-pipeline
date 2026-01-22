@@ -20,7 +20,7 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-def call(config, pom)
+def call(config)
 {
     def results = [:]
     def javaTool = config.javaTool
@@ -43,6 +43,7 @@ def call(config, pom)
                 // Sonar requires Java 17+, and since the "official" Java version we use is now >= Java 17, let's use that.
                 javaTool = 'official'
             } else {
+                def pom = readMavenPom file: pomFile
                 javaTool = getJavaTool(pom)
             }
         }
@@ -88,7 +89,7 @@ def call(config, pom)
  *   <li>XWiki versions >= 16 should use the official java version</li>
  *  </ul>
  */
-def getJavaTool(pom)
+private def getJavaTool(pom)
 {
     def parent = pom.parent
     def groupId
@@ -130,7 +131,7 @@ def getJavaTool(pom)
  * Check that the parent is XWiki commons, rendering or platform since we know the java requirements for these
  * modules based on their versions.
  */
-def isKnownParent(parentGroupId, parentArtifactId)
+private def isKnownParent(parentGroupId, parentArtifactId)
 {
     return (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-platform') ||
            (parentGroupId == 'org.xwiki.contrib' && parentArtifactId == 'parent-commons') ||
@@ -139,4 +140,9 @@ def isKnownParent(parentGroupId, parentArtifactId)
            parentGroupId == 'org.xwiki.commons' ||
            parentGroupId == 'org.xwiki.rendering' ||
            parentGroupId == 'org.xwiki.platform'
+}
+
+private def getPOMFile(def config)
+{
+    return config.pom ?: 'pom.xml'
 }

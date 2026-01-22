@@ -132,8 +132,7 @@ void call(name = 'Default', body)
         }
 
         // Configure the version of Java to use
-        def pom = readMavenPom file: getPOMFile(config)
-        javaMavenConfig = configureJavaTool(config, pom)
+        javaMavenConfig = configureJavaTool(config)
 
         // Generate a ~/.docker/config.json file containing authentication data for Dockerhub so that all operations
         // done on Dockerhub are done while authenticated, which prevents the pull-rate issue.
