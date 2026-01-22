@@ -33,5 +33,3 @@ Parameters:
   maximum number of configurations to flush out problems of configurations when XWiki doesn't start or has basic
   problems. This includes all supported configurations), and `docker-unsupported` (smoke tests, on configurations that
   we'll want to support in the future but that are currently not supported or not working).
-* `xwikiVersion`: the XWiki version being built. This is used to decide what configurations are executed for this
-  version (e.g. XWiki < 11.3 don't support Java 11)
