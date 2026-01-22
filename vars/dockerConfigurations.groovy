@@ -26,15 +26,7 @@ import java.lang.module.ModuleDescriptor.Version
  */
 def call(configurationName)
 {
-    def pom = readMavenPom file: 'pom.xml'
-    call(configurationName, pom.version)
-}
-
-def call(configurationName, xwikiVersion)
-{
-    // Note: these versions only specify major and minor (and not bugfix) so that:
-    // - we always test with the latest bugfix version
-    // - we reduce the maintenance (since specifying the bugfix part would mean updating them all the time)
+    // Note: we use labels as generic as possible to test on latest bugfix versions and reduce maintenance (no need ton constantly update this list)
 
     // Database versions
     def versions = [
@@ -48,21 +40,30 @@ def call(configurationName, xwikiVersion)
     ]
 
     // Java versions
-    def javaMaxVersion;
-    def javaMinVersion;
-    def major = xwikiVersion.substring(0, xwikiVersion.indexOf('.'))
-    if (major.toInteger() < 16) {
-        javaMinVersion = 11
-        javaMaxVersion = 17
-    } else if (major.toInteger() < 18) {
-        javaMinVersion = 17
-        javaMaxVersion = (isXWikiVersionAtLeast(xwikiVersion, '17.10')) ? 25 : 21
-    } else if (major.toInteger() < 20) {
-        javaMinVersion = 21
-        javaMaxVersion = 25
+    def javaMinVersion = sh script: "mvn -f ${pomFile} -N help:evaluate -Dexpression=xwiki.java.version -q -DforceStdout", returnStdout: true
+    echoXWiki "Value of the xwiki.java.version property: ${javaMinVersion}"
+    def javaMaxVersion = sh script: "mvn -f ${pomFile} -N help:evaluate -Dexpression=xwiki.java.version.support -q -DforceStdout", returnStdout: true
+    echoXWiki "Value of the xwiki.java.version.support property: ${javaMaxVersion}"
+    if (javaMinVersion.isNumber() && javaMaxVersion.isNumber()) {
+        // The minimum/maximum Java version are indicated in the effective pom
+        javaMinVersion = javaMinVersion.toInteger()
+        javaMaxVersion = javaMaxVersion.toInteger()
     } else {
-        javaMinVersion = 25
-        javaMaxVersion = 25
+        // The minimum/maximum Java versions are not indicated in the effective pom, try to deduce it from the XWiki version
+        def major = xwikiVersion.substring(0, xwikiVersion.indexOf('.'))
+        if (major.toInteger() < 16) {
+            javaMinVersion = 11
+            javaMaxVersion = 17
+        } else if (major.toInteger() < 18) {
+            javaMinVersion = 17
+            javaMaxVersion = (isXWikiVersionAtLeast(xwikiVersion, '17.10')) ? 25 : 21
+        } else if (major.toInteger() < 20) {
+            javaMinVersion = 21
+            javaMaxVersion = 25
+        } else {
+            javaMinVersion = 25
+            javaMaxVersion = 25
+        }
     }
 
     // Application servers (Tomcat and Jetty) versions
@@ -72,7 +73,7 @@ def call(configurationName, xwikiVersion)
     def jettyUnsupportedVersion = "latest";
     def jettyMaxVersion = 12;
     def jettyMinVersion = 12.0;
-    // javax based branches of XWiki cannot always use the latest versions of application servers
+    // javax.servlet based versions of XWiki cannot use the current version of Tomcat
     if (!isXWikiVersionAtLeast(xwikiVersion, '17.0')) {
         tomcatMaxVersion = 9
         tomcatMinVersion = 9
@@ -80,8 +81,7 @@ def call(configurationName, xwikiVersion)
     }
 
     tomcatJavaMaxVersion=javaMaxVersion
-    // TODO: cannot switch to Java 25 until Jetty starts providing proper Java 25 docker images for Jetty 12.1
-    jettyJavaMaxVersion=21
+    jettyJavaMaxVersion=javaMaxVersion
 
     versions.'tomcat' = [ 'latest' : "${tomcatMaxVersion}-jdk${tomcatJavaMaxVersion}", 'lts' : "${tomcatMinVersion}-jdk${javaMinVersion}", 'latestunsupported' : "${tomcatUnsupportedVersion}"]
     versions.'jetty' = [ 'latest' : "${jettyMaxVersion}-jdk${jettyJavaMaxVersion}", 'lts' : "${jettyMinVersion}-jdk${javaMinVersion}", 'latestunsupported' : "${jettyUnsupportedVersion}"]
