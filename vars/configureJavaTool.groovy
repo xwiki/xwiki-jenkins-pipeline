@@ -25,11 +25,26 @@ def call(config, pom)
     def results = [:]
     def javaTool = config.javaTool
     if (!javaTool) {
-        if (config.sonar) {
-            // Sonar requires Java 17+, and since the "official" Java version we use is now >= Java 17, let's use that.
-            javaTool = 'official'
+        // Get the java version indicated in the pom
+        def pomFile = getPOMFile(config)
+        def javaVersion = sh script: "mvn -f ${pomFile} -N help:evaluate -Dexpression=xwiki.java.version -q -DforceStdout", returnStdout: true
+        echoXWiki "Value of the xwiki.java.version property: ${javaVersion}"
+        if (javaVersion.isNumber()) {
+            // A Java version is explicitly indicated in the effective pom
+            if (config.sonar && javaVersion.toInteger() < 17) {
+                // Sonar required at least Java 17
+                echoXWiki "Sonar requires at least Java 17 so using it instead of to indicated version [${javaVersion}]"
+                javaVersion = '17'
+            }
+            javaTool = "java${javaVersion}"
         } else {
-            javaTool = getJavaTool(pom)
+            // If no java version is indicated in the effective pom, try to deduce it from the parent version
+            if (config.sonar) {
+                // Sonar requires Java 17+, and since the "official" Java version we use is now >= Java 17, let's use that.
+                javaTool = 'official'
+            } else {
+                javaTool = getJavaTool(pom)
+            }
         }
     }
     // NOTE: The Java tool Needs to be configured in the Jenkins global configuration.
