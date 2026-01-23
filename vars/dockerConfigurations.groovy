@@ -42,7 +42,7 @@ def call(configurationName)
     // Java versions
     def javaMinVersion = sh script: "mvn -N help:evaluate -Dexpression=xwiki.java.version -q -DforceStdout", returnStdout: true
     echoXWiki "Value of the xwiki.java.version property: ${javaMinVersion}"
-    def javaMaxVersion = sh script: "mvn-N help:evaluate -Dexpression=xwiki.java.version.support -q -DforceStdout", returnStdout: true
+    def javaMaxVersion = sh script: "mvn -N help:evaluate -Dexpression=xwiki.java.version.support -q -DforceStdout", returnStdout: true
     echoXWiki "Value of the xwiki.java.version.support property: ${javaMaxVersion}"
     if (javaMinVersion.isNumber() && javaMaxVersion.isNumber()) {
         // The minimum/maximum Java version are indicated in the effective pom
