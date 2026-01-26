@@ -26,13 +26,11 @@ import java.lang.module.ModuleDescriptor.Version
  */
 def call(configurationName)
 {
+    // Gather the XWiki version
     def pom = readMavenPom file: 'pom.xml'
-    call(configurationName, pom.version)
-}
+    def xwikiVersion = pom.version
 
-def call(configurationName, xwikiVersion)
-{
-    // Note: we use labels as generic as possible to test on latest bugfix versions and reduce maintenance (no need ton constantly update this list)
+    // Note: we use labels as generic as possible to test on latest bugfix versions and reduce maintenance (no need to constantly update this list)
 
     // Database versions
     def versions = [
