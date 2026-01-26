@@ -26,6 +26,12 @@ import java.lang.module.ModuleDescriptor.Version
  */
 def call(configurationName)
 {
+    def pom = readMavenPom file: 'pom.xml'
+    call(configurationName, pom.version)
+}
+
+def call(configurationName, xwikiVersion)
+{
     // Note: we use labels as generic as possible to test on latest bugfix versions and reduce maintenance (no need ton constantly update this list)
 
     // Database versions
