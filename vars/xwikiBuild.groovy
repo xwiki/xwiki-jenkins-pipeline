@@ -25,6 +25,9 @@ import javax.xml.bind.DatatypeConverter
 import hudson.tasks.test.AbstractTestResultAction
 import com.cloudbees.groovy.cps.NonCPS
 import java.text.SimpleDateFormat
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import static groovy.io.FileType.FILES
 
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
 //
@@ -216,6 +219,8 @@ void call(name = 'Default', body)
                         // We do those changes from the root since sub modules only define the parent
                         echoXWiki "Setting version to: ${branchVersion}"
                         sh script: "mvn versions:set -DnewVersion=${branchVersion} -P${profiles}"
+                        // Update the node packages versions.
+                        setPackagesVersion(branchVersion)
                         // We need to also reset the commons.version property from the pom.xml if it's building commons.
                         // The sed command is inspired from the release script, we don't want it to fail the build if
                         // the property cannot be found hence the returnStatus: true
@@ -822,4 +827,41 @@ private def getFailingTests()
         failingTests = []
     }
     return failingTests
+}
+
+@NonCPS
+private def setPackagesVersion(String version) {
+    def currentDir = new File(".")
+    def slurper = new JsonSlurper()
+
+    currentDir.traverse(
+        type: FILES,
+        nameFilter: "package.json",
+        excludeNameFilter: "node_modules",
+        preDir: { (it.name != "node_modules") }
+    ) { File pkgFile ->
+        // Skip root package.json
+        if (pkgFile.parentFile.canonicalPath == currentDir.canonicalPath) return
+
+        def json = slurper.parse(pkgFile)
+
+        // Skip private or unnamed packages
+        if (json.private == true) return
+
+        json.version = version
+
+        def tempFile = File.createTempFile("pkg", ".json", pkgFile.parentFile)
+        def renamed = false
+        try {
+            tempFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(json))
+            renamed = tempFile.renameTo(pkgFile)
+            if (!renamed) {
+                System.err.println("Failed to rename temp file for ${pkgFile.path}")
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to update ${pkgFile.path}: ${e.message}")
+        } finally {
+            if (!renamed) tempFile.delete()
+        }
+    }
 }
