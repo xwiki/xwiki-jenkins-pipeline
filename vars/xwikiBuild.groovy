@@ -856,10 +856,10 @@ private def setPackagesVersion(String version) {
             tempFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(json))
             renamed = tempFile.renameTo(pkgFile)
             if (!renamed) {
-                System.err.println("Failed to rename temp file for ${pkgFile.path}")
+                echoXWiki "Failed to rename temp file for ${pkgFile.path}"
             }
         } catch (Exception e) {
-            System.err.println("Failed to update ${pkgFile.path}: ${e.message}")
+            echoXWiki "Failed to update ${pkgFile.path}: ${e.message}"
         } finally {
             if (!renamed) tempFile.delete()
         }
