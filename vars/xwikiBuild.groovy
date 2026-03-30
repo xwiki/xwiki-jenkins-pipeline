@@ -789,7 +789,8 @@ private def getKnownFlickeringTests()
 @NonCPS
 private def normalizeTestName(value)
 {
-    // Determine which bracket style to look for
+    // Support both <test name prefix{...}> and <test name prefix(...)> since it seems that Jenkins could have changed
+    // the way it reports test names (Jenkins or JUnit).
     int s = value.indexOf('{')
     int e = value.lastIndexOf('}')
 
