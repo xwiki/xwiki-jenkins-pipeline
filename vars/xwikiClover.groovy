@@ -110,7 +110,7 @@ void call(baselineDefinitions)
                 manager.addErrorBadge(badgeText)
                 // Add some HTML to link to the report showing the failure
                 def summaryText = "<h1>${badgeText} See <a href='${cloverReportsURL}'>report</a></h1>"
-                manager.createSummary('red.gif').appendText(summaryText, false, false, false, 'red')
+                manager.addSummary(icon: "red.gif", text: summaryText, style: "color: red;")
                 // Persist changes
                 saveCurrentBuildChanges()
             } else {
@@ -119,7 +119,7 @@ void call(baselineDefinitions)
                 manager.addInfoBadge(badgeText)
                 // Add some HTML to link to the report
                 def summaryText = "<h1>${badgeText} See <a href='${cloverReportsURL}'>report</a></h1>"
-                manager.createSummary('green.gif').appendText(summaryText, false, false, false, 'green')
+                manager.addSummary(icon: "green.gif", text: summaryText, style: "color: green;")
                 // Persist changes
                 saveCurrentBuildChanges()
             }

@@ -104,13 +104,12 @@ def call()
         }
         // Display the info on the job results page
         // Replace the existing summary with the accrued list of false positives found
-        manager.removeSummaries()
-        def summary = manager.createSummary("warning.gif")
-        summary.appendText("False positives found<ul>", false, false, false, 'red')
+        def summaryText = "False positives found<ul>";
         falsePositiveMessages.each() { message ->
-            summary.appendText("<li>${message.get(1)}</li>", false, false, false, 'red')
+            summaryText += "<li>${message.get(1)}</li>"
         }
-        summary.appendText("</ul>", false, false, false, 'red')
+        summaryText += "</ul>"
+        manager.addSummary(icon: "warning.gif", text: summaryText, style: "color: red;")
         // Persist badge changes
         saveCurrentBuildChanges()
     }

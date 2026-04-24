@@ -722,12 +722,12 @@ private def checkForFlickers(def failingTests)
         }
         // Replace the existing summary with the accrued list of flickers found
         manager.removeSummaries()
-        def summary = manager.createSummary("warning.gif")
-        summary.appendText("Flickering tests<ul>", false, false, false, 'red')
+        dev summaryText = "Flickering tests<ul>"
         foundFlickers.each() {
-            summary.appendText("<li><a href='${knownFlickers.get(it)}'>${it}</a></li>", false, false, false, 'red')
+            summaryText += "<li><a href='${knownFlickers.get(it)}'>${it}</a></li>"
         }
-        summary.appendText("</ul>", false, false, false, 'red')
+        summaryText += "</ul>"
+        manager.addSummary(icon: "warning.gif", text: summaryText, style: "color: red;")
         isModified = true
     }
 
