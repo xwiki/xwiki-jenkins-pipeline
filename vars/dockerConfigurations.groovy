@@ -84,8 +84,8 @@ def call(configurationName)
         tomcatUnsupportedVersion = tomcatMaxVersion
     }
 
-    tomcatJavaMaxVersion=javaMaxVersion
-    jettyJavaMaxVersion=javaMaxVersion
+    def tomcatJavaMaxVersion=javaMaxVersion
+    def jettyJavaMaxVersion=javaMaxVersion
 
     versions.'tomcat' = [ 'latest' : "${tomcatMaxVersion}-jdk${tomcatJavaMaxVersion}", 'lts' : "${tomcatMinVersion}-jdk${javaMinVersion}", 'latestunsupported' : "${tomcatUnsupportedVersion}"]
     versions.'jetty' = [ 'latest' : "${jettyMaxVersion}-jdk${jettyJavaMaxVersion}", 'lts' : "${jettyMinVersion}-jdk${javaMinVersion}", 'latestunsupported' : "${jettyUnsupportedVersion}"]
