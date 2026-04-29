@@ -34,8 +34,7 @@ def call(configurationName)
 
     // Database versions
     def versions = [
-        // FIXME: put back 'latest' when all supported branches use testcontainer 2+ (so when 17.10.2 become the LTS)
-        'mysql' : [ 'latest' : '9.2', 'lts' : 'lts' ],
+        'mysql' : [ 'latest' : 'latest', 'lts' : 'lts' ],
         'mariadb' : [ 'latest' : 'latest', 'lts' : 'lts' ],
         // postgresql images don't have the concept of 'lts', we are considering the previous major version to serve this purpose
         'postgresql' : [ 'latest' : 'latest', 'lts' : '17' ],
