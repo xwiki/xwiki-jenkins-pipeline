@@ -33,7 +33,7 @@ void call(boolean isParallel = true, body)
     def builds = [:]
     config.modules.each() { modulePath ->
         echoXWiki "Module name: ${modulePath}"
-        def profiles = 'docker,legacy,integration-tests,snapshotModules'
+        def profiles = 'docker,legacy,integration-tests,snapshotModules,distribution,flavor-integration-tests'
         builds["IT for ${modulePath}"] = {
             build(
                 name: "IT for ${modulePath}",
