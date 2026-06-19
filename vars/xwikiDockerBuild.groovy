@@ -70,7 +70,7 @@ void call(boolean isParallel = true, body)
         config.modules.each() { modulePath ->
             def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
             echoXWiki "Module name: ${moduleName}"
-            def profiles = 'docker,legacy,integration-tests,snapshotModules'
+            def profiles = 'docker,legacy,integration-tests,snapshotModules,distribution,flavor-integration-tests'
             def additionalSystemProperties = [
                 "-Dmaven.build.dir=target/${testConfigurationName}"
             ]
