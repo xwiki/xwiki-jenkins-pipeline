@@ -685,9 +685,14 @@ private def checkForFlickers(def failingTests)
         def normalizedTestName = normalizeTestName(testResult.name.toString())
         def testName = "${testResult.className}#${normalizedTestName}".toString()
         echoXWiki "Analyzing test [${testName}] for flicker ..."
-        def geURLPrefix = 'https://ge.xwiki.org/scans/tests?search.relativeStartTime=P90D&tests.container='
+        def oldGEDomain = 'https://ge.xwiki.org'
+        def oldGEURLPrefix = "${oldGEDomain}/scans/tests?search.relativeStartTime=P90D&tests.container="
+        def oldGEFullURL = "${oldGEURLPrefix}${testResult.className}&tests.test=${normalizedTestName}"
+        def oldGEAnchor = "<a href='${oldGEFullURL}'>Old GE</a>"
+        def geDomain = 'https://community.develocity.cloud'
+        def geURLPrefix = "${geDomain}/scans/tests?search.relativeStartTime=P90D&tests.container="
         def geFullURL = "${geURLPrefix}${testResult.className}&tests.test=${normalizedTestName}"
-        def geAnchor = "<a href='${geFullURL}'>GE</a>"
+        def geAnchor = "<a href='${geFullURL}'>New GE</a>"
         def descriptionText
         if (knownFlickers.containsKey(testName)) {
             // Add the information that the test is a flicker to the test's description. Only display this
@@ -696,8 +701,9 @@ private def checkForFlickers(def failingTests)
             // getFailingTests(). We haven't found a way to get the failing tests only for the current withMaven
             // execution).
             def jiraAnchor = "<a href='${knownFlickers.get(testName)}'>JIRA</a>"
+            def links = "${jiraAnchor}&nbsp;${geAnchor}&nbsp;${oldGEAnchor}"
             descriptionText =
-              "<h3 style='color:red'>This is a flicker (<tt>${testName}</tt>): ${jiraAnchor}&nbsp;${geAnchor}</h3>"
+              "<h3 style='color:red'>This is a flicker (<tt>${testName}</tt>): ${links}</h3>"
             echoXWiki "   [${testName}] is a flicker!"
             foundFlickers.add(testName)
         } else {
@@ -707,8 +713,9 @@ private def checkForFlickers(def failingTests)
             // Add the information about the test to the test's description even if it's not considered a flicker.
             // This can be useful to copy/paste the test reference to create a new JIRA or check GE to check if the
             // test is actually a flicker.
+            def links = "${geAnchor}&nbsp;${oldGEAnchor}"
             descriptionText =
-                "<h3 style='color:red'>This is not a known flicker (<tt>${testName}</tt>): ${geAnchor}</h3>"
+                "<h3 style='color:red'>This is not a known flicker (<tt>${testName}</tt>): ${links}</h3>"
         }
         if (testResult.getDescription() == null || !testResult.getDescription().contains(descriptionText)) {
             testResult.setDescription("${descriptionText}${testResult.getDescription() ?: ''}")
