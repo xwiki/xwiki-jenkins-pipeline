@@ -529,19 +529,31 @@ private def createFilePath(String path)
  */
 private def attachScreenshotToFailingTests(def failingTests)
 {
+    // Looking up a screenshot for a test requires FilePath.exists()/list() calls, and each of these is a round-trip to
+    // the build agent (FilePath operations execute remotely over the agent channel). getFailingTests() can return many
+    // failing tests that belong to a small number of modules/configurations (see JENKINS-49339 and the note on
+    // getFailingTests()), so without caching the same handful of screenshot directories gets queried again for every
+    // failing test, which can make this step take tens of minutes. These caches ensure each directory is queried only
+    // once on the agent regardless of how many failing tests map to it:
+    // - directoryListingCache: maps a directory remote path to the list of *.png file names it contains (an empty list
+    //   when the directory doesn't exist).
+    // - targetDirectoryCache: maps a JUnit suite result file path to its resolved target directory FilePath.
+    def directoryListingCache = [:]
+    def targetDirectoryCache = [:]
+
     // Go through each failed test in the current build.
     for (def failedTest : failingTests) {
         // Compute the test's screenshot file name.
         def testClass = failedTest.className
         def testName = failedTest.name
 
-        def targetDirectory = computeTargetDirectoryForTest(failedTest)
+        def targetDirectory = computeTargetDirectoryForTest(failedTest, targetDirectoryCache)
         if (!targetDirectory) {
             // We couldn't compute the target directory, move to the next test!
             echoXWiki "Failed to find target directory for test [${testClass}#${testName}]"
             continue
         }
-        def imageAbsolutePath = findScreenshotFile(failedTest, targetDirectory)
+        def imageAbsolutePath = findScreenshotFile(failedTest, targetDirectory, directoryListingCache)
 
         // If a screenshot exists...
         if (imageAbsolutePath) {
@@ -573,7 +585,7 @@ private def attachScreenshotToFailingTests(def failingTests)
     }
 }
 
-private def findScreenshotFile(def failedTest, def targetDirectory)
+private def findScreenshotFile(def failedTest, def targetDirectory, def directoryListingCache)
 {
     // The screenshot can have several possible file names and locations, we check all.
     // Selenium 1 test screenshots.
@@ -585,34 +597,65 @@ private def findScreenshotFile(def failedTest, def targetDirectory)
     def imageAbsolutePath3 = createFilePath(System.getProperty("java.io.tmpdir"))
 
     // Determine which one exists, if any.
-    return findScreenshotFileForPattern(imageAbsolutePath1, failedTest) ?:
-        findScreenshotFileForPattern(imageAbsolutePath2, failedTest) ?:
-            findScreenshotFileForPattern(imageAbsolutePath3, failedTest)
+    return findScreenshotFileForPattern(imageAbsolutePath1, failedTest, directoryListingCache) ?:
+        findScreenshotFileForPattern(imageAbsolutePath2, failedTest, directoryListingCache) ?:
+            findScreenshotFileForPattern(imageAbsolutePath3, failedTest, directoryListingCache)
 }
 
-private def findScreenshotFileForPattern(def directoryFilePath, def failedTest)
+private def findScreenshotFileForPattern(def directoryFilePath, def failedTest, def directoryListingCache)
 {
-    def files = [] as Set
     // Remove the serialized parameters from the test name FTM since we output failing test image names without it.
     // The best fix would be to modify the Docker-based test framework to add the parameters but I don't know how to do
     // that ATM (i.e. what JUnit API to call to get it).
     def normalizedTestName = normalizeTestName(failedTest.name.toString())
-    if (directoryFilePath.exists()) {
-        files.addAll(directoryFilePath.list("*${failedTest.className}-${normalizedTestName}*.png"))
-        files.addAll(directoryFilePath.list("*${failedTest.simpleName}-${normalizedTestName}*.png"))
+
+    // A test's screenshot is named "<class>-<test>...png", so we look for a *.png file whose name contains either the
+    // fully-qualified or the simple class name followed by "-<test>". We do this matching in memory against the
+    // directory's file names (listed once and cached, see listScreenshotFileNames) rather than running a remote glob
+    // listing per test, because each remote listing is a round-trip to the agent and the same directory is searched for
+    // many failing tests. Matching a "*<substring>*.png" glob is equivalent to a "*.png" name containing the substring.
+    def classNamePattern = "${failedTest.className}-${normalizedTestName}"
+    def simpleNamePattern = "${failedTest.simpleName}-${normalizedTestName}"
+    def matches = [] as Set
+    for (def fileName : listScreenshotFileNames(directoryFilePath, directoryListingCache)) {
+        if (fileName.contains(classNamePattern) || fileName.contains(simpleNamePattern)) {
+            matches.add(fileName)
+        }
     }
-    if (files.size() > 1) {
-        echoXWiki "Found several matching screenshots which should not happen (something needs to be fixed): ${files}"
+
+    if (matches.size() > 1) {
+        echoXWiki "Found several matching screenshots which should not happen (something needs to be fixed): ${matches}"
         return null
-    } else if (files.size() == 1) {
-        return files[0]
+    } else if (matches.size() == 1) {
+        return directoryFilePath.child(matches.iterator().next())
     } else {
-        echoXWiki "No matching screenshot found for [*${failedTest.className}-${normalizedTestName}*.png] or [*${failedTest.simpleName}-${normalizedTestName}*.png] inside [${directoryFilePath.remote}]"
+        echoXWiki "No matching screenshot found for [*${classNamePattern}*.png] or [*${simpleNamePattern}*.png] inside [${directoryFilePath.remote}]"
         return null
     }
 }
 
-private def computeTargetDirectoryForTest(def caseResult)
+/**
+ * @return the list of {@code *.png} file names directly inside the passed directory (an empty list when the directory
+ *         doesn't exist). The result is cached by directory path because the listing is a remote round-trip to the
+ *         build agent and the same directory is searched for the screenshots of many failing tests.
+ */
+private def listScreenshotFileNames(def directoryFilePath, def directoryListingCache)
+{
+    def cacheKey = directoryFilePath.remote
+    if (directoryListingCache.containsKey(cacheKey)) {
+        return directoryListingCache.get(cacheKey)
+    }
+    def fileNames = []
+    if (directoryFilePath.exists()) {
+        for (def file : directoryFilePath.list("*.png")) {
+            fileNames.add(file.name)
+        }
+    }
+    directoryListingCache.put(cacheKey, fileNames)
+    return fileNames
+}
+
+private def computeTargetDirectoryForTest(def caseResult, def targetDirectoryCache)
 {
     // A CaseResult has a SuiteResult as parent which holds the JUnit XML file path, from which we can infer the
     // target directory for the passed test.
@@ -623,6 +666,13 @@ private def computeTargetDirectoryForTest(def caseResult)
     def suiteResultFile = caseResult.getSuiteResult().getFile()
     if (suiteResultFile == null) {
         return
+    }
+
+    // Resolving the target directory below requires exists() calls, which are round-trips to the build agent. Many
+    // failing tests share the same suite result file, so the resolution is cached by suite result file path to keep it
+    // to one resolution per suite instead of one per failing test.
+    if (targetDirectoryCache.containsKey(suiteResultFile)) {
+        return targetDirectoryCache.get(suiteResultFile)
     }
 
     // Compute the screenshot's location on the build agent.
@@ -640,6 +690,7 @@ private def computeTargetDirectoryForTest(def caseResult)
         }
     }
 
+    targetDirectoryCache.put(suiteResultFile, targetDirectory)
     return targetDirectory;
 }
 
