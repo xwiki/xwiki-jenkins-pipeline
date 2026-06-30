@@ -29,17 +29,22 @@ void call(boolean isParallel = true, body)
 
     echoXWiki "Modules to execute: ${config.modules}"
 
-    // Run integrations tests on all passed modules
+    // Run integrations tests on all passed modules, grouping several modules per build so that they are executed on the
+    // same agent. This amortizes the cost of acquiring an agent, checking out the sources and pulling Docker images over
+    // several modules, and lets Maven reuse its local repository across the modules of a batch.
     def builds = [:]
-    config.modules.each() { modulePath ->
-        echoXWiki "Module name: ${modulePath}"
-        def profiles = 'docker,legacy,integration-tests,snapshotModules,distribution,flavor-integration-tests'
-        builds["IT for ${modulePath}"] = {
+    def profiles = 'docker,legacy,integration-tests,snapshotModules,distribution,flavor-integration-tests'
+    config.modules.collate(config.batchSize ?: 4).eachWithIndex() { modulePaths, i ->
+        def buildName = "IT #${i + 1} for ${getModuleNames(modulePaths).join(', ')}"
+        echoXWiki "Build name: ${buildName}"
+        // We pass --fail-at-end so that a failure while building one module doesn't prevent the other modules of the
+        // batch from being built and tested (this is a no-op when there's a single module in the batch).
+        builds[buildName] = {
             build(
-                name: "IT for ${modulePath}",
+                name: buildName,
                 profiles: profiles,
                 properties: "${getSystemProperties().join(' ')}",
-                mavenFlags: "--projects ${modulePath} -e -U",
+                mavenFlags: "--projects ${modulePaths.join(',')} -e -U --fail-at-end",
                 xvnc: true,
                 goals: 'clean verify',
                 skipMail: config.skipMail,
@@ -68,6 +73,13 @@ private def getSystemProperties()
         '-Dxwiki.spoon.skip=true',
         '-Dxwiki.enforcer.skip=true'
     ]
+}
+
+// Return the last segment (the Maven module name) of each of the passed module paths, used to build short and readable
+// build/step names.
+private def getModuleNames(modulePaths)
+{
+    return modulePaths.collect { it.substring(it.lastIndexOf('/') + 1) }
 }
 
 private void build(map)

@@ -67,21 +67,25 @@ void call(boolean isParallel = true, body)
         }
 
         def testConfigurationName = getTestConfigurationName(testConfig.value)
-        config.modules.each() { modulePath ->
-            def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
-            echoXWiki "Module name: ${moduleName}"
+        // Group several modules per build so that they are executed on the same agent. This amortizes the cost of
+        // acquiring an agent, checking out the sources and pulling Docker images over several modules, and lets Maven
+        // reuse its local repository across the modules of a batch.
+        config.modules.collate(config.batchSize ?: 4).eachWithIndex() { modulePaths, j ->
+            def buildName = "${testConfig.key} - Docker tests #${j + 1} for ${getModuleNames(modulePaths).join(', ')}"
+            echoXWiki "Build name: ${buildName}"
             def profiles = 'docker,legacy,integration-tests,snapshotModules,distribution,flavor-integration-tests'
             def additionalSystemProperties = [
                 "-Dmaven.build.dir=target/${testConfigurationName}"
             ]
             additionalSystemProperties.addAll(getSystemProperties())
-            def testModuleName = "${modulePath}/${moduleName}-test/${moduleName}-test-docker"
-            builds["${testConfig.key} - Docker tests for ${moduleName}"] = {
+            // We pass --fail-at-end so that a failure while building one module doesn't prevent the other modules of the
+            // batch from being built and tested (this is a no-op when there's a single module in the batch).
+            builds[buildName] = {
                 build(
-                    name: "${testConfig.key} - Docker tests for ${moduleName}",
+                    name: buildName,
                     profiles: profiles,
                     properties: "${additionalSystemProperties.join(' ')} ${systemProperties.join(' ')}",
-                    mavenFlags: "--projects ${testModuleName} -e -U",
+                    mavenFlags: "--projects ${getDockerTestModulePaths(modulePaths).join(',')} -e -U --fail-at-end",
                     xvnc: false,
                     goals: 'clean verify',
                     skipMail: config.skipMail,
@@ -136,6 +140,23 @@ private def getSystemProperties()
         '-Dxwiki.spoon.skip=true',
         '-Dxwiki.enforcer.skip=true'
     ]
+}
+
+// Return the last segment (the Maven module name) of each of the passed module paths, used to build short and readable
+// build/step names.
+private def getModuleNames(modulePaths)
+{
+    return modulePaths.collect { it.substring(it.lastIndexOf('/') + 1) }
+}
+
+// Return, for each passed top module path, the path of its Docker-based test module (the *-test-docker submodule) which
+// is the module that's actually built and executed.
+private def getDockerTestModulePaths(modulePaths)
+{
+    return modulePaths.collect {
+        def moduleName = it.substring(it.lastIndexOf('/') + 1)
+        "${it}/${moduleName}-test/${moduleName}-test-docker"
+    }
 }
 
 private void build(map)
