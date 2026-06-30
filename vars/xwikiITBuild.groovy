@@ -29,11 +29,44 @@ void call(boolean isParallel = true, body)
 
     echoXWiki "Modules to execute: ${config.modules}"
 
-    // Run integrations tests on all passed modules
+    def profiles = 'docker,legacy,integration-tests,snapshotModules,distribution,flavor-integration-tests'
+
+    // Partition the modules into the large modules (each executed on its own agent) and the other modules (grouped in
+    // batches built several modules per agent). See isLargeDockerTestModule() for the rationale.
+    def largeModules = config.modules.findAll { isLargeDockerTestModule(it) }
+    def otherModules = config.modules.findAll { !isLargeDockerTestModule(it) }
+    echoXWiki "Large modules (one agent each): ${largeModules}"
+    echoXWiki "Other modules (batched): ${otherModules}"
+
     def builds = [:]
-    config.modules.each() { modulePath ->
-        echoXWiki "Module name: ${modulePath}"
-        def profiles = 'docker,legacy,integration-tests,snapshotModules,distribution,flavor-integration-tests'
+
+    // Build the non-large modules in batches, each batch being built on a single agent. This amortizes the cost of
+    // acquiring an agent, checking out the sources and pulling Docker images over several modules, and lets Maven reuse
+    // its local repository across all the modules of a batch. We still pass -U so that snapshot dependencies are
+    // refreshed from the remote repository on every batch, to avoid stale dependencies and to detect dependencies that
+    // are no longer available on Nexus. We pass --fail-at-end so that a failure while building one module of the batch
+    // doesn't prevent the other modules of the same batch from being built and tested.
+    def batchSize = config.batchSize ?: 4
+    otherModules.collate(batchSize).eachWithIndex() { batch, i ->
+        def batchName = "IT batch ${i + 1} (${batch.collect { it.substring(it.lastIndexOf('/') + 1) }.join(', ')})"
+        builds[batchName] = {
+            build(
+                name: batchName,
+                profiles: profiles,
+                properties: "${getSystemProperties().join(' ')}",
+                mavenFlags: "--projects ${batch.join(',')} -e -U --fail-at-end",
+                xvnc: true,
+                goals: 'clean verify',
+                skipMail: config.skipMail,
+                jobProperties: config.jobProperties,
+                label: config.label
+            )
+        }
+    }
+
+    // Build each large module on its own agent (unbatched) since they take a long time to execute and batching them
+    // would increase the minimum build duration.
+    largeModules.each() { modulePath ->
         builds["IT for ${modulePath}"] = {
             build(
                 name: "IT for ${modulePath}",

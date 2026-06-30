@@ -1,0 +1,4 @@
+true if the passed Maven module path corresponds to a Docker-based test module that takes a long time to execute and
+that must therefore be executed on its own Jenkins agent rather than being batched (xwikiITBuild) or grouped with its
+other configurations (xwikiDockerBuild). Keeping these large modules out of the batches/groups avoids increasing the
+minimum build duration too much.
