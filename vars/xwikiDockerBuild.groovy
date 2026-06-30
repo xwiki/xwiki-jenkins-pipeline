@@ -48,16 +48,6 @@ void call(boolean isParallel = true, body)
     // module will have triggered the main build (which rebuilds the -pageobjects modules). This could fail if the main
     // build fails before reaching the -pageobects with the changes but the likelihood is low and we consider that the
     // tradeoff is acceptable.
-    def profiles = 'docker,legacy,integration-tests,snapshotModules,distribution,flavor-integration-tests'
-    def batchSize = config.batchSize ?: 4
-
-    // Partition the modules into the large modules (each built on its own agent) and the other modules (grouped in
-    // batches built several modules per agent, for each configuration). See isLargeDockerTestModule() for the rationale.
-    def largeModules = config.modules.findAll { isLargeDockerTestModule(it) }
-    def otherModules = config.modules.findAll { !isLargeDockerTestModule(it) }
-    echoXWiki "Large modules (one agent each per configuration): ${largeModules}"
-    echoXWiki "Other modules (batched per configuration): ${otherModules}"
-
     def builds = [:]
     config.configurations.eachWithIndex() { testConfig, i ->
         def systemProperties = []
@@ -77,24 +67,25 @@ void call(boolean isParallel = true, body)
         }
 
         def testConfigurationName = getTestConfigurationName(testConfig.value)
-        def additionalSystemProperties = ["-Dmaven.build.dir=target/${testConfigurationName}"]
-        additionalSystemProperties.addAll(getSystemProperties())
-        def allProperties = "${additionalSystemProperties.join(' ')} ${systemProperties.join(' ')}"
-
-        // Register a build of the passed modules (given by their top module path) on a single agent for this
-        // configuration. We pass --fail-at-end so that a failure while building one module doesn't prevent the other
-        // modules built on the same agent from being built and tested (this is a no-op when there's a single module).
-        def registerBuild = { buildName, modulePaths ->
-            def testModules = modulePaths.collect {
-                def moduleName = it.substring(it.lastIndexOf('/') + 1)
-                "${it}/${moduleName}-test/${moduleName}-test-docker"
-            }
+        // Group several modules per build so that they are executed on the same agent. This amortizes the cost of
+        // acquiring an agent, checking out the sources and pulling Docker images over several modules, and lets Maven
+        // reuse its local repository across the modules of a batch.
+        config.modules.collate(config.batchSize ?: 4).eachWithIndex() { modulePaths, j ->
+            def buildName = "${testConfig.key} - Docker tests #${j + 1} for ${getModuleNames(modulePaths).join(', ')}"
+            echoXWiki "Build name: ${buildName}"
+            def profiles = 'docker,legacy,integration-tests,snapshotModules,distribution,flavor-integration-tests'
+            def additionalSystemProperties = [
+                "-Dmaven.build.dir=target/${testConfigurationName}"
+            ]
+            additionalSystemProperties.addAll(getSystemProperties())
+            // We pass --fail-at-end so that a failure while building one module doesn't prevent the other modules of the
+            // batch from being built and tested (this is a no-op when there's a single module in the batch).
             builds[buildName] = {
                 build(
                     name: buildName,
                     profiles: profiles,
-                    properties: allProperties,
-                    mavenFlags: "--projects ${testModules.join(',')} -e -U --fail-at-end",
+                    properties: "${additionalSystemProperties.join(' ')} ${systemProperties.join(' ')}",
+                    mavenFlags: "--projects ${getDockerTestModulePaths(modulePaths).join(',')} -e -U --fail-at-end",
                     xvnc: false,
                     goals: 'clean verify',
                     skipMail: config.skipMail,
@@ -105,22 +96,6 @@ void call(boolean isParallel = true, body)
                     daysToKeepStr: isMasterBranch(env.BRANCH_NAME) ? '30' : null
                 )
             }
-        }
-
-        // Build the non-large modules in batches, each batch being built on a single agent for this configuration. This
-        // amortizes the cost of acquiring an agent, checking out the sources and pulling Docker images over several
-        // modules, and lets Maven reuse its local repository across all the modules of a batch.
-        otherModules.collate(batchSize).eachWithIndex() { batch, j ->
-            def batchName = "${testConfig.key} - Docker tests batch ${j + 1} " +
-                "(${batch.collect { it.substring(it.lastIndexOf('/') + 1) }.join(', ')})"
-            registerBuild(batchName, batch)
-        }
-
-        // Build each large module on its own agent (unbatched) since they take a long time to execute and batching them
-        // would increase the minimum build duration.
-        largeModules.each() { modulePath ->
-            def moduleName = modulePath.substring(modulePath.lastIndexOf('/') + 1, modulePath.length())
-            registerBuild("${testConfig.key} - Docker tests for ${moduleName}", [modulePath])
         }
     }
 
@@ -165,6 +140,23 @@ private def getSystemProperties()
         '-Dxwiki.spoon.skip=true',
         '-Dxwiki.enforcer.skip=true'
     ]
+}
+
+// Return the last segment (the Maven module name) of each of the passed module paths, used to build short and readable
+// build/step names.
+private def getModuleNames(modulePaths)
+{
+    return modulePaths.collect { it.substring(it.lastIndexOf('/') + 1) }
+}
+
+// Return, for each passed top module path, the path of its Docker-based test module (the *-test-docker submodule) which
+// is the module that's actually built and executed.
+private def getDockerTestModulePaths(modulePaths)
+{
+    return modulePaths.collect {
+        def moduleName = it.substring(it.lastIndexOf('/') + 1)
+        "${it}/${moduleName}-test/${moduleName}-test-docker"
+    }
 }
 
 private void build(map)

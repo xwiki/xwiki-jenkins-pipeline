@@ -29,23 +29,16 @@ void call(boolean isParallel = true, body)
 
     echoXWiki "Modules to execute: ${config.modules}"
 
-    def profiles = 'docker,legacy,integration-tests,snapshotModules,distribution,flavor-integration-tests'
-
-    // Partition the modules into the large modules (each executed on its own agent) and the other modules (grouped in
-    // batches built several modules per agent). See isLargeDockerTestModule() for the rationale.
-    def largeModules = config.modules.findAll { isLargeDockerTestModule(it) }
-    def otherModules = config.modules.findAll { !isLargeDockerTestModule(it) }
-    echoXWiki "Large modules (one agent each): ${largeModules}"
-    echoXWiki "Other modules (batched): ${otherModules}"
-
+    // Run integrations tests on all passed modules, grouping several modules per build so that they are executed on the
+    // same agent. This amortizes the cost of acquiring an agent, checking out the sources and pulling Docker images over
+    // several modules, and lets Maven reuse its local repository across the modules of a batch.
     def builds = [:]
-
-    // Register a build of the passed modules on a single agent. We still pass -U so that snapshot dependencies are
-    // refreshed from the remote repository on every build, to avoid stale dependencies and to detect dependencies that
-    // are no longer available on Nexus. We pass --fail-at-end so that a failure while building one module doesn't
-    // prevent the other modules built on the same agent from being built and tested (this is a no-op when there's a
-    // single module).
-    def registerBuild = { buildName, modulePaths ->
+    def profiles = 'docker,legacy,integration-tests,snapshotModules,distribution,flavor-integration-tests'
+    config.modules.collate(config.batchSize ?: 4).eachWithIndex() { modulePaths, i ->
+        def buildName = "IT #${i + 1} for ${getModuleNames(modulePaths).join(', ')}"
+        echoXWiki "Build name: ${buildName}"
+        // We pass --fail-at-end so that a failure while building one module doesn't prevent the other modules of the
+        // batch from being built and tested (this is a no-op when there's a single module in the batch).
         builds[buildName] = {
             build(
                 name: buildName,
@@ -59,21 +52,6 @@ void call(boolean isParallel = true, body)
                 label: config.label
             )
         }
-    }
-
-    // Build the non-large modules in batches, each batch being built on a single agent. This amortizes the cost of
-    // acquiring an agent, checking out the sources and pulling Docker images over several modules, and lets Maven reuse
-    // its local repository across all the modules of a batch.
-    def batchSize = config.batchSize ?: 4
-    otherModules.collate(batchSize).eachWithIndex() { batch, i ->
-        def batchName = "IT batch ${i + 1} (${batch.collect { it.substring(it.lastIndexOf('/') + 1) }.join(', ')})"
-        registerBuild(batchName, batch)
-    }
-
-    // Build each large module on its own agent (unbatched) since they take a long time to execute and batching them
-    // would increase the minimum build duration.
-    largeModules.each() { modulePath ->
-        registerBuild("IT for ${modulePath}", [modulePath])
     }
 
     if (isParallel) {
@@ -95,6 +73,13 @@ private def getSystemProperties()
         '-Dxwiki.spoon.skip=true',
         '-Dxwiki.enforcer.skip=true'
     ]
+}
+
+// Return the last segment (the Maven module name) of each of the passed module paths, used to build short and readable
+// build/step names.
+private def getModuleNames(modulePaths)
+{
+    return modulePaths.collect { it.substring(it.lastIndexOf('/') + 1) }
 }
 
 private void build(map)
