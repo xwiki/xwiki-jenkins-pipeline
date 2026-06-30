@@ -544,6 +544,15 @@ private def attachScreenshotToFailingTests(def failingTests)
     def directoryListingCache = [:]
     def targetDirectoryCache = [:]
 
+    // Each echoXWiki call is a pipeline "echo" step, and every pipeline step is persisted to the build's flow graph,
+    // which costs in the order of a second per step. getFailingTests() can return a hundred or more failing tests for
+    // which no screenshot exists (e.g. non-UI tests), so logging one (or several) lines per test would turn this
+    // post-build step into a multi-minute step on its own. We therefore accumulate the diagnostic messages in plain
+    // lists (assigning to a local variable is not a pipeline step) and emit them with a single echoXWiki call at the
+    // end, regardless of how many failing tests there are.
+    def testsWithoutTargetDirectory = []
+    def testsWithoutScreenshot = []
+
     // Go through each failed test in the current build.
     for (def failedTest : failingTests) {
         // Compute the test's screenshot file name.
@@ -553,7 +562,7 @@ private def attachScreenshotToFailingTests(def failingTests)
         def targetDirectory = computeTargetDirectoryForTest(failedTest, targetDirectoryCache)
         if (!targetDirectory) {
             // We couldn't compute the target directory, move to the next test!
-            echoXWiki "Failed to find target directory for test [${testClass}#${testName}]"
+            testsWithoutTargetDirectory.add("${testClass}#${testName}")
             continue
         }
         def imageAbsolutePath = findScreenshotFile(failedTest, targetDirectory, directoryListingCache)
@@ -583,8 +592,18 @@ private def attachScreenshotToFailingTests(def failingTests)
                 saveCurrentBuildChanges()
             }
         } else {
-            echoXWiki "No screenshot found for test [${testClass}#${testName}] on ${NODE_NAME}"
+            testsWithoutScreenshot.add("${testClass}#${testName}")
         }
+    }
+
+    // Emit the accumulated diagnostics with as few pipeline steps as possible (see the note at the top of this method).
+    if (testsWithoutTargetDirectory) {
+        echoXWiki "Failed to find target directory for ${testsWithoutTargetDirectory.size()} failing test(s): " +
+            "${testsWithoutTargetDirectory.join(', ')}"
+    }
+    if (testsWithoutScreenshot) {
+        echoXWiki "No screenshot found on ${NODE_NAME} for ${testsWithoutScreenshot.size()} failing test(s): " +
+            "${testsWithoutScreenshot.join(', ')}"
     }
 }
 
@@ -632,7 +651,9 @@ private def findScreenshotFileForPattern(def directoryFilePath, def failedTest, 
     } else if (matches.size() == 1) {
         return directoryFilePath.child(matches.iterator().next())
     } else {
-        echoXWiki "No matching screenshot found for [*${classNamePattern}*.png] or [*${simpleNamePattern}*.png] inside [${directoryFilePath.remote}]"
+        // Don't log anything here: this is called for every candidate directory of every failing test, and each
+        // echoXWiki is a pipeline step that costs in the order of a second. The fact that no screenshot was found is
+        // reported once per test (and in batch) by the caller, see attachScreenshotToFailingTests().
         return null
     }
 }
@@ -726,19 +747,21 @@ private def checkForFlickers(def failingTests)
     echoXWiki "Known flickering tests: ${knownFlickers}"
 
     // For each failed test, check if it's in the known flicker list.
+    // Note: each echoXWiki is a pipeline "echo" step that gets persisted to the build's flow graph and costs in the
+    // order of a second, and getFailingTests() can return a hundred or more failing tests. We therefore accumulate the
+    // per-test analysis result in plain lists (assigning to a local variable is not a pipeline step) and emit it with
+    // a single echoXWiki call at the end instead of logging several lines per test (see attachScreenshotToFailingTests
+    // for the same approach).
     Set foundFlickers = []
+    def notFlickers = []
     boolean containsOnlyFlickers = true
     boolean isModified = false
     failingTests.each() { testResult ->
-        if (testResult instanceof hudson.tasks.junit.CaseResult) {
-          echoXWiki "DEBUG - simpleName: ${testResult.simpleName}"
-        }
         // Construct a normalized test name made of <test class name>#<method name>
         // Note: The call to toString() is important to get a String and not a GString so that contains() will work
         // (since otherwise equals() will fail between a String and a GString)
         def normalizedTestName = normalizeTestName(testResult.name.toString())
         def testName = "${testResult.className}#${normalizedTestName}".toString()
-        echoXWiki "Analyzing test [${testName}] for flicker ..."
         def oldGEDomain = 'https://ge.xwiki.org'
         def oldGEURLPrefix = "${oldGEDomain}/scans/tests?search.relativeStartTime=P90D&tests.container="
         def oldGEFullURL = "${oldGEURLPrefix}${testResult.className}&tests.test=${normalizedTestName}"
@@ -758,10 +781,9 @@ private def checkForFlickers(def failingTests)
             def links = "${jiraAnchor}&nbsp;${geAnchor}&nbsp;${oldGEAnchor}"
             descriptionText =
               "<h3 style='color:red'>This is a flicker (<tt>${testName}</tt>): ${links}</h3>"
-            echoXWiki "   [${testName}] is a flicker!"
             foundFlickers.add(testName)
         } else {
-            echoXWiki "   [${testName}] is not a known flicker"
+            notFlickers.add(testName)
             // This is a real failing test, thus we'll need to send the notification email...
             containsOnlyFlickers = false
             // Add the information about the test to the test's description even if it's not considered a flicker.
@@ -774,10 +796,15 @@ private def checkForFlickers(def failingTests)
         if (testResult.getDescription() == null || !testResult.getDescription().contains(descriptionText)) {
             testResult.setDescription("${descriptionText}${testResult.getDescription() ?: ''}")
             isModified = true
-        } else {
-            // For debugging
-            echoXWiki "Flicker [${testName}] - Description = [${testResult.getDescription()}]"
         }
+    }
+
+    // Emit the accumulated analysis results with as few pipeline steps as possible (see the note above the loop).
+    if (foundFlickers) {
+        echoXWiki "Identified ${foundFlickers.size()} known flicker(s): ${foundFlickers.join(', ')}"
+    }
+    if (notFlickers) {
+        echoXWiki "Identified ${notFlickers.size()} failing test(s) that are not known flickers: ${notFlickers.join(', ')}"
     }
 
     if (foundFlickers) {
