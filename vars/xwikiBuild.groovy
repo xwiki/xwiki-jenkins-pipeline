@@ -111,6 +111,11 @@ void call(name = 'Default', body)
 
     def mavenTool
     def javaMavenConfig
+    // The exact Maven command executed by the "Build" stage below. We capture it so that the "Post Build" stage can
+    // attach it to each failing test's description (see checkForFlickers). Since tests are executed in several separate
+    // Maven builds (the functional, docker and IT configurations all funnel through xwikiBuild() with a different
+    // "name"), recording the command per build is the only way to know exactly how a given failing test was run.
+    def mavenCommand
     stage("Preparation for ${name}") {
         // Get the Maven tool.
         // Note: We use an empty string by default, in order to not use the Global tools from Jenkins. We run our
@@ -258,8 +263,12 @@ void call(name = 'Default', body)
                                 deployRepository = '-DaltDeploymentRepository=nexus-snapshots.xwiki.org::default::https://nexus-snapshots.xwiki.org/repository/snapshots/'
                             }
                         }
+                        // Build the exact Maven command and keep it around (toString() so it's a plain serializable
+                        // String) so that the "Post Build" stage can attach it to each failing test's description.
+                        mavenCommand =
+                            "mvn -f ${pomFile} ${goals} -P${profiles} ${mavenFlags} ${properties} ${javadoc} ${deployRepository}".toString()
                         wrapInSonarQube(config) {
-                            sh "mvn -f ${pomFile} ${goals} -P${profiles} ${mavenFlags} ${properties} ${javadoc} ${deployRepository}"
+                            sh mavenCommand
                         }
                     }
                 } catch (InterruptedException e) {
@@ -333,27 +342,50 @@ void call(name = 'Default', body)
         // embed it in the failed test's description. Also check if failing tests are flickers.
         if (currentBuild.result != 'SUCCESS') {
             def failingTests = getFailingTests()
-            echoXWiki "Failing tests: ${failingTests.collect { "${it.getClassName()}#${it.getName()}" }}"
+            echoXWiki "Failing tests (whole job): ${failingTests.collect { "${it.getClassName()}#${it.getName()}" }}"
             if (!failingTests.isEmpty()) {
-                echoXWiki "Attaching screenshots to test result pages (if any)..."
-                attachScreenshotToFailingTests(failingTests)
+                // getFailingTests() returns the failing tests for the whole job (see its note and JENKINS-49339), but
+                // the per-configuration Maven builds run in parallel. Restrict the per-test post-processing below to the
+                // tests this build actually ran, both for correctness (attach the right Maven command, and screenshots
+                // that only exist on this agent) and to avoid parallel builds racing on the same test descriptions.
+                def targetDirectoryCache = [:]
+                def ownFailingTests = filterTestsExecutedByThisBuild(failingTests, targetDirectoryCache)
+                echoXWiki "Failing tests run by this build: " +
+                    "${ownFailingTests.collect { "${it.getClassName()}#${it.getName()}" }}"
 
-                // Check for false positives & Flickers.
-                echoXWiki "Checking for false positives and flickers in build results..."
-                def containsFalsePositivesOrOnlyFlickers = checkForFalsePositivesAndFlickers(failingTests)
+                // When this build ran none of the failing tests there's nothing for it to do (the build(s) that did run
+                // them handle them in their own post-build stage). Skipping here also avoids the costly Jira flicker
+                // lookup done by checkForFlickers() for builds that have no failing test of their own.
+                if (!ownFailingTests.isEmpty()) {
+                    echoXWiki "Attaching screenshots to test result pages (if any)..."
+                    attachScreenshotToFailingTests(ownFailingTests, targetDirectoryCache)
 
-                // Also send a mail notification when there are not only false positives or flickering tests.
-                // Update 2020-10-31: Temporarily only send mails when there are failing non-functional tests to reduce
-                // the number of emails sent, until we fix functional tests stability. See https://bit.ly/34GTVBe
-                echoXWiki "Checking if email should be sent or not"
-                if (!containsFalsePositivesOrOnlyFlickers && !config.skipMail
-                    && containsNonFunctionalFailingTests(failingTests))
-                {
-                    sendMail(currentBuild.result, name)
-                } else {
-                    echoXWiki "No email sent even if some tests failed because they contain only flickering tests!"
-                    echoXWiki "Considering job as successful!"
-                    currentBuild.result = 'SUCCESS'
+                    // Attach the exact Maven command used, so it's easy to reproduce the failure locally. Done here, in
+                    // the same area as the GE links, rather than in checkForFlickers() because it must be scoped to this
+                    // build's own tests (the command is build-specific).
+                    echoXWiki "Attaching the Maven command to this build's failing tests..."
+                    attachMavenCommandToFailingTests(ownFailingTests, name, mavenCommand)
+
+                    // Check for false positives & flickers. The flicker summary and the "only flickers?" decision (which
+                    // gates the email below) keep their whole-job meaning, hence the job-wide list; only the per-test
+                    // flicker marking is restricted to this build's own tests.
+                    echoXWiki "Checking for false positives and flickers in build results..."
+                    def containsFalsePositivesOrOnlyFlickers =
+                        checkForFalsePositivesAndFlickers(failingTests, ownFailingTests)
+
+                    // Also send a mail notification when there are not only false positives or flickering tests.
+                    // Update 2020-10-31: Temporarily only send mails when there are failing non-functional tests to
+                    // reduce the number of emails sent, until we fix functional tests stability. See https://bit.ly/34GTVBe
+                    echoXWiki "Checking if email should be sent or not"
+                    if (!containsFalsePositivesOrOnlyFlickers && !config.skipMail
+                        && containsNonFunctionalFailingTests(failingTests))
+                    {
+                        sendMail(currentBuild.result, name)
+                    } else {
+                        echoXWiki "No email sent even if some tests failed because they contain only flickering tests!"
+                        echoXWiki "Considering job as successful!"
+                        currentBuild.result = 'SUCCESS'
+                    }
                 }
             }
         }
@@ -530,19 +562,18 @@ private def createFilePath(String path)
  *       (http://<jenkins server ip>/configureSecurity).</li>
  * </ul>
  */
-private def attachScreenshotToFailingTests(def failingTests)
+private def attachScreenshotToFailingTests(def failingTests, def targetDirectoryCache)
 {
     // Looking up a screenshot for a test requires FilePath.exists()/list() calls, and each of these is a round-trip to
-    // the build agent (FilePath operations execute remotely over the agent channel). getFailingTests() can return many
-    // failing tests that belong to a small number of modules/configurations (see JENKINS-49339 and the note on
-    // getFailingTests()), so without caching the same handful of screenshot directories gets queried again for every
-    // failing test, which can make this step take tens of minutes. These caches ensure each directory is queried only
-    // once on the agent regardless of how many failing tests map to it:
+    // the build agent (FilePath operations execute remotely over the agent channel). The passed tests can still belong
+    // to a small number of modules, so without caching the same handful of screenshot directories gets queried again
+    // for every failing test, which can make this step take tens of minutes. These caches ensure each directory is
+    // queried only once on the agent regardless of how many failing tests map to it:
     // - directoryListingCache: maps a directory remote path to the list of *.png file names it contains (an empty list
     //   when the directory doesn't exist).
-    // - targetDirectoryCache: maps a JUnit suite result file path to its resolved target directory FilePath.
+    // - targetDirectoryCache: maps a JUnit suite result file path to its resolved target directory FilePath. It is
+    //   passed in (and shared with filterTestsExecutedByThisBuild()) so the directories are resolved only once.
     def directoryListingCache = [:]
-    def targetDirectoryCache = [:]
 
     // Each echoXWiki call is a pipeline "echo" step, and every pipeline step is persisted to the build's flow graph,
     // which costs in the order of a second per step. getFailingTests() can return a hundred or more failing tests for
@@ -604,6 +635,100 @@ private def attachScreenshotToFailingTests(def failingTests)
     if (testsWithoutScreenshot) {
         echoXWiki "No screenshot found on ${NODE_NAME} for ${testsWithoutScreenshot.size()} failing test(s): " +
             "${testsWithoutScreenshot.join(', ')}"
+    }
+}
+
+/**
+ * @return the subset of the passed failing tests that were executed by <em>this</em> build.
+ *
+ * <p>{@code getFailingTests()} returns the failing tests for the <em>whole job</em> (see the note on it and
+ * JENKINS-49339), but the per-configuration Maven builds run in parallel (see {@code xwikiDockerBuild} /
+ * {@code xwikiITBuild}), each on its own {@code node {}}, and this build's post-build stage must only act on its own
+ * tests (to attach the right Maven command, to attach screenshots that only exist on this agent, and to avoid several
+ * parallel builds racing on the same test descriptions and flicker summaries).</p>
+ *
+ * <p>A test belongs to this build when its JUnit report directory exists in this build's workspace on this agent:
+ * {@code computeTargetDirectoryForTest()} resolves it on the current node (via {@code NODE_NAME}), docker builds
+ * further isolate it with {@code -Dmaven.build.dir=target/<configuration>}, and a report directory is only present on
+ * the agent of the build that produced it. This makes the result independent of the order in which the parallel
+ * post-build stages run. It is reliable in practice: this is the very same resolution that
+ * {@code attachScreenshotToFailingTests()} has long relied on to locate screenshots, the report directory is not
+ * cleaned between the build and post-build stages (the {@code clean} goal runs at the start of the Maven build), and
+ * each configuration is a distinct test entry, so a test failing under several configurations is correctly attributed
+ * to each of them. A build that batches several Maven modules naturally matches all of them (each module has its own
+ * report directory in this workspace).</p>
+ *
+ * @param targetDirectoryCache shared with {@code attachScreenshotToFailingTests()} so the report directories are
+ *        resolved (a remote round-trip to the agent) only once
+ */
+private def filterTestsExecutedByThisBuild(def failingTests, def targetDirectoryCache)
+{
+    // exists() is a remote round-trip to the build agent and many failing tests share the same report directory, so we
+    // cache the existence check by directory path (the resolution itself is cached by targetDirectoryCache).
+    def directoryExistsCache = [:]
+    def ownTests = []
+    for (def failedTest : failingTests) {
+        def targetDirectory = computeTargetDirectoryForTest(failedTest, targetDirectoryCache)
+        if (!targetDirectory) {
+            continue
+        }
+        def cacheKey = targetDirectory.remote
+        def exists
+        if (directoryExistsCache.containsKey(cacheKey)) {
+            exists = directoryExistsCache.get(cacheKey)
+        } else {
+            exists = targetDirectory.exists()
+            directoryExistsCache.put(cacheKey, exists)
+        }
+        if (exists) {
+            ownTests.add(failedTest)
+        }
+    }
+    return ownTests
+}
+
+/**
+ * For each of the passed failing tests, attach the exact Maven command that was used to its test result description, so
+ * that it's easy to reproduce the failure locally. The command is displayed in the same area as the Develocity (GE)
+ * links added by {@link #checkForFlickers}.
+ *
+ * <p>The passed tests must be the ones that <em>this</em> build actually ran (see
+ * {@link #filterTestsExecutedByThisBuild}): the command is build-specific, so attaching it to a test that a different
+ * parallel build ran would record the wrong command. Because per-configuration runs are separate test entries (see
+ * {@code filterTestsExecutedByThisBuild}), a test that fails under several configurations gets one entry per
+ * configuration, each correctly carrying its own configuration's command.</p>
+ */
+private def attachMavenCommandToFailingTests(def failingTests, def buildName, def mavenCommand)
+{
+    // Nothing to attach if we never got to run the Maven command (e.g. the build failed before reaching it).
+    if (!mavenCommand) {
+        return
+    }
+
+    // Each echoXWiki is a pipeline step costing ~1s and there can be many failing tests, so we accumulate the
+    // diagnostic and emit it with a single echoXWiki at the end (see the note in attachScreenshotToFailingTests()).
+    def annotatedTests = []
+
+    // Render the command once, in a copy/paste friendly block.
+    def commandDescription = ("<h3>Maven command (build <tt>${buildName}</tt>)</h3>" +
+        "<pre style='white-space: pre-wrap; word-break: break-all'>${mavenCommand}</pre>").toString()
+
+    for (def failedTest : failingTests) {
+        def testResultAction = failedTest.getParentAction()
+        def currentDescription = testResultAction.getDescription(failedTest) ?: ''
+        // Append the command only if it isn't listed yet: keeps it idempotent if the post-build is retried.
+        if (!currentDescription.contains(commandDescription)) {
+            testResultAction.setDescription(failedTest, "${currentDescription}${commandDescription}")
+            // Clear the potentially non-serializable reference after use (see attachScreenshotToFailingTests()).
+            testResultAction = null
+            saveCurrentBuildChanges()
+            annotatedTests.add("${failedTest.className}#${failedTest.name}")
+        }
+    }
+
+    if (annotatedTests) {
+        echoXWiki "Attached the Maven command to ${annotatedTests.size()} failing test(s) run by this build: " +
+            "${annotatedTests.join(', ')}"
     }
 }
 
@@ -721,15 +846,17 @@ private def computeTargetDirectoryForTest(def caseResult, def targetDirectoryCac
 /**
  * Check for false positives for known cases of failures not related to code + check for test flickers.
  *
+ * @param failingTests the failing tests for the whole job (drives the flicker summary and the returned value)
+ * @param ownFailingTests the subset run by this build (only those get their description marked)
  * @return true if the build has false positives or if there are only flickering tests
  */
-private def checkForFalsePositivesAndFlickers(def failingTests)
+private def checkForFalsePositivesAndFlickers(def failingTests, def ownFailingTests)
 {
     // Step 1: Check for false positives
     def containsFalsePositives = checkForFalsePositives()
 
     // Step 2: Check for flickers
-    def containsOnlyFlickers = checkForFlickers(failingTests)
+    def containsOnlyFlickers = checkForFlickers(failingTests, ownFailingTests)
 
     return containsFalsePositives || containsOnlyFlickers
 }
@@ -739,12 +866,21 @@ private def checkForFalsePositivesAndFlickers(def failingTests)
  * a flicker if there's a JIRA issue having the "Flickering Test" custom field containing the FQN of the test in the
  * format "<java package name>#<test name>".
  *
+ * @param failingTests the failing tests for the whole job, used to compute the flicker summary and the returned
+ *        "only flickers?" value (these stay job-wide so the build's email/result decisions are unchanged)
+ * @param ownFailingTests the subset of {@code failingTests} that this build ran; only those have their description
+ *        marked, so that parallel builds don't race on the same test descriptions (see
+ *        {@link #filterTestsExecutedByThisBuild})
  * @return true if the failing tests only contain flickering tests
  */
-private def checkForFlickers(def failingTests)
+private def checkForFlickers(def failingTests, def ownFailingTests)
 {
     def knownFlickers = getKnownFlickeringTests()
     echoXWiki "Known flickering tests: ${knownFlickers}"
+
+    // The descriptions we may set below must only be set for tests this build ran; membership is checked against this
+    // set. ownFailingTests holds the very same objects as (a subset of) failingTests, so a plain Set lookup works.
+    def ownTests = new HashSet(ownFailingTests)
 
     // For each failed test, check if it's in the known flicker list.
     // Note: each echoXWiki is a pipeline "echo" step that gets persisted to the build's flow graph and costs in the
@@ -793,7 +929,11 @@ private def checkForFlickers(def failingTests)
             descriptionText =
                 "<h3 style='color:red'>This is not a known flicker (<tt>${testName}</tt>): ${links}</h3>"
         }
-        if (testResult.getDescription() == null || !testResult.getDescription().contains(descriptionText)) {
+        // Only mark tests that this build ran (see ownTests above); the classification above stays job-wide so that the
+        // flicker summary and the returned "only flickers?" value keep their whole-job meaning.
+        if (ownTests.contains(testResult) &&
+            (testResult.getDescription() == null || !testResult.getDescription().contains(descriptionText)))
+        {
             testResult.setDescription("${descriptionText}${testResult.getDescription() ?: ''}")
             isModified = true
         }
