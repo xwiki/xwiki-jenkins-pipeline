@@ -22,11 +22,10 @@
 
 /**
  * The Docker-based test modules that take a long time to execute and that we therefore want to run on their own Jenkins
- * agent instead of batching/grouping them with other work. Batching several modules together (see {@code xwikiITBuild})
- * or grouping the several configurations of a single module together (see {@code xwikiDockerBuild}) reduces the number
- * of agents used and lets Maven reuse its local repository (downloaded dependencies) across the grouped builds. However
- * the duration of a batch/group is the sum of the durations of the modules/configurations it contains, so we keep these
- * large modules out of the batches/groups to avoid increasing the minimum build duration too much.
+ * agent instead of batching them with other modules. Batching several modules together (see {@code xwikiITBuild} and
+ * {@code xwikiDockerBuild}) reduces the number of agents used and lets Maven reuse its local repository (downloaded
+ * dependencies) across the batched builds. However the duration of a batch is the sum of the durations of the modules it
+ * contains, so we keep these large modules out of the batches to avoid increasing the minimum build duration too much.
  *
  * Note: the entries below are matched against the individual path segments of the passed module path so that the same
  * list works both with the module paths used by {@code xwikiITBuild} (which point to the {@code *-test-docker} /

@@ -40,14 +40,6 @@ The following options are available:
   be able to use this library for simple pipeline jobs (without a `Jenkinsfile`). In this case the pipeline
   would do the checkout.
 * `mavenFlags` = `'--projects ... -amd -U -e'` (default is `'-U -e'`)
-* `executions` = a list of maps describing several Maven executions to perform on the same agent (inside a single
-  `xwikiBuild` call), sharing the checkout, the Maven local repository and a single post-build stage. Each entry may
-  define `name` (used in the logs to identify the execution), `properties` and `mavenFlags`, which are appended to the
-  top-level `properties` and `mavenFlags` for that execution. This is used by `xwikiDockerBuild` to run all the test
-  configurations of a module on the same agent. The executions are run sequentially and the build fails fast: if an
-  execution fails (other than for failing tests, which don't stop the build thanks to
-  `-Dmaven.test.failure.ignore`), the following executions are not run. By default (option unset) a single execution is
-  performed using the top-level configuration.
 * `jobProperties` = `[parameters([string(defaultValue: 'standard', description: 'Job type', name: 'type')])]`. Sets
   properties that will be merged (and take precedence when on the same content) with the default ones. This allows
   adding some crons, parameters, etc.

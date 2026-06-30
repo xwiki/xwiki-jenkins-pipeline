@@ -40,21 +40,18 @@ void call(boolean isParallel = true, body)
 
     def builds = [:]
 
-    // Build the non-large modules in batches, each batch being built on a single agent. This amortizes the cost of
-    // acquiring an agent, checking out the sources and pulling Docker images over several modules, and lets Maven reuse
-    // its local repository across all the modules of a batch. We still pass -U so that snapshot dependencies are
-    // refreshed from the remote repository on every batch, to avoid stale dependencies and to detect dependencies that
-    // are no longer available on Nexus. We pass --fail-at-end so that a failure while building one module of the batch
-    // doesn't prevent the other modules of the same batch from being built and tested.
-    def batchSize = config.batchSize ?: 4
-    otherModules.collate(batchSize).eachWithIndex() { batch, i ->
-        def batchName = "IT batch ${i + 1} (${batch.collect { it.substring(it.lastIndexOf('/') + 1) }.join(', ')})"
-        builds[batchName] = {
+    // Register a build of the passed modules on a single agent. We still pass -U so that snapshot dependencies are
+    // refreshed from the remote repository on every build, to avoid stale dependencies and to detect dependencies that
+    // are no longer available on Nexus. We pass --fail-at-end so that a failure while building one module doesn't
+    // prevent the other modules built on the same agent from being built and tested (this is a no-op when there's a
+    // single module).
+    def registerBuild = { buildName, modulePaths ->
+        builds[buildName] = {
             build(
-                name: batchName,
+                name: buildName,
                 profiles: profiles,
                 properties: "${getSystemProperties().join(' ')}",
-                mavenFlags: "--projects ${batch.join(',')} -e -U --fail-at-end",
+                mavenFlags: "--projects ${modulePaths.join(',')} -e -U --fail-at-end",
                 xvnc: true,
                 goals: 'clean verify',
                 skipMail: config.skipMail,
@@ -64,22 +61,19 @@ void call(boolean isParallel = true, body)
         }
     }
 
+    // Build the non-large modules in batches, each batch being built on a single agent. This amortizes the cost of
+    // acquiring an agent, checking out the sources and pulling Docker images over several modules, and lets Maven reuse
+    // its local repository across all the modules of a batch.
+    def batchSize = config.batchSize ?: 4
+    otherModules.collate(batchSize).eachWithIndex() { batch, i ->
+        def batchName = "IT batch ${i + 1} (${batch.collect { it.substring(it.lastIndexOf('/') + 1) }.join(', ')})"
+        registerBuild(batchName, batch)
+    }
+
     // Build each large module on its own agent (unbatched) since they take a long time to execute and batching them
     // would increase the minimum build duration.
     largeModules.each() { modulePath ->
-        builds["IT for ${modulePath}"] = {
-            build(
-                name: "IT for ${modulePath}",
-                profiles: profiles,
-                properties: "${getSystemProperties().join(' ')}",
-                mavenFlags: "--projects ${modulePath} -e -U",
-                xvnc: true,
-                goals: 'clean verify',
-                skipMail: config.skipMail,
-                jobProperties: config.jobProperties,
-                label: config.label
-            )
-        }
+        registerBuild("IT for ${modulePath}", [modulePath])
     }
 
     if (isParallel) {

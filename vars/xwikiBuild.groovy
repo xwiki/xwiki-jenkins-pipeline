@@ -165,6 +165,14 @@ void call(name = 'Default', body)
     stage("Build for ${name}") {
         // Execute the XVNC plugin (useful for integration-tests)
         wrapInXvnc(config) {
+            // Execute the Maven build.
+            // Note that withMaven() will also perform some post build steps:
+            // - Archive and fingerprint generated Maven artifacts and Maven attached artifacts (if archiveArtifacts
+            //   is set to true, see above)
+            // - Publish JUnit / Surefire reports (if the Jenkins JUnit Plugin is installed)
+            // - Publish Findbugs reports (if the Jenkins FindBugs Plugin is installed)
+            // - Publish a report of the tasks ("FIXME" and "TODO") found in the java source code
+            //   (if the Jenkins Tasks Scanner Plugin is installed)
             echoXWiki "Using Java tool: ${javaMavenConfig.jdk}"
             echoXWiki "Using Maven tool: ${mavenTool ?: 'None, using pre-installed mvn executable on host'}"
             echoXWiki "Using Maven options: ${javaMavenConfig.mavenOpts}"
@@ -183,145 +191,105 @@ void call(name = 'Default', body)
             // Note: withMaven is concatenating any passed "mavenOpts" with env.MAVEN_OPTS. Thus in order to fully
             // control the maven options used we set env.MAVEN_OPTS to empty.
             env.MAVEN_OPTS = ''
+            wrapInWithMaven(maven: mavenTool, jdk: javaMavenConfig.jdk, mavenOpts: javaMavenConfig.mavenOpts,
+                    options: publishers)
+            {
+                try {
+                    def goals = computeMavenGoals(config)
+                    echoXWiki "Using Maven goals: ${goals}"
+                    def profiles = getMavenProfiles(config, env)
+                    echoXWiki "Using Maven profiles: ${profiles}"
+                    def pomFile = getPOMFile(config)
+                    def pom = readMavenPom file: pomFile
+                    echoXWiki "Using POM file: ${pom}"
+                    def branchName = env['BRANCH_NAME']
+                    // If we're building a feature branch that needs to be deployed, we set first its version so that
+                    // it's deployed with a specific version based on the branch name.
+                    if (isFeatureDeploymentBranch(branchName)) {
+                        def pomVersion = pom.version
+                        if (!pomVersion) {
+                            pomVersion = pom.parent.version
+                        }
+                        def index = pomVersion.size() - "-SNAPSHOT".size();
+                        def actualVersion = pomVersion.substring(0, index)
+                        def branchVersion = "${actualVersion}-${branchName}-SNAPSHOT"
+                        if (pom.parent) {
+                            // Change the parent version, but only if one exist for that parent
+                            echoXWiki "Setting parent to: ${branchVersion}"
+                            sh script: "mvn versions:update-parent -DallowSnapshots=true -DparentVersion=[${pom.parent.version}],[${branchVersion}] -N"
+                        }
+                        // Change the project version
+                        // We do those changes from the root since sub modules only define the parent
+                        echoXWiki "Setting version to: ${branchVersion}"
+                        sh script: "mvn versions:set -DnewVersion=${branchVersion} -P${profiles}"
+                        // Update the node packages versions.
+                        setPackagesVersion(branchVersion)
+                        // We need to also reset the commons.version property from the pom.xml if it's building commons.
+                        // The sed command is inspired from the release script, we don't want it to fail the build if
+                        // the property cannot be found hence the returnStatus: true
+                        sh script: "sed -e  \"s/<commons.version>.*<\\/commons.version>/<commons.version>${branchVersion}<\\/commons.version>/\" -i pom.xml", returnStatus: true
+                        // In the case of platform it's the platform.version property which needs to be updated (in case it's parent wasn't).
+                        sh script: "sed -e  \"s/<platform.version>.*<\\/platform.version>/<platform.version>${branchVersion}<\\/platform.version>/\" -i pom.xml", returnStatus: true
+                    }
 
-            // Compute the build parameters that are shared by all executions once.
-            def goals = computeMavenGoals(config)
-            echoXWiki "Using Maven goals: ${goals}"
-            def profiles = getMavenProfiles(config, env)
-            echoXWiki "Using Maven profiles: ${profiles}"
-            def pomFile = getPOMFile(config)
-            def pom = readMavenPom file: pomFile
-            echoXWiki "Using POM file: ${pom}"
-            def branchName = env['BRANCH_NAME']
-            def baseProperties = getMavenSystemProperties(config, "${NODE_NAME}")
-            def javadoc = ''
-            if (config.javadoc == null || config.javadoc == true) {
-                javadoc = 'javadoc:javadoc -Ddoclint=all'
-                echoXWiki "Enabling javadoc validation"
-            }
-            def baseMavenFlags = config.mavenFlags ?: '-U -e'
-            def deployRepository = ''
-            if (goals.contains('deploy')) {
-                // Make sure all org.xwiki.* projects are deployed on the right repository
-                def groupId = pom.groupId
-                if (groupId == null) {
-                    groupId = pom.parent.groupId
-                }
-                if (groupId.startsWith('org.xwiki')) {
-                    deployRepository = '-DaltDeploymentRepository=nexus-snapshots.xwiki.org::default::https://nexus-snapshots.xwiki.org/repository/snapshots/'
-                }
-            }
-            def timeoutThreshold = config.timeout ?: 240
-            echoXWiki "Using timeout: [${timeoutThreshold}] minutes"
-            // Display the java version for information (in case it's useful to debug some specific issue)
-            echoXWiki 'Java version used:'
-            sh script: 'java -version', returnStatus: true
-
-            // The list of Maven executions to perform on this agent. By default (when the caller doesn't pass an
-            // explicit list of executions) a single execution is performed using the top-level configuration, which is
-            // the historical behavior. Callers such as xwikiDockerBuild pass several executions (one per test
-            // configuration) so that they all run on the same agent, sharing the checkout, the Maven local repository
-            // and a single post-build stage (see the "Post Build" stage below). The executions then only differ by a
-            // few extra system properties (e.g. the Maven build directory and the test configuration) and Maven flags
-            // (e.g. -U on the first execution only). Each entry is a map with optional 'name', 'properties' and
-            // 'mavenFlags' keys, appended to the top-level configuration.
-            def executions = config.executions ?: [[:]]
-
-            try {
-                // Use a single timeout for all the executions performed on this agent rather than one timeout per
-                // execution: the large modules (whose configurations are long enough to each deserve their own timeout)
-                // are explicitly built one configuration per agent (see xwikiDockerBuild), so the executions grouped
-                // here are short enough to share a single timeout.
-                // Note: a "for" loop (rather than each()/eachWithIndex()) is used on purpose since the loop body calls
-                // pipeline steps (sh, withMaven, ...) which don't behave well inside non-CPS-transformed closures.
-                timeout(timeoutThreshold) {
-                    for (int i = 0; i < executions.size(); i++) {
-                        def execution = executions[i]
-                        def executionName = execution.name ? "${name} - ${execution.name}" : name
-                        echoXWiki "Building [${executionName}]"
-                        def properties = "${baseProperties} ${execution.properties ?: ''}".trim()
-                        echoXWiki "Using Maven properties: ${properties}"
-                        def mavenFlags = "${baseMavenFlags} ${execution.mavenFlags ?: ''}".trim()
-                        // We wrap each execution in its own withMaven() so that the JUnit/Surefire reports (and the
-                        // other post-build steps performed by withMaven) of each execution are published as soon as that
-                        // execution finishes. Note that withMaven() will also perform some post build steps:
-                        // - Archive and fingerprint generated Maven artifacts and Maven attached artifacts (if
-                        //   archiveArtifacts is set to true, see above)
-                        // - Publish JUnit / Surefire reports (if the Jenkins JUnit Plugin is installed)
-                        // - Publish Findbugs reports (if the Jenkins FindBugs Plugin is installed)
-                        // - Publish a report of the tasks ("FIXME" and "TODO") found in the java source code
-                        //   (if the Jenkins Tasks Scanner Plugin is installed)
-                        wrapInWithMaven(maven: mavenTool, jdk: javaMavenConfig.jdk, mavenOpts: javaMavenConfig.mavenOpts,
-                                options: publishers)
-                        {
-                            // If we're building a feature branch that needs to be deployed, we set first its version so
-                            // that it's deployed with a specific version based on the branch name. We only do it for the
-                            // first execution since it mutates the pom.xml in the (shared) workspace.
-                            if (i == 0 && isFeatureDeploymentBranch(branchName)) {
-                                def pomVersion = pom.version
-                                if (!pomVersion) {
-                                    pomVersion = pom.parent.version
-                                }
-                                def versionIndex = pomVersion.size() - "-SNAPSHOT".size();
-                                def actualVersion = pomVersion.substring(0, versionIndex)
-                                def branchVersion = "${actualVersion}-${branchName}-SNAPSHOT"
-                                if (pom.parent) {
-                                    // Change the parent version, but only if one exist for that parent
-                                    echoXWiki "Setting parent to: ${branchVersion}"
-                                    sh script: "mvn versions:update-parent -DallowSnapshots=true -DparentVersion=[${pom.parent.version}],[${branchVersion}] -N"
-                                }
-                                // Change the project version
-                                // We do those changes from the root since sub modules only define the parent
-                                echoXWiki "Setting version to: ${branchVersion}"
-                                sh script: "mvn versions:set -DnewVersion=${branchVersion} -P${profiles}"
-                                // Update the node packages versions.
-                                setPackagesVersion(branchVersion)
-                                // We need to also reset the commons.version property from the pom.xml if it's building commons.
-                                // The sed command is inspired from the release script, we don't want it to fail the build if
-                                // the property cannot be found hence the returnStatus: true
-                                sh script: "sed -e  \"s/<commons.version>.*<\\/commons.version>/<commons.version>${branchVersion}<\\/commons.version>/\" -i pom.xml", returnStatus: true
-                                // In the case of platform it's the platform.version property which needs to be updated (in case it's parent wasn't).
-                                sh script: "sed -e  \"s/<platform.version>.*<\\/platform.version>/<platform.version>${branchVersion}<\\/platform.version>/\" -i pom.xml", returnStatus: true
+                    def properties = getMavenSystemProperties(config, "${NODE_NAME}")
+                    echoXWiki "Using Maven properties: ${properties}"
+                    def javadoc = ''
+                    if (config.javadoc == null || config.javadoc == true) {
+                        javadoc = 'javadoc:javadoc -Ddoclint=all'
+                        echoXWiki "Enabling javadoc validation"
+                    }
+                    def timeoutThreshold = config.timeout ?: 240
+                    echoXWiki "Using timeout: [${timeoutThreshold}] minutes"
+                    // Display the java version for information (in case it's useful to debug some specific issue)
+                    echoXWiki 'Java version used:'
+                    sh script: 'java -version', returnStatus: true
+                    // Abort the build if it takes more than the timeout threshold (in minutes).
+                    timeout(timeoutThreshold) {
+                        def mavenFlags = config.mavenFlags ?: '-U -e'
+                        def deployRepository = ''
+                        if (goals.contains('deploy')) {
+                            // Make sure all org.xwiki.* projects are deployed on the right repository
+                            def groupId = pom.groupId
+                            if (groupId == null) {
+                                groupId = pom.parent.groupId
                             }
-
-                            wrapInSonarQube(config) {
-                                sh "mvn -f ${pomFile} ${goals} -P${profiles} ${mavenFlags} ${properties} ${javadoc} ${deployRepository}"
+                            if (groupId.startsWith('org.xwiki')) {
+                                deployRepository = '-DaltDeploymentRepository=nexus-snapshots.xwiki.org::default::https://nexus-snapshots.xwiki.org/repository/snapshots/'
                             }
                         }
+                        wrapInSonarQube(config) {
+                            sh "mvn -f ${pomFile} ${goals} -P${profiles} ${mavenFlags} ${properties} ${javadoc} ${deployRepository}"
+                        }
                     }
+                } catch (InterruptedException e) {
+                    // This can happen when the timeout() step reaches the timeout. We need to let this bubble up so
+                    // that Jenkins can coordinate the stopping of all threads & builds that execute in parallel.
+                    echoXWiki "XWiki build [${name}] interrupted due to timeout"
+                    StringWriter sw = new StringWriter();
+                    PrintWriter pw = new PrintWriter(sw);
+                    e.printStackTrace(pw);
+                    echoXWiki "[DEBUG] Cause for the timeout:\n${sw.toString()}"
+                    displayDebugData()
+                    Thread.currentThread().interrupt();
+                    // Note: Don't send email on an interrupted build.
+                } catch (Exception e) {
+                    // - If this line is reached it means the build has failed (other than for failing tests) or has
+                    //   been aborted (because we told maven above to not stop on test failures!)
+                    // - We stop the build by throwing the exception.
+                    // - Note that withMaven() doesn't set any build result in this case but we don't need to set any
+                    //   since we're stopping the build!
+                    // - Don't send emails for aborts! We discover aborts by checking for exit code 143.
+                    // - Also don't send emails for process kills since it's an environment issue and not an XWiki
+                    //   source problem (this happens when the exit code is 137).
+                    displayDebugData()
+                    if (!e.getMessage()?.contains('exit code 143') && !e.getMessage()?.contains('exit code 137')
+                        && !config.skipMail)
+                    {
+                        sendMail('ERROR', name)
+                    }
+                    throw e
                 }
-            } catch (InterruptedException e) {
-                // This can happen when the timeout() step reaches the timeout or when the build is cancelled (e.g. by a
-                // user, or because a newer build superseded it). We need to let this bubble up so that Jenkins can
-                // coordinate the stopping of all threads & builds that execute in parallel.
-                echoXWiki "XWiki build [${name}] interrupted (timeout or cancellation)"
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-                echoXWiki "[DEBUG] Cause for the interruption:\n${sw.toString()}"
-                displayDebugData()
-                Thread.currentThread().interrupt();
-                // Note: Don't send email on an interrupted build.
-            } catch (Exception e) {
-                // - If this line is reached it means the build has failed (other than for failing tests) or has
-                //   been aborted (because we told maven above to not stop on test failures!)
-                // - We stop the build by throwing the exception. When several executions are grouped on this agent, this
-                //   means the executions following the failed one are not run (fail fast). Note that failing *tests* do
-                //   not reach this point since we pass -Dmaven.test.failure.ignore (see getMavenSystemProperties()), so
-                //   a configuration that only has failing tests does not prevent the following configurations from
-                //   running.
-                // - Note that withMaven() doesn't set any build result in this case but we don't need to set any
-                //   since we're stopping the build!
-                // - Don't send emails for aborts! We discover aborts by checking for exit code 143.
-                // - Also don't send emails for process kills since it's an environment issue and not an XWiki
-                //   source problem (this happens when the exit code is 137).
-                displayDebugData()
-                if (!e.getMessage()?.contains('exit code 143') && !e.getMessage()?.contains('exit code 137')
-                    && !config.skipMail)
-                {
-                    sendMail('ERROR', name)
-                }
-                throw e
             }
         }
     }
