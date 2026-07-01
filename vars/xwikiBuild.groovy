@@ -151,6 +151,15 @@ void call(name = 'Default', body)
         sh script: 'docker system prune -f --filter "until=720h"', returnStatus: true
         sh script: 'docker volume prune -f', returnStatus: true
 
+        // The xwiki-*-office images built by xwiki-platform-test-docker (see ServletContainerExecutor) are tagged
+        // (not dangling) and are intentionally never deleted by the test framework, so the generic "docker system
+        // prune" above never reclaims them and they keep accumulating. We still need to keep one image per distinct
+        // servlet-engine/JDK prefix (e.g. "xwiki-jetty-12-jdk25-office") since different LTS branches depend on
+        // different base images, so we only remove images that have already been superseded by a newer build for
+        // the same prefix, plus the last remaining image for a prefix if it's older than 30 days (i.e. that branch
+        // hasn't triggered a rebuild in a while and is assumed inactive; it'll simply get rebuilt on its next run).
+        pruneStaleOfficeDockerImages()
+
         // Display some environmental information that can be useful to debug some failures
         // Note: if the executables don't exist, this won't fail the step thanks to "returnStatus: true".
         sh script: 'ps -ef', returnStatus: true
@@ -358,6 +367,69 @@ void call(name = 'Default', body)
             }
         }
     }
+}
+
+/**
+ * Remove locally-built "xwiki-*-office" docker images (see ServletContainerExecutor in
+ * xwiki-platform-test-docker) that are either superseded by a newer image for the same
+ * servlet-engine/JDK prefix, or that are the last remaining image for a prefix but haven't been rebuilt in more
+ * than 30 days (assumed to belong to an inactive branch; it'll be rebuilt on its next run if needed).
+ */
+private def pruneStaleOfficeDockerImages()
+{
+    // Gather the raw data on the build agent so that all timestamps come from the same clock: the "30 days ago"
+    // cutoff (epoch seconds) on the first line, followed by one "<createdEpochSeconds> <repository> <tag>" line per
+    // office image. The actual keep/remove decision is made in selectStaleOfficeImagesToRemove() below.
+    def listing = sh(returnStdout: true, script: '''
+        date -d "30 days ago" +%s
+        docker images --filter "reference=xwiki-*-office" --format "{{.ID}} {{.Repository}} {{.Tag}}" |
+        while read -r id repo tag; do
+            echo "$(date -d "$(docker inspect -f '{{.Created}}' "$id")" +%s) $repo $tag"
+        done
+    '''.stripIndent())
+
+    def imagesToRemove = selectStaleOfficeImagesToRemove(listing)
+    if (imagesToRemove) {
+        sh script: "docker rmi ${imagesToRemove.join(' ')}", returnStatus: true
+    }
+}
+
+/**
+ * Decide which office images to prune from the listing gathered by {@link #pruneStaleOfficeDockerImages()}.
+ *
+ * @param listing the cutoff epoch (seconds) on the first line, then one "<createdEpochSeconds> <repository> <tag>"
+ *        line per image
+ * @return the "<repository>:<tag>" references to delete: for each repository we keep only the most recently created
+ *         image, and even that one is dropped when it is older than the cutoff (its branch is assumed inactive)
+ */
+@NonCPS
+private def selectStaleOfficeImagesToRemove(String listing)
+{
+    def lines = listing.trim().readLines()
+    // Nothing but the cutoff line means there are no office images.
+    if (lines.size() <= 1) {
+        return []
+    }
+
+    long cutoff = lines[0] as long
+
+    // Parse the images and sort them newest-first, so the first image seen for a given repository is the one we keep.
+    def images = lines.drop(1).collect { line ->
+        def (created, repo, tag) = line.split(' ')
+        [created: created as long, repo: repo, tag: tag]
+    }.sort { a, b -> b.created <=> a.created }
+
+    def keptRepos = new HashSet<String>()
+    def toRemove = []
+    for (image in images) {
+        // keptRepos.add() returns false when the repository was already seen, i.e. when a newer image for it has
+        // already been kept and this older one is therefore superseded. The newest image of a repository is kept
+        // unless it is itself older than the cutoff.
+        if (!keptRepos.add(image.repo) || image.created < cutoff) {
+            toRemove << "${image.repo}:${image.tag}".toString()
+        }
+    }
+    return toRemove
 }
 
 private def containsNonFunctionalFailingTests(def failingTests)
