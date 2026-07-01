@@ -817,27 +817,20 @@ private def computeTargetDirectoryForTest(def caseResult, def targetDirectoryCac
         return
     }
 
-    // Resolving the target directory below requires exists() calls, which are round-trips to the build agent. Many
-    // failing tests share the same suite result file, so the resolution is cached by suite result file path to keep it
-    // to one resolution per suite instead of one per failing test.
+    // Many failing tests share the same suite result file, so the resolution is cached by suite result file path (the
+    // cache is shared with filterTestsExecutedByThisBuild(), whose exists() call is the actual remote round-trip) to
+    // keep it to one resolution per suite instead of one per failing test.
     if (targetDirectoryCache.containsKey(suiteResultFile)) {
         return targetDirectoryCache.get(suiteResultFile)
     }
 
-    // Compute the screenshot's location on the build agent.
+    // The target directory is the Maven build directory, i.e. the parent of the *-reports directory holding the JUnit
+    // XML file. This is where the XWiki docker test framework saves the "screenshots" directory (see
+    // DockerTestUtils#getScreenshotsDirectory), both for the main build (maven.build.dir unset, so ./target) and for
+    // the environment tests (maven.build.dir set to target/<configuration>).
     // Example of target folder path:
     //   /Users/vmassol/.jenkins/workspace/blog/application-blog-test/application-blog-test-tests/target
     def targetDirectory = createFilePath(suiteResultFile).getParent().getParent()
-
-    // When executing docker-based tests as part of the main build (ie with the default configuration), we use a
-    // subdirectory inside the target directory, and it's in it that we save the screenshots and videos. Thus we need
-    // to test for that directory's existence and if it exists, return it.
-    if (targetDirectory.exists()) {
-        def subDirectory = targetDirectory.child("hsqldb_embedded-default-default-jetty_standalone-default-firefox")
-        if (subDirectory.exists()) {
-            targetDirectory = subDirectory
-        }
-    }
 
     targetDirectoryCache.put(suiteResultFile, targetDirectory)
     return targetDirectory;
