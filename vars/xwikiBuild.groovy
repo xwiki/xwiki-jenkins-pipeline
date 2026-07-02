@@ -148,13 +148,10 @@ void call(name = 'Default', body)
         def dockerHubUserId = config.dockerHubUserId ?: 'xwikici'
         generateDockerConfig(dockerHubSecretId, dockerHubUserId)
 
-        // Force removal of unused docker containers, networks, dangling images older than 30 days (720h), and all
-        // unused volumes (volumes don't support age filtering) to avoid Docker taking more and more space over time due
-        // to leftovers (e.g. https://github.com/testcontainers/testcontainers-java/issues/5667
+        // Force removal of unused docker containers, networks, dangling images, volumes to avoid Docker taking more and
+        // more space over time due to leftovers (e.g. https://github.com/testcontainers/testcontainers-java/issues/5667
         // and https://github.com/testcontainers/testcontainers-java/issues/3558)
-        // Note: --volumes and --filter "until=..." are mutually exclusive in "docker system prune", hence 2 commands.
-        sh script: 'docker system prune -f --filter "until=720h"', returnStatus: true
-        sh script: 'docker volume prune -f', returnStatus: true
+        sh script: 'docker system prune --volumes -f', returnStatus: true
 
         // Display some environmental information that can be useful to debug some failures
         // Note: if the executables don't exist, this won't fail the step thanks to "returnStatus: true".
