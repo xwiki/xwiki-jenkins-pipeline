@@ -753,16 +753,19 @@ private def findScreenshotFileForPattern(def directoryFilePath, def failedTest, 
     // that ATM (i.e. what JUnit API to call to get it).
     def normalizedTestName = normalizeTestName(failedTest.name.toString())
 
-    // A test's screenshot is named "<class>-<test>...png", so we look for a *.png file whose name contains either the
-    // fully-qualified or the simple class name followed by "-<test>". We do this matching in memory against the
-    // directory's file names (listed once and cached, see listScreenshotFileNames) rather than running a remote glob
-    // listing per test, because each remote listing is a round-trip to the agent and the same directory is searched for
-    // many failing tests. Matching a "*<substring>*.png" glob is equivalent to a "*.png" name containing the substring.
+    // A test's screenshot is named "<class>-<test>[parameters].png" (the "[parameters]" part is optional), so we look
+    // for a *.png file whose name contains either the fully-qualified or the simple class name followed by "-<test>".
+    // We do this matching in memory against the directory's file names (listed once and cached, see
+    // listScreenshotFileNames) rather than running a remote glob listing per test, because each remote listing is a
+    // round-trip to the agent and the same directory is searched for many failing tests.
+    // Note that we can't simply test that the file name contains the "<class>-<test>" substring: a test whose name is a
+    // prefix of another (e.g. "testImportDocument" vs "testImportDocumentWithoutXClassInfo") would then match the other
+    // test's screenshot too. Hence matchesScreenshotName() requires the "<test>" part to be followed by a name boundary.
     def classNamePattern = "${failedTest.className}-${normalizedTestName}"
     def simpleNamePattern = "${failedTest.simpleName}-${normalizedTestName}"
     def matches = [] as Set
     for (def fileName : listScreenshotFileNames(directoryFilePath, directoryListingCache)) {
-        if (fileName.contains(classNamePattern) || fileName.contains(simpleNamePattern)) {
+        if (matchesScreenshotName(fileName, classNamePattern) || matchesScreenshotName(fileName, simpleNamePattern)) {
             matches.add(fileName)
         }
     }
@@ -778,6 +781,28 @@ private def findScreenshotFileForPattern(def directoryFilePath, def failedTest, 
         // reported once per test (and in batch) by the caller, see attachScreenshotToFailingTests().
         return null
     }
+}
+
+/**
+ * @return {@code true} when the passed screenshot file name matches the {@code <class>-<test>} pattern, i.e. it contains
+ *         the pattern followed by a name boundary (the {@code .png} extension or a {@code [parameters]} suffix) rather
+ *         than more test-name characters. Checking for a boundary (and not just for the substring) is what prevents a
+ *         test whose name is a prefix of another (e.g. {@code testImportDocument} vs
+ *         {@code testImportDocumentWithoutXClassInfo}) from matching the other test's screenshot.
+ */
+private def matchesScreenshotName(def fileName, def pattern)
+{
+    int index = fileName.indexOf(pattern)
+    while (index >= 0) {
+        int end = index + pattern.length()
+        // The test name has ended (the pattern is followed by a boundary) if there's nothing after it or the next
+        // character isn't a valid Java identifier character (i.e. it's the "." of ".png" or the "[" of "[parameters]").
+        if (end >= fileName.length() || !Character.isJavaIdentifierPart(fileName.charAt(end))) {
+            return true
+        }
+        index = fileName.indexOf(pattern, index + 1)
+    }
+    return false
 }
 
 /**
