@@ -148,9 +148,26 @@ void call(name = 'Default', body)
         def dockerHubUserId = config.dockerHubUserId ?: 'xwikici'
         generateDockerConfig(dockerHubSecretId, dockerHubUserId)
 
+        // Force removal of all Docker resources (containers, networks, volumes) created by Testcontainers. They are all
+        // labelled with "org.testcontainers=true", which allows removing them reliably. This is needed because the
+        // "docker system prune" below only removes *stopped* containers and *unused* volumes/networks: leftover
+        // Testcontainers containers that are still running (and the volumes still attached to them) would otherwise
+        // never be cleaned up and would accumulate over time (e.g.
+        // https://github.com/testcontainers/testcontainers-java/issues/5667 and
+        // https://github.com/testcontainers/testcontainers-java/issues/3558).
+        // Note: containers are removed first (with their anonymous volumes, "-v") so that the networks and named
+        // volumes they were using become free to be removed afterwards.
+        sh script: '''
+            containers=$(docker ps -aq --filter "label=org.testcontainers=true")
+            if [ -n "$containers" ]; then docker rm -f -v $containers; fi
+            networks=$(docker network ls -q --filter "label=org.testcontainers=true")
+            if [ -n "$networks" ]; then docker network rm $networks; fi
+            volumes=$(docker volume ls -q --filter "label=org.testcontainers=true")
+            if [ -n "$volumes" ]; then docker volume rm $volumes; fi
+        ''', returnStatus: true
+
         // Force removal of unused docker containers, networks, dangling images, volumes to avoid Docker taking more and
-        // more space over time due to leftovers (e.g. https://github.com/testcontainers/testcontainers-java/issues/5667
-        // and https://github.com/testcontainers/testcontainers-java/issues/3558)
+        // more space over time due to leftovers.
         sh script: 'docker system prune --volumes -f', returnStatus: true
 
         // Display some environmental information that can be useful to debug some failures
