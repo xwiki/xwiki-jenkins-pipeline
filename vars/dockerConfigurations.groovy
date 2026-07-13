@@ -129,7 +129,7 @@ def getLatestConfigurations(def xwikiVersion, def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
             'servletEngineTag' : versions.jetty.latest
-        ], 'filesystem', 'firefox', xwikiVersion
+        ], 's3', 'firefox', xwikiVersion
     )
 
     addConfiguration(
@@ -155,7 +155,9 @@ def getLatestConfigurations(def xwikiVersion, def versions)
             'jdbcVersion' : 'pom',
             'servletEngine' : 'jetty',
             'servletEngineTag' : versions.jetty.latest
-        ], 's3', 'firefox', xwikiVersion
+        // Use the filesystem blob store with Oracle: it's our most memory-hungry database and pairing it with the
+        // MinIO (S3) container overcommits the agent's RAM. S3 is still covered by the MariaDB and PostgreSQL configs.
+        ], 'filesystem', 'firefox', xwikiVersion
     )
 
     return configurations
