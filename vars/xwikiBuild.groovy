@@ -770,6 +770,14 @@ private def findScreenshotFileForPattern(def directoryFilePath, def failedTest, 
     // that ATM (i.e. what JUnit API to call to get it).
     def normalizedTestName = normalizeTestName(failedTest.name.toString())
 
+    // A parameterized test invocation is reported by JUnit/Jenkins with a bracketed index suffix, e.g.
+    // "livedataLivetableTableLayout(WikiReference, TestUtils, TestLocalReference)[2]". normalizeTestName() removes the
+    // "(...)" argument-type list but keeps the "[2]" index, whereas the Docker-based test framework names the
+    // screenshot with the index appended *without* brackets ("...-livedataLivetableTableLayout2.png"). Drop the
+    // brackets so the pattern matches the screenshot file name; without this, screenshots of parameterized tests are
+    // never attached (non-parameterized tests have no index suffix and are unaffected).
+    normalizedTestName = normalizedTestName.replaceAll(/[\[\]]/, '')
+
     // A test's screenshot is named "<class>-<test>[parameters].png" (the "[parameters]" part is optional), so we look
     // for a *.png file whose name contains either the fully-qualified or the simple class name followed by "-<test>".
     // We do this matching in memory against the directory's file names (listed once and cached, see
