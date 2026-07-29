@@ -20,6 +20,7 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 import hudson.FilePath
+import hudson.Util
 import hudson.util.IOUtils
 import javax.xml.bind.DatatypeConverter
 import hudson.tasks.test.AbstractTestResultAction
@@ -563,17 +564,19 @@ private def createFilePath(String path)
 }
 
 /**
- * Attach the screenshot of failing XWiki Selenium tests to failed test descriptions.
- * The screenshot is preserved after the workspace gets cleared by a new build.
+ * Attach the screenshot and the video of failing XWiki Selenium tests to failed test descriptions. They are linked from
+ * this build's archived artifacts (see the archiveArtifacts calls in the post build stage), so that they're preserved
+ * after the workspace gets cleared by a new build (for as long as the build's artifacts are kept).
  *
  * To make this script works the following needs to be setup on the Jenkins instance:
  * <ul>
  *   <li>Install the <a href="http://wiki.jenkins-ci.org/display/JENKINS/Groovy+Postbuild+Plugin">Groovy Postbuild
  *       plugin</a>. This exposes the "manager" variable needed by the script.</li>
  *   <li>Add the required security exceptions to http://<jenkins server ip>/scriptApproval/ if need be.</li>
- *   <li>Install the <a href="https://wiki.jenkins-ci.org/display/JENKINS/PegDown+Formatter+Plugin">Pegdown Formatter
- *       plugin</a> and set the description syntax to be Pegdown in the Global Security configuration
- *       (http://<jenkins server ip>/configureSecurity).</li>
+ *   <li>Set a description syntax that renders HTML in the Global Security configuration
+ *       (http://<jenkins server ip>/configureSecurity), i.e. either the "Safe HTML" formatter of the
+ *       <a href="https://plugins.jenkins.io/antisamy-markup-formatter/">OWASP Markup Formatter plugin</a> or Pegdown
+ *       from the <a href="https://plugins.jenkins.io/pegdown-formatter/">Pegdown Formatter plugin</a>.</li>
  * </ul>
  */
 private def attachScreenshotToFailingTests(def failingTests, def targetDirectoryCache)
@@ -583,8 +586,8 @@ private def attachScreenshotToFailingTests(def failingTests, def targetDirectory
     // to a small number of modules, so without caching the same handful of screenshot directories gets queried again
     // for every failing test, which can make this step take tens of minutes. These caches ensure each directory is
     // queried only once on the agent regardless of how many failing tests map to it:
-    // - directoryListingCache: maps a directory remote path to the list of *.png file names it contains (an empty list
-    //   when the directory doesn't exist).
+    // - directoryListingCache: maps a directory remote path and listing patterns to the screenshot and video files it
+    //   contains (an empty list when the directory doesn't exist), see listTestFiles().
     // - targetDirectoryCache: maps a JUnit suite result file path to its resolved target directory FilePath. It is
     //   passed in (and shared with filterTestsExecutedByThisBuild()) so the directories are resolved only once.
     def directoryListingCache = [:]
@@ -597,6 +600,20 @@ private def attachScreenshotToFailingTests(def failingTests, def targetDirectory
     // end, regardless of how many failing tests there are.
     def testsWithoutTargetDirectory = []
     def testsWithoutScreenshot = []
+    def testsWithNonArchivedScreenshot = []
+    def testsWithNonArchivedVideo = []
+
+    // Paths (relative to the archiving directory) of the screenshots that this method copied into the workspace and that
+    // thus still need to be archived, see copyFileToScreenshotsDirectory(). They are all archived with a single
+    // archiveArtifacts call at the end so that there's one pipeline step for them all, regardless of the number of
+    // failing tests (see the note above about step costs).
+    def screenshotsToArchive = []
+
+    // The screenshots and videos are linked from the build's archived artifacts, which Jenkins serves at
+    // "<build url>artifact/<path of the artifact relative to the directory it was archived from>". The archiving
+    // happens in the post build stage, in the current directory, hence this is the directory their paths must be made
+    // relative to. Computed once since pwd() is a pipeline step (see the note above about step costs).
+    def archivingDirectory = pwd()
 
     // Go through each failed test in the current build.
     for (def failedTest : failingTests) {
@@ -610,25 +627,74 @@ private def attachScreenshotToFailingTests(def failingTests, def targetDirectory
             testsWithoutTargetDirectory.add("${testClass}#${testName}")
             continue
         }
-        def imageAbsolutePath = findScreenshotFile(failedTest, targetDirectory, directoryListingCache)
+        // The XWiki docker test framework saves the video of a test next to its screenshot, with the same name and a
+        // ".flv" extension, but the two are looked up independently since a test can very well have one and not the
+        // other (e.g. when the video recording is disabled).
+        def imageAbsolutePath = findTestFile(failedTest, targetDirectory, directoryListingCache, '.png')
+        def videoAbsolutePath = findTestFile(failedTest, targetDirectory, directoryListingCache, '.flv')
 
-        // If a screenshot exists...
-        if (imageAbsolutePath) {
-            echoXWiki "Attaching screenshot to description: [${imageAbsolutePath}]"
+        // If a screenshot or a video exists...
+        if (imageAbsolutePath || videoAbsolutePath) {
+            echoXWiki "Attaching screenshot [${imageAbsolutePath}] and video [${videoAbsolutePath}] to description"
 
-            // Build a base64 string of the image's content.
-            def imageDataStream = imageAbsolutePath.read()
-            byte[] imageData = IOUtils.toByteArray(imageDataStream)
-            def imageDataString = "data:image/png;base64," + DatatypeConverter.printBase64Binary(imageData)
+            // Build a description HTML to be set for the failing test that displays the screenshot and links to the
+            // screenshot and to the video in this build's archived artifacts.
+            // Note: we used to embed the image content in the description as a "data:" URI instead. This doesn't work
+            // with the "Safe HTML" description syntax (OWASP Markup Formatter plugin): Jenkins renders descriptions
+            // through the configured markup formatter and that formatter only allows the http(s) protocols in "src"
+            // and "href" attributes. It thus removes the "data:" URIs and then the <img>/<a> tags that have become
+            // attribute-less, leaving a "Screenshot" title with no image below it. An artifact URL renders with both
+            // that syntax and Pegdown, and it also keeps the descriptions (and thus the build's junitResult.xml in
+            // which they are saved) small since a base64-encoded screenshot used to be inlined twice per failing test.
+            def description = ''
+
+            if (imageAbsolutePath) {
+                def imageSource = computeArchivedArtifactUrl(imageAbsolutePath, archivingDirectory)
+                if (!imageSource) {
+                    // The screenshot is not among this build's artifacts because it's not in a directory matched by the
+                    // archiving pattern. This happens for the screenshots that the legacy (non-docker) test framework
+                    // saves in the temporary directory, so we copy them next to the other screenshots and archive them
+                    // below, which is the only way to have an URL to link to them.
+                    def copiedImagePath = copyFileToScreenshotsDirectory(imageAbsolutePath, targetDirectory)
+                    if (copiedImagePath) {
+                        imageSource = computeArchivedArtifactUrl(copiedImagePath, archivingDirectory)
+                        def artifactPath = computeArchivedArtifactPath(copiedImagePath, archivingDirectory)
+                        if (artifactPath) {
+                            screenshotsToArchive.add(artifactPath)
+                        }
+                    }
+                }
+                if (!imageSource) {
+                    // We failed to make the screenshot available as an artifact, fall back to embedding its content.
+                    // Note that such an image is only displayed by Jenkins when the description syntax is Pegdown (see
+                    // above).
+                    imageSource = computeImageDataURI(imageAbsolutePath)
+                    testsWithNonArchivedScreenshot.add("${testClass}#${testName}")
+                }
+                // The image is also a link to itself so that it can be opened at full size. The "alt" text is what's
+                // displayed if the image cannot be loaded (e.g. because the build's artifacts have been discarded).
+                description += """<h3>Screenshot</h3><a href="${imageSource}" target="_blank"><img """ +
+                    """style="width: 800px" alt="Screenshot of the failing test" src="${imageSource}" /></a>"""
+            }
+
+            if (videoAbsolutePath) {
+                // Contrary to the screenshot, the video is only linked and never embedded: browsers cannot play these
+                // Flash videos (they need to be downloaded and opened in a video player), and embedding a video's
+                // content in a description would make it huge.
+                def videoUrl = computeArchivedArtifactUrl(videoAbsolutePath, archivingDirectory)
+                if (videoUrl) {
+                    description += """<h3>Video</h3><a href="${videoUrl}">${videoAbsolutePath.name}</a>"""
+                } else {
+                    testsWithNonArchivedVideo.add("${testClass}#${testName}")
+                }
+            }
+            description = description.toString()
 
             def testResultAction = failedTest.getParentAction()
 
-            // Build a description HTML to be set for the failing test that includes the image in Data URI format.
-            def imgText = """<img style="width: 800px" src="${imageDataString}" />"""
-            def description = """<h3>Screenshot</h3><a href="${imageDataString}">${imgText}</a>"""
-
-            // Only modify the description if the test page hasn't been modified already
-            if (!description.equals(testResultAction.getDescription(failedTest))) {
+            // Only modify the description if we have something to display in it (this is not the case when the only
+            // file found is a video that isn't archived) and if the test page hasn't been modified already.
+            if (description && !description.equals(testResultAction.getDescription(failedTest))) {
                 // Set the description to the failing test and save it to disk.
                 testResultAction.setDescription(failedTest, description)
                 // Clear potentially problematic non-serializable object reference, after we've used it.
@@ -641,15 +707,116 @@ private def attachScreenshotToFailingTests(def failingTests, def targetDirectory
         }
     }
 
+    // Archive the screenshots that were copied into the workspace above, so that the URLs used in the descriptions point
+    // to an existing artifact.
+    if (screenshotsToArchive) {
+        echoXWiki "Archiving ${screenshotsToArchive.size()} screenshot(s) saved outside the workspace: " +
+            "${screenshotsToArchive.join(', ')}"
+        archiveArtifacts artifacts: screenshotsToArchive.join(','), allowEmptyArchive: true
+    }
+
     // Emit the accumulated diagnostics with as few pipeline steps as possible (see the note at the top of this method).
     if (testsWithoutTargetDirectory) {
         echoXWiki "Failed to find target directory for ${testsWithoutTargetDirectory.size()} failing test(s): " +
             "${testsWithoutTargetDirectory.join(', ')}"
     }
     if (testsWithoutScreenshot) {
-        echoXWiki "No screenshot found on ${NODE_NAME} for ${testsWithoutScreenshot.size()} failing test(s): " +
-            "${testsWithoutScreenshot.join(', ')}"
+        echoXWiki "No screenshot nor video found on ${NODE_NAME} for ${testsWithoutScreenshot.size()} failing " +
+            "test(s): ${testsWithoutScreenshot.join(', ')}"
     }
+    if (testsWithNonArchivedScreenshot) {
+        echoXWiki "Failed to make the screenshot available as a build artifact for " +
+            "${testsWithNonArchivedScreenshot.size()} failing test(s), it will only be displayed if the description " +
+            "syntax is Pegdown: ${testsWithNonArchivedScreenshot.join(', ')}"
+    }
+    if (testsWithNonArchivedVideo) {
+        echoXWiki "The video is not archived as a build artifact for ${testsWithNonArchivedVideo.size()} failing " +
+            "test(s), it's not linked in their description: ${testsWithNonArchivedVideo.join(', ')}"
+    }
+}
+
+/**
+ * @return the URL at which the passed file can be fetched from this build's archived artifacts, or {@code null} when
+ *         the file is not among the archived artifacts (see {@link #computeArchivedArtifactPath}) or when no Jenkins URL
+ *         is configured (in which case no absolute URL can be built).
+ */
+private def computeArchivedArtifactUrl(def filePath, def archivingDirectory)
+{
+    def artifactPath = computeArchivedArtifactPath(filePath, archivingDirectory)
+    if (!artifactPath || !env.BUILD_URL) {
+        return null
+    }
+    // Each path segment is URL-encoded (but not the "/" separators) since a directory or test name can contain
+    // characters that are not valid in a URL. Note that Util.rawEncode leaves the characters that are valid in a URL
+    // path as they are, e.g. the "$" of the tests located in nested classes.
+    def encodedPath = artifactPath.split('/').collect { Util.rawEncode(it) }.join('/')
+    // Note: BUILD_URL ends with a "/".
+    return "${env.BUILD_URL}artifact/${encodedPath}".toString()
+}
+
+/**
+ * Copy the passed file to the "screenshots" directory of the passed Maven build directory, so that it can be archived as
+ * a build artifact (and thus linked in a test description). This is needed for the screenshots saved outside the
+ * workspace by the legacy (non-docker) test framework: it saves them in the temporary directory when the
+ * "screenshotDirectory" system property is not set, which is the case when the build activates the "docker" Maven
+ * profile (the property is set by a profile of the platform's pom that is then not active).
+ *
+ * @return the {@link FilePath} of the copy, or {@code null} when the copy failed
+ */
+private def copyFileToScreenshotsDirectory(def filePath, def targetDirectory)
+{
+    try {
+        def destinationFilePath = new FilePath(new FilePath(targetDirectory, 'screenshots'), filePath.name)
+        destinationFilePath.getParent().mkdirs()
+        filePath.copyTo(destinationFilePath)
+        return destinationFilePath
+    } catch (Exception e) {
+        echoXWiki "Failed to copy [${filePath}] to the screenshots directory of [${targetDirectory}]: ${e.message}"
+        return null
+    }
+}
+
+/**
+ * @return the path at which the passed file can be found in this build's archived artifacts, i.e. its path relative to
+ *         the directory it was archived from. Returns {@code null} when the file is not among the archived artifacts, in
+ *         which case there's no URL to link to it.
+ */
+@NonCPS
+private def computeArchivedArtifactPath(def filePath, def archivingDirectory)
+{
+    def prefix = archivingDirectory.endsWith('/') ? archivingDirectory : "${archivingDirectory}/"
+    def path = filePath.getRemote()
+    if (!path.startsWith(prefix)) {
+        // The file is not inside the directory the artifacts were archived from (e.g. a screenshot saved in the
+        // temporary directory), thus it's not archived.
+        return null
+    }
+    def relativePath = path.substring(prefix.length())
+
+    // The screenshots are archived with the '**/target/**/screenshots/*.png' pattern and the videos with the
+    // '**/target/**/*.flv' one, both excluding '**/node_modules/**' (see the post build stage).
+    if (!relativePath.contains('/target/') || relativePath.contains('/node_modules/')) {
+        return null
+    }
+    if (relativePath.endsWith('.png') && !relativePath.contains('/screenshots/')) {
+        // A screenshot saved outside a "screenshots" directory (e.g. in the legacy "selenium-screenshots" one) is not
+        // archived.
+        return null
+    }
+
+    return relativePath
+}
+
+/**
+ * @return the content of the passed image file as a "data:" URI, to be used as the source of an <img> tag. Note that
+ *         Jenkins only displays such an image when the description syntax is Pegdown (see
+ *         {@link #attachScreenshotToFailingTests}).
+ */
+private def computeImageDataURI(def imageFilePath)
+{
+    def imageDataStream = imageFilePath.read()
+    byte[] imageData = IOUtils.toByteArray(imageDataStream)
+    return "data:image/png;base64," + DatatypeConverter.printBase64Binary(imageData)
 }
 
 /**
@@ -725,7 +892,9 @@ private def attachMavenCommandToFailingTests(def failingTests, def buildName, de
 
     // Render the command once, in a copy/paste friendly block.
     def commandDescription = ("<h3>Maven command (build <tt>${buildName}</tt>)</h3>" +
-        "<pre style='white-space: pre-wrap; word-break: break-all'>${mavenCommand}</pre>").toString()
+        // Note: "word-wrap" is used rather than "word-break" because the latter is not part of the CSS properties
+        // allowed by the "Safe HTML" description syntax (OWASP Markup Formatter plugin), which drops it.
+        "<pre style='white-space: pre-wrap; word-wrap: break-word'>${mavenCommand}</pre>").toString()
 
     for (def failedTest : failingTests) {
         def testResultAction = failedTest.getParentAction()
@@ -746,24 +915,38 @@ private def attachMavenCommandToFailingTests(def failingTests, def buildName, de
     }
 }
 
-private def findScreenshotFile(def failedTest, def targetDirectory, def directoryListingCache)
+/**
+ * @param fileExtension the extension of the file to find for the passed test, i.e. {@code .png} for its screenshot or
+ *        {@code .flv} for its video (both are saved in the same directories, with the same name)
+ * @return the file of the passed test having the passed extension, or {@code null} if there's no such file
+ */
+private def findTestFile(def failedTest, def targetDirectory, def directoryListingCache, def fileExtension)
 {
-    // The screenshot can have several possible file names and locations, we check all.
-    // Selenium 1 test screenshots.
-    def imageAbsolutePath1 = new FilePath(targetDirectory, "selenium-screenshots")
-    // Selenium 2 test screenshots.
-    def imageAbsolutePath2 = new FilePath(targetDirectory, "screenshots")
-    // If screenshotDirectory system property is not defined we save screenshots in the tmp dir so we must also
-    // support this.
-    def imageAbsolutePath3 = createFilePath(System.getProperty("java.io.tmpdir"))
+    // The file can be in several locations inside the Maven build directory, depending on the version of the test
+    // framework that the built project depends on, so we search them all at once (a single listing per directory keeps
+    // the number of remote round-trips to the agent low, see listTestFiles):
+    // - "screenshots": where the docker-based test framework saves screenshots and videos (see
+    //   DockerTestUtils#getScreenshotsDirectory) and where the legacy (non-docker) framework saves screenshots when the
+    //   "screenshotDirectory" system property is set (see TestDebugger).
+    // - "<configuration>/screenshots": where the docker-based test framework saved them before XWIKI-24536 moved them
+    //   directly under the Maven build directory. This is still the case for the projects that depend on an older
+    //   version of the test framework (e.g. contrib extensions built against an older platform version), and their
+    //   screenshots wouldn't be found without this pattern (even though they are archived).
+    // - "selenium-screenshots": where the oldest Selenium 1 tests saved their screenshots.
+    def screenshotDirectories = ['screenshots', '*/screenshots', 'selenium-screenshots']
+    def includes = screenshotDirectories.collect { "${it}/*.png,${it}/*.flv" }.join(',')
 
-    // Determine which one exists, if any.
-    return findScreenshotFileForPattern(imageAbsolutePath1, failedTest, directoryListingCache) ?:
-        findScreenshotFileForPattern(imageAbsolutePath2, failedTest, directoryListingCache) ?:
-            findScreenshotFileForPattern(imageAbsolutePath3, failedTest, directoryListingCache)
+    // The legacy (non-docker) test framework saves screenshots in the temporary directory when the
+    // "screenshotDirectory" system property is not set, which is the case when the build activates the "docker" Maven
+    // profile (see copyFileToScreenshotsDirectory), so it needs to be searched too.
+    def temporaryDirectory = createFilePath(System.getProperty("java.io.tmpdir"))
+
+    return findTestFileForPattern(targetDirectory, includes, failedTest, directoryListingCache, fileExtension) ?:
+        findTestFileForPattern(temporaryDirectory, '*.png,*.flv', failedTest, directoryListingCache, fileExtension)
 }
 
-private def findScreenshotFileForPattern(def directoryFilePath, def failedTest, def directoryListingCache)
+private def findTestFileForPattern(def directoryFilePath, def includes, def failedTest, def directoryListingCache,
+    def fileExtension)
 {
     // Remove the serialized parameters from the test name FTM since we output failing test image names without it.
     // The best fix would be to modify the Docker-based test framework to add the parameters but I don't know how to do
@@ -778,28 +961,35 @@ private def findScreenshotFileForPattern(def directoryFilePath, def failedTest, 
     // never attached (non-parameterized tests have no index suffix and are unaffected).
     normalizedTestName = normalizedTestName.replaceAll(/[\[\]]/, '')
 
-    // A test's screenshot is named "<class>-<test>[parameters].png" (the "[parameters]" part is optional), so we look
-    // for a *.png file whose name contains either the fully-qualified or the simple class name followed by "-<test>".
-    // We do this matching in memory against the directory's file names (listed once and cached, see
-    // listScreenshotFileNames) rather than running a remote glob listing per test, because each remote listing is a
-    // round-trip to the agent and the same directory is searched for many failing tests.
+    // A test's screenshot is named "<class>-<test>[parameters].png" (the "[parameters]" part is optional) and its video
+    // has the same name with a ".flv" extension, so we look for a file having the passed extension and whose name
+    // contains either the fully-qualified or the simple class name followed by "-<test>".
+    // We do this matching in memory against the directory's listing (done once and cached, see listTestFiles) rather
+    // than running a remote glob listing per test, because each remote listing is a round-trip to the agent and the same
+    // directory is searched for many failing tests.
     // Note that we can't simply test that the file name contains the "<class>-<test>" substring: a test whose name is a
     // prefix of another (e.g. "testImportDocument" vs "testImportDocumentWithoutXClassInfo") would then match the other
     // test's screenshot too. Hence matchesScreenshotName() requires the "<test>" part to be followed by a name boundary.
     def classNamePattern = "${failedTest.className}-${normalizedTestName}"
     def simpleNamePattern = "${failedTest.simpleName}-${normalizedTestName}"
-    def matches = [] as Set
-    for (def fileName : listScreenshotFileNames(directoryFilePath, directoryListingCache)) {
-        if (matchesScreenshotName(fileName, classNamePattern) || matchesScreenshotName(fileName, simpleNamePattern)) {
-            matches.add(fileName)
+    // Keyed by file name so that the same file name found in two of the searched directories (i.e. the same screenshot
+    // saved by two versions of the test framework) counts as a single match.
+    def matches = [:]
+    for (def file : listTestFiles(directoryFilePath, includes, directoryListingCache)) {
+        def fileName = file.name
+        if (fileName.endsWith(fileExtension) && (matchesScreenshotName(fileName, classNamePattern)
+            || matchesScreenshotName(fileName, simpleNamePattern)))
+        {
+            matches.putIfAbsent(fileName, file)
         }
     }
 
     if (matches.size() > 1) {
-        echoXWiki "Found several matching screenshots which should not happen (something needs to be fixed): ${matches}"
+        echoXWiki "Found several matching [${fileExtension}] files which should not happen (something needs to be " +
+            "fixed): ${matches.keySet()}"
         return null
     } else if (matches.size() == 1) {
-        return directoryFilePath.child(matches.iterator().next())
+        return matches.values().iterator().next()
     } else {
         // Don't log anything here: this is called for every candidate directory of every failing test, and each
         // echoXWiki is a pipeline step that costs in the order of a second. The fact that no screenshot was found is
@@ -809,10 +999,10 @@ private def findScreenshotFileForPattern(def directoryFilePath, def failedTest, 
 }
 
 /**
- * @return {@code true} when the passed screenshot file name matches the {@code <class>-<test>} pattern, i.e. it contains
- *         the pattern followed by a name boundary (the {@code .png} extension or a {@code [parameters]} suffix) rather
- *         than more test-name characters. Checking for a boundary (and not just for the substring) is what prevents a
- *         test whose name is a prefix of another (e.g. {@code testImportDocument} vs
+ * @return {@code true} when the passed file name matches the {@code <class>-<test>} pattern, i.e. it contains the
+ *         pattern followed by a name boundary (the {@code .png} / {@code .flv} extension or a {@code [parameters]}
+ *         suffix) rather than more test-name characters. Checking for a boundary (and not just for the substring) is
+ *         what prevents a test whose name is a prefix of another (e.g. {@code testImportDocument} vs
  *         {@code testImportDocumentWithoutXClassInfo}) from matching the other test's screenshot.
  */
 private def matchesScreenshotName(def fileName, def pattern)
@@ -821,7 +1011,8 @@ private def matchesScreenshotName(def fileName, def pattern)
     while (index >= 0) {
         int end = index + pattern.length()
         // The test name has ended (the pattern is followed by a boundary) if there's nothing after it or the next
-        // character isn't a valid Java identifier character (i.e. it's the "." of ".png" or the "[" of "[parameters]").
+        // character isn't a valid Java identifier character (i.e. it's the "." of the extension or the "[" of
+        // "[parameters]").
         if (end >= fileName.length() || !Character.isJavaIdentifierPart(fileName.charAt(end))) {
             return true
         }
@@ -831,24 +1022,26 @@ private def matchesScreenshotName(def fileName, def pattern)
 }
 
 /**
- * @return the list of {@code *.png} file names directly inside the passed directory (an empty list when the directory
- *         doesn't exist). The result is cached by directory path because the listing is a remote round-trip to the
- *         build agent and the same directory is searched for the screenshots of many failing tests.
+ * @param includes the Ant-style patterns (comma-separated) of the files to list, relative to the passed directory
+ * @return the matching files (an empty list when the directory doesn't exist). The result is cached by directory path
+ *         and patterns because the listing is a remote round-trip to the build agent and the same directory is searched
+ *         for the screenshots and videos of many failing tests. All the patterns are passed in a single listing call
+ *         (Ant accepts a comma-separated list of patterns) to keep the number of round-trips as low as possible.
  */
-private def listScreenshotFileNames(def directoryFilePath, def directoryListingCache)
+private def listTestFiles(def directoryFilePath, def includes, def directoryListingCache)
 {
-    def cacheKey = directoryFilePath.remote
+    def cacheKey = "${directoryFilePath.remote}|${includes}"
     if (directoryListingCache.containsKey(cacheKey)) {
         return directoryListingCache.get(cacheKey)
     }
-    def fileNames = []
+    def files = []
     if (directoryFilePath.exists()) {
-        for (def file : directoryFilePath.list("*.png")) {
-            fileNames.add(file.name)
+        for (def file : directoryFilePath.list(includes)) {
+            files.add(file)
         }
     }
-    directoryListingCache.put(cacheKey, fileNames)
-    return fileNames
+    directoryListingCache.put(cacheKey, files)
+    return files
 }
 
 private def computeTargetDirectoryForTest(def caseResult, def targetDirectoryCache)

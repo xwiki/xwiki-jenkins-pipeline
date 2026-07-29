@@ -19,6 +19,7 @@
  */
 package org.xwiki.jenkins.pipeline;
 
+import java.io.File;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -28,8 +29,11 @@ import org.junit.jupiter.api.TestInstance;
 import com.lesfurets.jenkins.unit.BasePipelineTest;
 
 import groovy.lang.Script;
+import hudson.FilePath;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -55,5 +59,42 @@ class XWikiBuildTest extends BasePipelineTest
         assertNotNull(flickers);
         // Verify we get results (note that this will fail in case we fix all the flickering tests, yeah one can dream)
         assertTrue(flickers.size() > 0);
+    }
+
+    @Test
+    void computeArchivedArtifactPath()
+    {
+        Script script = loadScript("vars/xwikiBuild.groovy");
+
+        // A screenshot saved in a "screenshots" directory of a Maven build directory is archived by the pipeline, so its
+        // path relative to the directory the archiving was done from is returned (the URL encoding is done by
+        // computeArchivedArtifactUrl, this path is also used as an archiving pattern).
+        assertEquals("module/target/config/screenshots/db-firefox-org.xwiki.AllIT$NestedIT-verify1.png",
+            computeArchivedArtifactPath(script,
+                "/ws/module/target/config/screenshots/db-firefox-org.xwiki.AllIT$NestedIT-verify1.png", "/ws"));
+
+        // Videos are archived from anywhere inside a Maven build directory.
+        assertEquals("module/target/screenshots/db-firefox-org.xwiki.AllIT-verify.flv", computeArchivedArtifactPath(
+            script, "/ws/module/target/screenshots/db-firefox-org.xwiki.AllIT-verify.flv", "/ws"));
+
+        // A trailing separator on the archiving directory is supported.
+        assertEquals("module/target/screenshots/test.png",
+            computeArchivedArtifactPath(script, "/ws/module/target/screenshots/test.png", "/ws/"));
+
+        // Not archived, and thus no path: a file outside the directory the archiving was done from (e.g. a screenshot
+        // saved in the temporary directory)...
+        assertNull(computeArchivedArtifactPath(script, "/tmp/db-firefox-org.xwiki.AllIT-verify.png", "/ws"));
+        // ... a screenshot outside a "screenshots" directory (e.g. in the legacy "selenium-screenshots" one)...
+        assertNull(computeArchivedArtifactPath(script, "/ws/module/target/selenium-screenshots/test.png", "/ws"));
+        // ... a file outside a Maven build directory...
+        assertNull(computeArchivedArtifactPath(script, "/ws/module/screenshots/test.png", "/ws"));
+        // ... and a file inside a "node_modules" directory, which the archiving excludes.
+        assertNull(computeArchivedArtifactPath(script, "/ws/m/node_modules/n/target/screenshots/test.png", "/ws"));
+    }
+
+    private Object computeArchivedArtifactPath(Script script, String filePath, String archivingDirectory)
+    {
+        return script.invokeMethod("computeArchivedArtifactPath",
+            new Object[] { new FilePath(new File(filePath)), archivingDirectory });
     }
 }
