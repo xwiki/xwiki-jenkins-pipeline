@@ -31,17 +31,17 @@ def call(config)
         echoXWiki "Value of the xwiki.java.version property: ${javaVersion}"
         if (javaVersion.isNumber()) {
             // A Java version is explicitly indicated in the effective pom
-            if (config.sonar && javaVersion.toInteger() < 17) {
-                // Sonar required at least Java 17
-                echoXWiki "Sonar requires at least Java 17 so using it instead of to indicated version [${javaVersion}]"
-                javaVersion = '17'
+            if (config.sonar && javaVersion.toInteger() < 11) {
+                // Sonar Maven plugin requires at least Java 11
+                echoXWiki "The Sonar Maven plugin requires at least Java 11 so using it instead of the indicated version [${javaVersion}]"
+                javaVersion = '11'
             }
             javaTool = "java${javaVersion}"
         } else {
             // If no java version is indicated in the effective pom, try to deduce it from the parent version
             if (config.sonar) {
-                // Sonar requires Java 17+, and since the "official" Java version we use is now >= Java 17, let's use that.
-                javaTool = 'official'
+                // Sonar requires Java 11+, let's use that.
+                javaTool = '11'
             } else {
                 def pom = readMavenPom file: pomFile
                 javaTool = getJavaTool(pom)
