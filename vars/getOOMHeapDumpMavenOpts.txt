@@ -1,0 +1,4 @@
+the Maven options that make the JVM dump the heap on an {@code OutOfMemoryError}
+({@code -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=...}), or an empty string on agents without the shared
+Jenkins root. Must be called from within a {@code node} since it inspects the agent filesystem and creates the dump
+directory.
