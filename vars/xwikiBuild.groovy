@@ -376,8 +376,8 @@ void call(name = 'Default', body)
                     attachScreenshotToFailingTests(ownFailingTests, targetDirectoryCache)
 
                     // Attach the exact Maven command used, so it's easy to reproduce the failure locally. Done here, in
-                    // the same area as the GE links, rather than in checkForFlickers() because it must be scoped to this
-                    // build's own tests (the command is build-specific).
+                    // the same area as the Develocity link, rather than in checkForFlickers() because it must be
+                    // scoped to this build's own tests (the command is build-specific).
                     echoXWiki "Attaching the Maven command to this build's failing tests..."
                     attachMavenCommandToFailingTests(ownFailingTests, name, mavenCommand)
 
@@ -870,8 +870,8 @@ private def filterTestsExecutedByThisBuild(def failingTests, def targetDirectory
 
 /**
  * For each of the passed failing tests, attach the exact Maven command that was used to its test result description, so
- * that it's easy to reproduce the failure locally. The command is displayed in the same area as the Develocity (GE)
- * links added by {@link #checkForFlickers}.
+ * that it's easy to reproduce the failure locally. The command is displayed in the same area as the Develocity link
+ * added by {@link #checkForFlickers}.
  *
  * <p>The passed tests must be the ones that <em>this</em> build actually ran (see
  * {@link #filterTestsExecutedByThisBuild}): the command is build-specific, so attaching it to a test that a different
@@ -1131,14 +1131,10 @@ private def checkForFlickers(def failingTests, def ownFailingTests)
         // (since otherwise equals() will fail between a String and a GString)
         def normalizedTestName = normalizeTestName(testResult.name.toString())
         def testName = "${testResult.className}#${normalizedTestName}".toString()
-        def oldGEDomain = 'https://ge.xwiki.org'
-        def oldGEURLPrefix = "${oldGEDomain}/scans/tests?search.relativeStartTime=P90D&tests.container="
-        def oldGEFullURL = "${oldGEURLPrefix}${testResult.className}&tests.test=${normalizedTestName}"
-        def oldGEAnchor = "<a href='${oldGEFullURL}'>Old GE</a>"
-        def geDomain = 'https://community.develocity.cloud'
-        def geURLPrefix = "${geDomain}/scans/tests?search.relativeStartTime=P90D&tests.container="
-        def geFullURL = "${geURLPrefix}${testResult.className}&tests.test=${normalizedTestName}"
-        def geAnchor = "<a href='${geFullURL}'>New GE</a>"
+        def develocityDomain = 'https://community.develocity.cloud'
+        def develocityURLPrefix = "${develocityDomain}/scans/tests?search.relativeStartTime=P90D&tests.container="
+        def develocityFullURL = "${develocityURLPrefix}${testResult.className}&tests.test=${normalizedTestName}"
+        def develocityAnchor = "<a href='${develocityFullURL}'>Develocity</a>"
         def descriptionText
         if (knownFlickers.containsKey(testName)) {
             // Add the information that the test is a flicker to the test's description. Only display this
@@ -1147,7 +1143,7 @@ private def checkForFlickers(def failingTests, def ownFailingTests)
             // getFailingTests(). We haven't found a way to get the failing tests only for the current withMaven
             // execution).
             def jiraAnchor = "<a href='${knownFlickers.get(testName)}'>JIRA</a>"
-            def links = "${jiraAnchor}&nbsp;${geAnchor}&nbsp;${oldGEAnchor}"
+            def links = "${jiraAnchor}&nbsp;${develocityAnchor}"
             descriptionText =
               "<h3 style='color:red'>This is a flicker (<tt>${testName}</tt>): ${links}</h3>"
             foundFlickers.add(testName)
@@ -1156,11 +1152,10 @@ private def checkForFlickers(def failingTests, def ownFailingTests)
             // This is a real failing test, thus we'll need to send the notification email...
             containsOnlyFlickers = false
             // Add the information about the test to the test's description even if it's not considered a flicker.
-            // This can be useful to copy/paste the test reference to create a new JIRA or check GE to check if the
-            // test is actually a flicker.
-            def links = "${geAnchor}&nbsp;${oldGEAnchor}"
+            // This can be useful to copy/paste the test reference to create a new JIRA or check Develocity to see
+            // if the test is actually a flicker.
             descriptionText =
-                "<h3 style='color:red'>This is not a known flicker (<tt>${testName}</tt>): ${links}</h3>"
+                "<h3 style='color:red'>This is not a known flicker (<tt>${testName}</tt>): ${develocityAnchor}</h3>"
         }
         // Only mark tests that this build ran (see ownTests above); the classification above stays job-wide so that the
         // flicker summary and the returned "only flickers?" value keep their whole-job meaning.
