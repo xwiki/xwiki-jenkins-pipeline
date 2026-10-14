@@ -20,17 +20,25 @@
 package org.xwiki.jenkins.pipeline;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.lesfurets.jenkins.unit.BasePipelineTest;
+import com.lesfurets.jenkins.unit.MethodCall;
 
 import groovy.lang.Script;
 import hudson.FilePath;
 
+import static com.lesfurets.jenkins.unit.MethodSignature.method;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -44,6 +52,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class XWikiBuildTest extends BasePipelineTest
 {
+    private static final String HEAP_DUMP_DIRECTORY = "/ws@tmp/maven-heap-dumps";
+
     @BeforeAll
     public void setUp() throws Exception
     {
@@ -90,6 +100,76 @@ class XWikiBuildTest extends BasePipelineTest
         assertNull(computeArchivedArtifactPath(script, "/ws/module/screenshots/test.png", "/ws"));
         // ... and a file inside a "node_modules" directory, which the archiving excludes.
         assertNull(computeArchivedArtifactPath(script, "/ws/m/node_modules/n/target/screenshots/test.png", "/ws"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "master", "main", "stable-17.10.x" })
+    void archiveMavenHeapDumps(String branchName)
+    {
+        List<String> shellCommands = registerHeapDumpMethods(0);
+        Script script = loadScript("vars/xwikiBuild.groovy");
+
+        script.invokeMethod("archiveMavenHeapDumps", new Object[] { HEAP_DUMP_DIRECTORY, branchName });
+
+        // The dumps are compressed and moved to the workspace since archiveArtifacts only takes files from there.
+        assertEquals(List.of("gzip /ws@tmp/maven-heap-dumps/*.hprof && rm -rf maven-heap-dumps && mkdir "
+            + "maven-heap-dumps && mv /ws@tmp/maven-heap-dumps/*.hprof.gz maven-heap-dumps/"), shellCommands);
+        List<MethodCall> archiveCalls = getMethodCalls("archiveArtifacts");
+        assertEquals(1, archiveCalls.size());
+        assertEquals("maven-heap-dumps/*.hprof.gz", ((Map<?, ?>) archiveCalls.get(0).getArgs()[0]).get("artifacts"));
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = { "PR-1234", "feature-deploy-something" })
+    void archiveMavenHeapDumpsOnlyForMasterAndStableBranches(String branchName)
+    {
+        // There are dumps but they're not archived, to limit the disk space used.
+        List<String> shellCommands = registerHeapDumpMethods(0);
+        Script script = loadScript("vars/xwikiBuild.groovy");
+
+        script.invokeMethod("archiveMavenHeapDumps", new Object[] { HEAP_DUMP_DIRECTORY, branchName });
+
+        assertTrue(shellCommands.isEmpty());
+        assertTrue(getMethodCalls("archiveArtifacts").isEmpty());
+    }
+
+    @Test
+    void archiveMavenHeapDumpsWhenNoDump()
+    {
+        // The "ls" command fails when there's no dump.
+        List<String> shellCommands = registerHeapDumpMethods(2);
+        Script script = loadScript("vars/xwikiBuild.groovy");
+
+        script.invokeMethod("archiveMavenHeapDumps", new Object[] { HEAP_DUMP_DIRECTORY, "master" });
+        // No heap dump directory when the job configures its own heap dump options (see configureJavaTool).
+        script.invokeMethod("archiveMavenHeapDumps", new Object[] { null, "master" });
+
+        assertTrue(shellCommands.isEmpty());
+        assertTrue(getMethodCalls("archiveArtifacts").isEmpty());
+        assertEquals(1, getMethodCalls("sh").size());
+    }
+
+    private List<String> registerHeapDumpMethods(int lsExitCode)
+    {
+        getHelper().getCallStack().clear();
+        List<String> shellCommands = new ArrayList<>();
+        getHelper().registerAllowedMethod(method("echoXWiki", String.class), (Object arg) -> { });
+        getHelper().registerAllowedMethod(method("sh", Map.class), (Object arg) -> lsExitCode);
+        getHelper().registerAllowedMethod(method("sh", String.class), (Object command) -> {
+            shellCommands.add(String.valueOf(command));
+        });
+        getHelper().registerAllowedMethod(method("archiveArtifacts", Map.class), (Object arg) -> { });
+        // Same logic as the isMasterBranch library step, which isn't loaded by this test.
+        getHelper().registerAllowedMethod(method("isMasterBranch", String.class),
+            (Object branchName) -> "master".equals(branchName) || "main".equals(branchName));
+        return shellCommands;
+    }
+
+    private List<MethodCall> getMethodCalls(String methodName)
+    {
+        return getHelper().getCallStack().stream().filter(call -> call.getMethodName().equals(methodName))
+            .collect(Collectors.toList());
     }
 
     private Object computeArchivedArtifactPath(Script script, String filePath, String archivingDirectory)

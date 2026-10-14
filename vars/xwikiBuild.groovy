@@ -307,6 +307,7 @@ void call(name = 'Default', body)
                     // - Also don't send emails for process kills since it's an environment issue and not an XWiki
                     //   source problem (this happens when the exit code is 137).
                     displayDebugData()
+                    archiveMavenHeapDumps(javaMavenConfig.heapDumpDirectory, env['BRANCH_NAME'])
                     if (!e.getMessage()?.contains('exit code 143') && !e.getMessage()?.contains('exit code 137')
                         && !config.skipMail)
                     {
@@ -350,6 +351,10 @@ void call(name = 'Default', body)
             archiveArtifacts artifacts: '**/target/**/wcag-reports/wcag*.txt', excludes: '**/node_modules/**',
                 allowEmptyArchive: true
         }
+
+        // Save the heap dumps of the Maven JVM, if any. An OutOfMemoryError doesn't always fail the build (e.g. when
+        // it's thrown in a thread whose errors are ignored), so they need to be looked for here too.
+        archiveMavenHeapDumps(javaMavenConfig.heapDumpDirectory, env['BRANCH_NAME'])
 
         echoXWiki "Current build status after withMaven execution: ${currentBuild.result}"
 
@@ -420,6 +425,34 @@ private def containsNonFunctionalFailingTests(def failingTests)
 private def getPOMFile(def config)
 {
     return config.pom ?: 'pom.xml'
+}
+
+/**
+ * Archive the heap dumps written by the Maven JVM when it ran out of memory (see configureJavaTool()), if any, since
+ * they would be lost with the agent otherwise. A compressed dump is still hundreds of MB and is kept as long as its
+ * build, so the dumps are only archived for the master and stable branches, to limit the disk space used when many
+ * builds run out of memory (e.g. on pull request branches).
+ *
+ * @param heapDumpDirectory the directory where the Maven JVM writes its heap dumps, or null if it's not configured
+ * @param branchName the name of the branch being built, or null if the job isn't a multibranch one
+ */
+private def archiveMavenHeapDumps(def heapDumpDirectory, def branchName)
+{
+    if (heapDumpDirectory
+        && sh(script: "ls ${heapDumpDirectory}/*.hprof > /dev/null 2>&1", returnStatus: true) == 0)
+    {
+        if (branchName == null || !(isMasterBranch(branchName) || isStableBranch(branchName))) {
+            echoXWiki "Not archiving the Maven heap dumps found in ${heapDumpDirectory} since they're only archived " +
+                "for the master and stable branches"
+            return
+        }
+        echoXWiki "Archiving the Maven heap dumps found in ${heapDumpDirectory}"
+        // Compress the dumps since they're as big as the used heap and compress well. They're moved since
+        // archiveArtifacts only takes files from the workspace.
+        sh "gzip ${heapDumpDirectory}/*.hprof && rm -rf maven-heap-dumps && mkdir maven-heap-dumps " +
+            "&& mv ${heapDumpDirectory}/*.hprof.gz maven-heap-dumps/"
+        archiveArtifacts artifacts: 'maven-heap-dumps/*.hprof.gz', allowEmptyArchive: true
+    }
 }
 
 private def getMavenSystemProperties(config, nodeName)

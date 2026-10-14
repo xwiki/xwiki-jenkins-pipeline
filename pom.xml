@@ -26,6 +26,9 @@
   <packaging>pom</packaging>
   <version>1.0-SNAPSHOT</version>
   <description>Jenkins shared Pipeline libraries for XWiki's CI</description>
+  <properties>
+    <maven.compiler.release>11</maven.compiler.release>
+  </properties>
   <dependencyManagement>
     <dependencies>
       <dependency>
