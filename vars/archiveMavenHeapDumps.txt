@@ -1,0 +1,12 @@
+Archives the heap dumps written by the Maven JVM when it ran out of memory (see `configureJavaTool`), if any, as
+`maven-heap-dumps/<build name>/*.hprof.gz`. The dumps are only archived for the master and stable branches, to limit
+the disk space used. A failure to archive them is only logged.
+
+Parameters:
+
+* `heapDumpDirectory`: The directory where the Maven JVM writes its heap dumps (the `heapDumpDirectory` returned by
+  `configureJavaTool`), or null if it's not configured, in which case nothing is done
+* `branchName`: The name of the branch being built (e.g. `env['BRANCH_NAME']`), or null if the job isn't a multibranch
+  one
+* `buildName`: The name of the build (e.g. `'TestRelease'`), used to archive the dumps of each build of a job in a
+  separate directory

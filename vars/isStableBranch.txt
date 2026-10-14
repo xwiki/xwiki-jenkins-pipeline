@@ -1,0 +1,3 @@
+Returns:
+
+* True if the passed branch name is a stable branch (named "stable-*", e.g. "stable-17.10.x") or false otherwise
