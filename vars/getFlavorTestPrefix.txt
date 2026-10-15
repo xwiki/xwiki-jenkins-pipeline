@@ -1,0 +1,3 @@
+the repository-relative path prefix under which all the flavor functional-test modules live
+(e.g. {@code xwiki-platform-distribution/xwiki-platform-distribution-flavor/xwiki-platform-distribution-flavor-test}).
+Shared between the standard build and the environment-test build so the prefix is defined in a single place.
