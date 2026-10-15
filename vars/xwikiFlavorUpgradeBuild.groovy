@@ -66,9 +66,8 @@ void call(body)
             // off a compute-constrained pool such as the one running the docker matrix.
             node(config.label ?: '') {
                 xwikiBuild(buildName) {
-                    // Use the same heap as the other flavor functional tests, plus heap-dump options for post-mortem
-                    // debugging of OOMs.
-                    mavenOpts = "-Xmx2048m -Xms512m ${getOOMHeapDumpMavenOpts()}".trim()
+                    // Use the same heap as the other flavor functional tests.
+                    mavenOpts = '-Xmx2048m -Xms512m'
                     // Javadoc execution is on by default but we don't need it for the functional tests.
                     javadoc = false
                     goals = 'clean verify'
