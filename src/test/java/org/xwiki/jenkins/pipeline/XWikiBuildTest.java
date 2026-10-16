@@ -111,6 +111,34 @@ class XWikiBuildTest extends BasePipelineTest
     }
 
     @Test
+    void computeMavenGoals()
+    {
+        getHelper().registerAllowedMethod(method("isMasterBranch", String.class), (Object branch) -> false);
+        getHelper().registerAllowedMethod(method("isStableBranch", String.class), (Object branch) -> false);
+        getHelper().registerAllowedMethod(method("isFeatureDeploymentBranch", String.class), (Object branch) -> false);
+        Script script = loadScript("vars/xwikiBuild.groovy");
+        getBinding().setVariable("env", new HashMap<>(Map.of("BRANCH_NAME", "feature")));
+
+        Map<String, Object> config = new HashMap<>();
+        assertEquals("clean install", computeMavenGoals(script, config));
+        config.put("goals", "clean deploy");
+        assertEquals("clean deploy", computeMavenGoals(script, config));
+
+        // Asking for a SonarQube analysis adds the jacoco:report and sonar:sonar goals, to the default goals or to the
+        // configured ones...
+        config.put("sonar", true);
+        assertEquals("clean deploy jacoco:report sonar:sonar", computeMavenGoals(script, config));
+        config.remove("goals");
+        assertEquals("clean install jacoco:report sonar:sonar", computeMavenGoals(script, config));
+        // ... with the jacoco:report goal executed before the sonar:sonar one...
+        config.put("goals", "clean sonar:sonar install");
+        assertEquals("clean jacoco:report sonar:sonar install", computeMavenGoals(script, config));
+        // ... and without duplicating the goals already present.
+        config.put("goals", "jacoco:report sonar:sonar");
+        assertEquals("jacoco:report sonar:sonar", computeMavenGoals(script, config));
+    }
+
+    @Test
     void setPackagesVersion()
     {
         Map<String, String> files = new HashMap<>();
@@ -142,6 +170,11 @@ class XWikiBuildTest extends BasePipelineTest
         assertTrue(moduleContent.contains("\"version\": \"17.10.0-feature-SNAPSHOT\""), moduleContent);
         assertTrue(moduleContent.contains("\"name\": \"module\""), moduleContent);
         assertTrue(messages.isEmpty(), messages.toString());
+    }
+
+    private String computeMavenGoals(Script script, Map<String, Object> config)
+    {
+        return String.valueOf(script.invokeMethod("computeMavenGoals", new Object[] { config }));
     }
 
     private Object computeArchivedArtifactPath(Script script, String filePath, String archivingDirectory)

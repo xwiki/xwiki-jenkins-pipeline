@@ -556,6 +556,18 @@ private def computeMavenGoals(config)
         }
         goals = "clean ${goals}"
     }
+    if (config.sonar) {
+        // Asking for a SonarQube analysis (sonar = true) requires the sonar:sonar goal, without which there would be
+        // no analysis for the quality gate check to wait for.
+        if (!goals.contains('sonar:sonar')) {
+            goals = "${goals} sonar:sonar"
+        }
+        // SonarQube gets the coverage from the target/site/jacoco/jacoco.xml file of each module, which is generated
+        // by the jacoco:report goal, and thus it must be executed before the sonar:sonar one.
+        if (!goals.contains('jacoco:report')) {
+            goals = goals.replaceFirst('sonar:sonar', 'jacoco:report sonar:sonar')
+        }
+    }
     return goals
 }
 

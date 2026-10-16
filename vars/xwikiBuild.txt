@@ -50,6 +50,10 @@ The following options are available:
 * `daysToKeepStr` = if specified, build records are only kept up to this number of days. The value must be a String.
 * `monthlyTrigger` = by default projects are built at least once a month because SNAPSHOT older than one month are
 deleted by the Nexus scheduler, but it's possible to disable it by setting `monthlyTrigger` to `false`
+* `sonar` = `true` (default is `false`). If true, run a SonarQube analysis and fail the build when the SonarQube
+  quality gate is not met. The `sonar:sonar` goal is added to the Maven goals when missing, preceded by the
+  `jacoco:report` one (when missing too) so that the analysis gets the test coverage. Automatically set to `true` when
+  `goals` contains `sonar:sonar`.
 * `javadoc` = false (`true` by default). If true build and validate the javadoc.
 * `dockerHubSecretId` = `secretId` (by default it's `xwikici`). Id of the text secret defined in Jenkins that contains
   the Personal Access Token (PAT) for the `dockerHubUserId` user id on DockerHub. This is used to log into DockerHub
