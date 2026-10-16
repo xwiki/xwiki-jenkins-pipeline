@@ -295,6 +295,10 @@ void call(name = 'Default', body)
                     e.printStackTrace(pw);
                     echoXWiki "[DEBUG] Cause for the timeout:\n${sw.toString()}"
                     displayDebugData()
+                    // A JVM running out of memory can spend its time in GC until the timeout instead of failing.
+                    // Archive the dumps before restoring the interrupt flag, since the steps would be interrupted
+                    // otherwise.
+                    archiveHeapDumps(javaMavenConfig, name)
                     Thread.currentThread().interrupt();
                     // Note: Don't send email on an interrupted build.
                 } catch (Exception e) {
@@ -307,7 +311,7 @@ void call(name = 'Default', body)
                     // - Also don't send emails for process kills since it's an environment issue and not an XWiki
                     //   source problem (this happens when the exit code is 137).
                     displayDebugData()
-                    archiveMavenHeapDumps(javaMavenConfig.heapDumpDirectory, env['BRANCH_NAME'], name)
+                    archiveHeapDumps(javaMavenConfig, name)
                     if (!e.getMessage()?.contains('exit code 143') && !e.getMessage()?.contains('exit code 137')
                         && !config.skipMail)
                     {
@@ -354,7 +358,7 @@ void call(name = 'Default', body)
 
         // Save the heap dumps of the Maven JVM, if any. An OutOfMemoryError doesn't always fail the build (e.g. when
         // it's thrown in a thread whose errors are ignored), so they need to be looked for here too.
-        archiveMavenHeapDumps(javaMavenConfig.heapDumpDirectory, env['BRANCH_NAME'], name)
+        archiveHeapDumps(javaMavenConfig, name)
 
         echoXWiki "Current build status after withMaven execution: ${currentBuild.result}"
 
@@ -532,7 +536,7 @@ private def computeMavenGoals(config)
         // This is to avoid having branches with the same version in pom.xml, polluting the maven snapshot repo,
         // overwriting one another.
         def branchName = env['BRANCH_NAME']
-        if (branchName != null && (isMasterBranch(branchName) || isStableBranch(branchName) || isFeatureDeploymentBranch(branchName))) {
+        if (isMasterBranch(branchName) || isStableBranch(branchName) || isFeatureDeploymentBranch(branchName)) {
             goals = "deploy"
         } else {
             goals = "install"
@@ -546,7 +550,15 @@ private def computeMavenGoals(config)
  * Test if a branch is about a feature that needs to be deployed, and not just installed.
  */
 private def isFeatureDeploymentBranch(def branchName) {
-    return branchName.startsWith('feature-deploy-');
+    return branchName?.startsWith('feature-deploy-') ?: false
+}
+
+/**
+ * Archive the heap dumps of the Maven JVM of the passed build, if any (see archiveMavenHeapDumps).
+ */
+private void archiveHeapDumps(javaMavenConfig, name)
+{
+    archiveMavenHeapDumps(javaMavenConfig.heapDumpDirectory, env['BRANCH_NAME'], name)
 }
 
 /**

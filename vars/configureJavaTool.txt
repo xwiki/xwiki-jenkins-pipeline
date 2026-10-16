@@ -9,5 +9,7 @@ Parameters:
 Whether `mavenOpts` is specified or not, some options are always added, unless already present:
 
 * `-XX:+HeapDumpOnOutOfMemoryError` with a dump directory outside the workspace, returned as `heapDumpDirectory` so
-  that `xwikiBuild` archives the dumps (see `archiveMavenHeapDumps`)
-* `-XX:GCLockerRetryAllocationCount=100` for `java17` and `java21`, to avoid spurious `OutOfMemoryError`s
+  that the caller can archive the dumps (see `archiveMavenHeapDumps`). When `mavenOpts` already contains
+  `HeapDumpOnOutOfMemoryError`, no `heapDumpDirectory` is returned
+* `-XX:GCLockerRetryAllocationCount=100` for `java8`, `java11`, `java17` and `java21`, to avoid spurious
+  `OutOfMemoryError`s

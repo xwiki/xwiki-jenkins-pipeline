@@ -98,11 +98,14 @@ class ArchiveMavenHeapDumpsTest extends BasePipelineTest
     @ValueSource(strings = { "PR-1234", "feature-deploy-something" })
     void archiveOnlyForMasterAndStableBranches(String branchName)
     {
-        // There are dumps but they're not archived, to limit the disk space used.
+        // There are dumps but they're not archived, to limit the disk space used, and they're deleted to free the disk
+        // space of the agent.
         archiveMavenHeapDumps(HEAP_DUMP_DIRECTORY, branchName, "Main");
 
-        assertTrue(this.shellCommands.isEmpty());
+        assertEquals(List.of("rm -f /ws@tmp/maven-heap-dumps/*.hprof"), this.shellCommands);
         assertTrue(getMethodCalls("archiveArtifacts").isEmpty());
+        assertEquals(List.of("Deleting the Maven heap dumps found in /ws@tmp/maven-heap-dumps since they're only "
+            + "archived for the master and stable branches"), this.messages);
     }
 
     @Test
@@ -111,12 +114,21 @@ class ArchiveMavenHeapDumpsTest extends BasePipelineTest
         this.lsExitCode = 2;
 
         archiveMavenHeapDumps(HEAP_DUMP_DIRECTORY, "master", "Main");
-        // No heap dump directory when the job configures its own heap dump options (see configureJavaTool).
-        archiveMavenHeapDumps(null, "master", "Main");
 
         assertTrue(this.shellCommands.isEmpty());
         assertTrue(getMethodCalls("archiveArtifacts").isEmpty());
-        assertEquals(1, getMethodCalls("sh").size());
+        assertTrue(this.messages.isEmpty());
+    }
+
+    @Test
+    void archiveWhenNoHeapDumpDirectory()
+    {
+        // No heap dump directory when the job configures its own heap dump options (see configureJavaTool), in which
+        // case the dumps aren't even looked for.
+        archiveMavenHeapDumps(null, "master", "Main");
+
+        assertTrue(getMethodCalls("sh").isEmpty());
+        assertTrue(getMethodCalls("archiveArtifacts").isEmpty());
     }
 
     @Test

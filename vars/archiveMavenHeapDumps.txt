@@ -1,6 +1,6 @@
 Archives the heap dumps written by the Maven JVM when it ran out of memory (see `configureJavaTool`), if any, as
 `maven-heap-dumps/<build name>/*.hprof.gz`. The dumps are only archived for the master and stable branches, to limit
-the disk space used. A failure to archive them is only logged.
+the disk space used, and deleted otherwise. A failure to archive them is only logged.
 
 Parameters:
 

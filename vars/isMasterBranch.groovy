@@ -25,5 +25,5 @@ def call(branchName)
     // Note: We support both "master" and "main" as valid names for the master branch because GitHub has changed the
     // default branch name from "master" to "main" and we need to support both old repos (created with "master") and
     // new ones (created with "main").
-    return branchName.equals("master") || branchName.equals("main")
+    return "master".equals(branchName) || "main".equals(branchName)
 }

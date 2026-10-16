@@ -24,7 +24,8 @@
  * Archive the heap dumps written by the Maven JVM when it ran out of memory (see configureJavaTool()), if any, since
  * they would be lost with the agent otherwise. A compressed dump is still hundreds of MB and is kept as long as its
  * build, so the dumps are only archived for the master and stable branches, to limit the disk space used when many
- * builds run out of memory (e.g. on pull request branches).
+ * builds run out of memory (e.g. on pull request branches). The dumps that aren't archived are deleted, to free the
+ * disk space of the agent.
  *
  * @param heapDumpDirectory the directory where the Maven JVM writes its heap dumps, or null if it's not configured
  * @param branchName the name of the branch being built, or null if the job isn't a multibranch one
@@ -50,9 +51,10 @@ private def archive(heapDumpDirectory, branchName, buildName)
     if (heapDumpDirectory
         && sh(script: "ls ${heapDumpDirectory}/*.hprof > /dev/null 2>&1", returnStatus: true) == 0)
     {
-        if (branchName == null || !(isMasterBranch(branchName) || isStableBranch(branchName))) {
-            echoXWiki "Not archiving the Maven heap dumps found in ${heapDumpDirectory} since they're only archived " +
-                "for the master and stable branches"
+        if (!isMasterBranch(branchName) && !isStableBranch(branchName)) {
+            echoXWiki "Deleting the Maven heap dumps found in ${heapDumpDirectory} since they're only archived for " +
+                "the master and stable branches"
+            sh "rm -f ${heapDumpDirectory}/*.hprof"
             return
         }
         // The dumps are named after the PID of the JVM (java_pid<N>.hprof), so they're archived in a directory named

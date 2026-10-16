@@ -41,7 +41,7 @@ def call(config)
             // If no java version is indicated in the effective pom, try to deduce it from the parent version
             if (config.sonar) {
                 // Sonar requires Java 11+, let's use that.
-                javaTool = '11'
+                javaTool = 'java11'
             } else {
                 def pom = readMavenPom file: pomFile
                 javaTool = getJavaTool(pom)
@@ -78,8 +78,8 @@ def call(config)
     mavenOpts = "${mavenOpts} -Daether.connector.http.retryHandler.serviceUnavailable=429,500,503,502 -Daether.connector.http.retryHandler.count=10 -Daether.connector.http.retryHandler.intervalMax=600000"
 
     // Dump the heap of the Maven JVM when it runs out of memory, so that the cause can be analyzed. The dump is written
-    // outside the workspace (so that it's not mixed with the build files) and archived by xwikiBuild since the agents
-    // are ephemeral. The JVM only writes the dump when the directory exists.
+    // outside the workspace (so that it's not mixed with the build files) and must be archived by the caller (see
+    // archiveMavenHeapDumps) since the agents are ephemeral. The JVM only writes the dump when the directory exists.
     // Note: no quotes around the path since MAVEN_OPTS is expanded unquoted by the mvn script, which would keep them.
     if (!mavenOpts.contains('HeapDumpOnOutOfMemoryError')) {
         def heapDumpDirectory = "${pwd(tmp: true)}/maven-heap-dumps"
@@ -88,12 +88,13 @@ def call(config)
         results.heapDumpDirectory = heapDumpDirectory
     }
 
-    // On Java 17 and 21, G1 throws an OutOfMemoryError after only 2 failed attempts to allocate while another thread
+    // Up to Java 21, the JVM throws an OutOfMemoryError after only 2 failed attempts to allocate while another thread
     // is in a JNI critical region (e.g. java.util.zip compressing an archive), even when a GC could free enough
     // memory. The console log then shows "Retried waiting for GCLocker too often" just before the "Java heap space"
-    // error. Retrying more avoids these spurious errors. Java 22+ doesn't have the problem (G1 pins regions instead,
-    // see JEP 423) and Java 25 refuses to start with this option, hence the restriction to these versions.
-    if ((javaTool == 'java17' || javaTool == 'java21') && !mavenOpts.contains('GCLockerRetryAllocationCount')) {
+    // error. Retrying more avoids these spurious errors. Java 7 doesn't know this option, Java 22+ doesn't have the
+    // problem (G1 pins regions instead, see JEP 423) and Java 25 refuses to start with this option, hence the
+    // restriction to these versions. The "official" Java tool isn't included since its version isn't known here.
+    if (javaTool in ['java8', 'java11', 'java17', 'java21'] && !mavenOpts.contains('GCLockerRetryAllocationCount')) {
         mavenOpts = "${mavenOpts} -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"
     }
 
