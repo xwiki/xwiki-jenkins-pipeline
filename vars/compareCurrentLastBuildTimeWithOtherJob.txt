@@ -6,7 +6,7 @@ Parameters:
 
 Returns:
 
-* A long value which is the difference between the time (in millis) of the other job's last completed build and the
-  current build's last completed build
-* or null if an error happened (no job exists for the passed name, no last completion)
+* A long value which is the difference between the finish time (in millis) of the other job's last completed build and
+  the start time of the current job's previous build
+* or null if an error happened (no job exists for the passed name, no last completed build, no previous build)
 

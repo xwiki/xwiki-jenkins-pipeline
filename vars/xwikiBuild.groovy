@@ -32,9 +32,10 @@ import groovy.json.JsonSlurper
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
 //
 // - Configure Global tools:
-//   - One named 'Maven' for Maven,
-//   - One named 'java7' for Java 7
-//   - One named 'official' for Java 8
+//   - One JDK per supported Java version, named 'java<version>' (e.g. 'java17', 'java21'), and one named 'official'
+//     for the default Java version (see configureJavaTool)
+//   - Optionally one for Maven, only needed when the 'mavenTool' configuration property is used (by default the mvn
+//     executable installed on the agent is used)
 // - Configure a Global Pipeline library
 //   - Name: 'XWiki'
 //   - Version: 'master'
@@ -46,9 +47,12 @@ import groovy.json.JsonSlurper
 //   - XVnc plugin. You'll also need to have the "vncserver" executable available in the path
 //   - Email Extension plugin (provides emailext() API)
 //   - Build Timeout plugin (provides timeout() API)
-//   - Pipeline Utility Steps plugin (provides readMavenPom() API)
+//   - Pipeline Utility Steps plugin (provides readMavenPom() and findFiles() APIs)
 //   - Pipeline Maven Integration plugin (provides withMaven() API)
 //   - Groovy Post Build plugin (provides the 'manager' variable)
+//   - Badge plugin (provides the badges and summaries added through the 'manager' variable)
+//   - JUnit plugin (provides the test results)
+//   - SonarQube Scanner plugin (provides withSonarQubeEnv() and waitForQualityGate() APIs)
 
 /**
  * @param name a string representing the current build
@@ -184,13 +188,10 @@ void call(name = 'Default', body)
         // Execute the XVNC plugin (useful for integration-tests)
         wrapInXvnc(config) {
             // Execute the Maven build.
-            // Note that withMaven() will also perform some post build steps:
+            // Note that withMaven() will also perform some post build steps, such as:
             // - Archive and fingerprint generated Maven artifacts and Maven attached artifacts (if archiveArtifacts
-            //   is set to true, see above)
+            //   is set to true, see below)
             // - Publish JUnit / Surefire reports (if the Jenkins JUnit Plugin is installed)
-            // - Publish Findbugs reports (if the Jenkins FindBugs Plugin is installed)
-            // - Publish a report of the tasks ("FIXME" and "TODO") found in the java source code
-            //   (if the Jenkins Tasks Scanner Plugin is installed)
             echoXWiki "Using Java tool: ${javaMavenConfig.jdk}"
             echoXWiki "Using Maven tool: ${mavenTool ?: 'None, using pre-installed mvn executable on host'}"
             echoXWiki "Using Maven options: ${javaMavenConfig.mavenOpts}"
@@ -429,11 +430,24 @@ private def isMonthlyTriggerEnabled(config)
 private def containsNonFunctionalFailingTests(def failingTests)
 {
     for (failingTest in failingTests) {
-        if (!failingTest.className.contains("IT")) {
+        if (!isFunctionalTestClass(failingTest.className)) {
             return true
         }
     }
     return false
+}
+
+/**
+ * @param className the fully qualified name of a test class, possibly a nested class (e.g.
+ *        {@code org.xwiki.menu.test.ui.AllIT$NestedMenuIT})
+ * @return true if the passed test class is a functional test, i.e. if its top level class name ends with {@code IT}
+ *         (e.g. {@code MenuIT}) or {@code ITs} (e.g. {@code AllITs}, the test suites of the legacy functional tests)
+ */
+@NonCPS
+private def isFunctionalTestClass(def className)
+{
+    def topLevelClassName = className.substring(className.lastIndexOf('.') + 1).tokenize('$')[0]
+    return topLevelClassName.endsWith('IT') || topLevelClassName.endsWith('ITs')
 }
 
 private def getPOMFile(def config)

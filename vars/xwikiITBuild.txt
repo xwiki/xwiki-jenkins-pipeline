@@ -1,0 +1,27 @@
+Execute the integration tests (functional tests included) of the passed Maven modules, grouping several modules per
+build, each build being executed on its own agent.
+
+Example usage:
+
+```
+xwikiITBuild {
+  modules = itModules()
+}
+```
+
+The following options are available:
+
+* `modules`: The list of paths of the Maven modules to test (e.g. the path of the
+  `xwiki-platform-administration-test-tests` module, see `itModules` to find them all).
+* `batchSize` = `2` (default is `4`). The number of modules to test in the same build (i.e. on the same agent).
+* `jobProperties` = `[parameters([string(defaultValue: 'standard', description: 'Job type', name: 'type')])]`. Sets
+  properties that will be merged (and take precedence when on the same content) with the default ones. This allows
+  adding some crons, parameters, etc.
+* `skipMail` = `true` (default is `false`). If true then don't send emails when the job or tests fail.
+* `label` = `docker` (by default any agent is used). If specified will use that label to identify on which node to
+  execute the builds.
+
+Notes:
+
+* The builds are executed in parallel, unless `false` is passed as the first parameter (e.g.
+  `xwikiITBuild(false) { ... }`).

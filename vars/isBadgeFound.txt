@@ -1,10 +1,9 @@
-Verify if the passed raw build has a badge matching the passed text and return true if it does.
+Verify if the current build has a badge containing the passed text and return true if it does.
 
 Parameters:
 
-* `rawBuild`: The Jenkins raw build (e.g. `currentBuild.getRawBuild()`)
-* `badgetText`: The badge text to look for (e.g. `Docker Build`)
+* `badgeText`: The badge text to look for (e.g. `Docker Build`)
 
 Returns:
 
-* True if the passed raw build has a badge matching the passed text, false otherwise
+* True if the current build has a badge containing the passed text, false otherwise

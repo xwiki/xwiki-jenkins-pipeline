@@ -1,3 +1,4 @@
-the list of Maven module paths having integration tests, found in the current directory and sub directories.
-We will return all modules ending in {@code -test-tests} and {@code -test-docker}
-(e.g. {@code xwiki-platform-administration-test-tests} and {@code xwiki-platform-administration-test-docker}).
+The list of Maven module paths having integration tests, found in the current directory and sub directories.
+We will return all modules ending in `-test-tests` and `-test-docker` (e.g. `xwiki-platform-administration-test-tests`
+and `xwiki-platform-administration-test-docker`), except the Docker-based test framework module
+(`xwiki-platform-test-docker`).

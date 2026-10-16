@@ -1,0 +1,12 @@
+Clean up the Clover reports published by `xwikiClover` at http://maven.xwiki.org/site/clover: going through the report
+directories (named after their date, e.g. `20190101`) from the most recently modified to the oldest, move a report
+directory to a `toDelete` directory when its global TPC is lower than the one of the previously processed (more
+recent) report.
+
+Example usage:
+
+```
+node {
+  xwikiCloverCleanup()
+}
+```

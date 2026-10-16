@@ -71,7 +71,7 @@ def call(config)
         mavenOpts = "${mavenOpts} -Dorg.slf4j.simpleLogger.showDateTime=true"
     }
 
-    // Make sure to support Docker 2.29+
+    // Make sure to support Docker Engine 29+, which only supports the Docker API versions 1.44+
     mavenOpts = "${mavenOpts} -Dapi.version=1.44"
 
     // Improve retry options in maven to avoid problems in the CI when nexus is not available immediately.
@@ -103,12 +103,16 @@ def call(config)
 }
 
 /**
- * Read the parent pom to try to guess the java tool to use based on the parent pom version.
+ * Read the parent pom to try to guess the java tool to use based on the parent pom version, for the known XWiki
+ * parent poms (see isKnownParent()).
  * <ul>
  *   <li>XWiki versions < 14 should use Java 8.</li>
  *   <li>XWiki versions >= 14 and < 16 should use Java 11.</li>
- *   <li>XWiki versions >= 16 should use the official java version</li>
- *  </ul>
+ *   <li>XWiki versions >= 16 and < 18 should use Java 17.</li>
+ *   <li>XWiki versions >= 18 and < 20 should use Java 21.</li>
+ *   <li>XWiki versions >= 20 and < 22 should use Java 25.</li>
+ *   <li>Other XWiki versions and unknown parent poms should use the official java version.</li>
+ * </ul>
  */
 private def getJavaTool(pom)
 {
@@ -149,8 +153,8 @@ private def getJavaTool(pom)
 }
 
 /**
- * Check that the parent is XWiki commons, rendering or platform since we know the java requirements for these
- * modules based on their versions.
+ * Check that the parent is XWiki commons, rendering or platform (or one of the contrib parent poms based on them) since
+ * we know the java requirements for these modules based on their versions.
  */
 private def isKnownParent(parentGroupId, parentArtifactId)
 {

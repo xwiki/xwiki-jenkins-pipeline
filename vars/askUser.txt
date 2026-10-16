@@ -1,4 +1,4 @@
-Ask the user what to build and exits after 1 minute if no choice was made.
+Ask the user what to build when the build has been triggered manually, and exits after 1 minute if no choice was made.
 
 Parameters:
 
@@ -6,4 +6,5 @@ Parameters:
 
 Returns:
 
-* The selected item from  the passed `choices` list or `All` if the question timed out.
+* The selected item from the passed `choices` list, or `All` if the question timed out or if the build wasn't
+  triggered manually.
