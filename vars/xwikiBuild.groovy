@@ -131,8 +131,8 @@ void call(name = 'Default', body)
         }
 
         if (!config.skipCheckout) {
-            echoXWiki "SCM checkout with changelog set to [${config.skipChangeLog}]"
-            checkout changelog: config.skipChangeLog ?: false, scm: scm
+            echoXWiki "SCM checkout with changelog set to [${!config.skipChangeLog}]"
+            checkout changelog: !config.skipChangeLog, scm: scm
         }
 
         // Set config.sonar = true if the sonar:sonar goal is set in config.goals.

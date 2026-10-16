@@ -113,6 +113,9 @@ private void build(map)
             if (map.skipMail != null) {
                 skipMail = map.skipMail
             }
+            // Avoid duplicate changelogs in the job execution UI page: the checkout of the job's Jenkinsfile already
+            // records them.
+            skipChangeLog = true
             if (map.jobProperties != null) {
                 jobProperties = map.jobProperties
             }
