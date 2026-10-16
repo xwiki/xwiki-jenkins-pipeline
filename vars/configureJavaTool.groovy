@@ -77,6 +77,26 @@ def call(config)
     // Improve retry options in maven to avoid problems in the CI when nexus is not available immediately.
     mavenOpts = "${mavenOpts} -Daether.connector.http.retryHandler.serviceUnavailable=429,500,503,502 -Daether.connector.http.retryHandler.count=10 -Daether.connector.http.retryHandler.intervalMax=600000"
 
+    // Dump the heap of the Maven JVM when it runs out of memory, so that the cause can be analyzed. The dump is written
+    // outside the workspace (so that it's not mixed with the build files) and archived by xwikiBuild since the agents
+    // are ephemeral. The JVM only writes the dump when the directory exists.
+    // Note: no quotes around the path since MAVEN_OPTS is expanded unquoted by the mvn script, which would keep them.
+    if (!mavenOpts.contains('HeapDumpOnOutOfMemoryError')) {
+        def heapDumpDirectory = "${pwd(tmp: true)}/maven-heap-dumps"
+        sh "rm -rf ${heapDumpDirectory} && mkdir -p ${heapDumpDirectory}"
+        mavenOpts = "${mavenOpts} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=${heapDumpDirectory}"
+        results.heapDumpDirectory = heapDumpDirectory
+    }
+
+    // On Java 17 and 21, G1 throws an OutOfMemoryError after only 2 failed attempts to allocate while another thread
+    // is in a JNI critical region (e.g. java.util.zip compressing an archive), even when a GC could free enough
+    // memory. The console log then shows "Retried waiting for GCLocker too often" just before the "Java heap space"
+    // error. Retrying more avoids these spurious errors. Java 22+ doesn't have the problem (G1 pins regions instead,
+    // see JEP 423) and Java 25 refuses to start with this option, hence the restriction to these versions.
+    if ((javaTool == 'java17' || javaTool == 'java21') && !mavenOpts.contains('GCLockerRetryAllocationCount')) {
+        mavenOpts = "${mavenOpts} -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"
+    }
+
     results.mavenOpts = mavenOpts
     return results
 }

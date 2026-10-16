@@ -307,6 +307,7 @@ void call(name = 'Default', body)
                     // - Also don't send emails for process kills since it's an environment issue and not an XWiki
                     //   source problem (this happens when the exit code is 137).
                     displayDebugData()
+                    archiveMavenHeapDumps(javaMavenConfig.heapDumpDirectory, env['BRANCH_NAME'], name)
                     if (!e.getMessage()?.contains('exit code 143') && !e.getMessage()?.contains('exit code 137')
                         && !config.skipMail)
                     {
@@ -350,6 +351,10 @@ void call(name = 'Default', body)
             archiveArtifacts artifacts: '**/target/**/wcag-reports/wcag*.txt', excludes: '**/node_modules/**',
                 allowEmptyArchive: true
         }
+
+        // Save the heap dumps of the Maven JVM, if any. An OutOfMemoryError doesn't always fail the build (e.g. when
+        // it's thrown in a thread whose errors are ignored), so they need to be looked for here too.
+        archiveMavenHeapDumps(javaMavenConfig.heapDumpDirectory, env['BRANCH_NAME'], name)
 
         echoXWiki "Current build status after withMaven execution: ${currentBuild.result}"
 
@@ -535,11 +540,6 @@ private def computeMavenGoals(config)
         goals = "clean ${goals}"
     }
     return goals
-}
-
-private def isStableBranch(def branchName)
-{
-    return branchName.startsWith('stable-')
 }
 
 /**

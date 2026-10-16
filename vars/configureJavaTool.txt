@@ -5,3 +5,9 @@ Parameters:
 
 * `config`: The configuration map that is passed to the `xwikiBuild` step. Specifically `config.javaTool` and
 `config.mavenOpts` are read and used (if they exist)
+
+Whether `mavenOpts` is specified or not, some options are always added, unless already present:
+
+* `-XX:+HeapDumpOnOutOfMemoryError` with a dump directory outside the workspace, returned as `heapDumpDirectory` so
+  that `xwikiBuild` archives the dumps (see `archiveMavenHeapDumps`)
+* `-XX:GCLockerRetryAllocationCount=100` for `java17` and `java21`, to avoid spurious `OutOfMemoryError`s
