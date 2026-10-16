@@ -19,6 +19,8 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+import org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution
 
 def call(choices)
 {
@@ -34,7 +36,10 @@ def call(choices)
                 ])
             }
         } catch(err) {
-            if (err.getCauses()[0] instanceof org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution.ExceededTimeout) {
+            // Note: only a FlowInterruptedException has causes, other exceptions must be rethrown as is.
+            if (err instanceof FlowInterruptedException
+                && err.getCauses()[0] instanceof TimeoutStepExecution.ExceededTimeout)
+            {
                 // In case of timeout, build everything
                 selection = 'All'
             } else {

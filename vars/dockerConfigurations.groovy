@@ -303,9 +303,15 @@ private static def addConfiguration(def configurations, def databaseName, def se
     configurations.put(configurationName, configuration)
 }
 
+/**
+ * @return true if the passed XWiki version is greater than or equal to the passed minimal version. The qualifier of
+ *         the XWiki version (e.g. {@code -SNAPSHOT} or {@code -rc-1}) is ignored, so that the development versions of
+ *         the minimal version (e.g. {@code 17.10.0-SNAPSHOT} for {@code 17.10}) are considered as at least that version
+ *         (a qualifier makes a version lower than the same version without qualifier otherwise)
+ */
 private static def isXWikiVersionAtLeast(String version1, String version2)
 {
-    def v1 = Version.parse(version1)
+    def v1 = Version.parse(version1.replaceFirst(/-.*/, ''))
     def v2 = Version.parse(version2)
     return v1.compareTo(v2) >= 0
 }

@@ -1,0 +1,7 @@
+Remove the summaries of the current build containing the passed text, leaving the other summaries untouched (contrary
+to `manager.removeSummaries()` which removes them all). This is used to replace a summary that is computed several
+times in a job (e.g. once per parallel build) without removing the summaries added by other steps.
+
+Parameters:
+
+* `summaryText`: The text identifying the summaries to remove (e.g. `Flickering tests`)

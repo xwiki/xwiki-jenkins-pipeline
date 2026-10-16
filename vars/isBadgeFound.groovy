@@ -31,7 +31,8 @@ def call(badgeText)
     def result = false
     def badgeActionItems = currentBuild.rawBuild.getActions(BadgeAction.class)
     badgeActionItems.each() {
-        if (it.getText().contains(badgeText)) {
+        // Note: a badge can have no text (e.g. an icon-only badge).
+        if (it.getText()?.contains(badgeText)) {
             result = true
         }
     }

@@ -41,7 +41,7 @@ void call(boolean isParallel = true, body)
 
     // Start by building the test framework in case there have been recent changes not yet push to the Maven remote
     // repo.
-    buildTestFramework()
+    buildTestFramework(config)
 
     // Run docker tests on all modules for all supported configurations
     // Note: We don't rebuild the -pageobjects modules for performance reasons and because any commit in a -pageobjects
@@ -120,14 +120,20 @@ private def getTestConfigurationName(def testConfig)
     return "${databasePart}-${servletEnginePart}-${blobStorePart}${browserPart}"
 }
 
-private void buildTestFramework()
+private void buildTestFramework(config)
 {
     build(
         name: 'Test Framework',
         profiles: 'docker,integration-tests',
         properties: "${getSystemProperties().join(' ')}",
         pom: 'xwiki-platform-core/xwiki-platform-test/pom.xml',
-        xvnc: false
+        xvnc: false,
+        skipMail: config.skipMail,
+        // Pass the job properties since each build sets the job properties, and they would be lost (e.g. the cron
+        // trigger of the job) if this build failed, since the other builds wouldn't be executed.
+        jobProperties: config.jobProperties,
+        label: config.label ?: 'docker',
+        daysToKeepStr: isMasterBranch(env.BRANCH_NAME) ? '30' : null
     )
 }
 
@@ -196,6 +202,9 @@ private void build(map)
             skipChangeLog = true
             if (map.jobProperties != null) {
                 jobProperties = map.jobProperties
+            }
+            if (map.daysToKeepStr != null) {
+                daysToKeepStr = map.daysToKeepStr
             }
         }
     }
