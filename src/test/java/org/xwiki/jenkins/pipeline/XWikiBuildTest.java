@@ -194,6 +194,26 @@ class XWikiBuildTest extends BasePipelineTest
             loadScript("vars/xwikiBuild.groovy").invokeMethod("isFunctionalTestClass", new Object[] { className }));
     }
 
+    @Test
+    void attachMavenCommandToFailingTests()
+    {
+        List<String> savedDescriptions = new ArrayList<>();
+        FakeCaseResult test = new FakeCaseResult("org.xwiki.MenuIT", "verifyMenu", "<h3>Screenshot</h3>");
+        getHelper().registerAllowedMethod(method("saveCurrentBuildChanges"),
+            (Object arg) -> savedDescriptions.add(test.getDescription()));
+        getHelper().registerAllowedMethod(method("echoXWiki", String.class), (Object message) -> { });
+
+        Script script = loadScript("vars/xwikiBuild.groovy");
+        Object[] arguments = new Object[] { List.of(test), "Main", "mvn clean install" };
+        script.invokeMethod("attachMavenCommandToFailingTests", arguments);
+        // Attaching the command again doesn't change the description.
+        script.invokeMethod("attachMavenCommandToFailingTests", arguments);
+
+        // The command is appended to the existing description, which is saved once.
+        assertEquals(List.of("<h3>Screenshot</h3><h3>Maven command (build <tt>Main</tt>)</h3>"
+            + "<pre style='white-space: pre-wrap; word-wrap: break-word'>mvn clean install</pre>"), savedDescriptions);
+    }
+
     private String computeMavenGoals(Script script, Map<String, Object> config)
     {
         return String.valueOf(script.invokeMethod("computeMavenGoals", new Object[] { config }));
@@ -203,5 +223,44 @@ class XWikiBuildTest extends BasePipelineTest
     {
         return script.invokeMethod("computeArchivedArtifactPath",
             new Object[] { new FilePath(new File(filePath)), archivingDirectory });
+    }
+
+    /**
+     * Exposes the {@code hudson.tasks.junit.CaseResult} methods used by the pipeline to read and set test descriptions.
+     */
+    public static class FakeCaseResult
+    {
+        private final String className;
+
+        private final String name;
+
+        private String description;
+
+        FakeCaseResult(String className, String name, String description)
+        {
+            this.className = className;
+            this.name = name;
+            this.description = description;
+        }
+
+        public String getClassName()
+        {
+            return this.className;
+        }
+
+        public String getName()
+        {
+            return this.name;
+        }
+
+        public String getDescription()
+        {
+            return this.description;
+        }
+
+        public void setDescription(String description)
+        {
+            this.description = description;
+        }
     }
 }

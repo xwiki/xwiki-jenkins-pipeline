@@ -75,7 +75,8 @@ def call(configurationName)
     def tomcatMinVersion = 10;
     def jettyUnsupportedVersion = "latest";
     def jettyMaxVersion = 12;
-    def jettyMinVersion = 12.0;
+    // Note: a String since it's a Docker image tag (12.0.x) and not a number.
+    def jettyMinVersion = '12.0';
     // javax.servlet based versions of XWiki cannot use the current version of Tomcat
     if (!isXWikiVersionAtLeast(xwikiVersion, '17.0')) {
         tomcatMaxVersion = 9

@@ -235,12 +235,14 @@ void call(name = 'Default', body)
                         if (pom.parent) {
                             // Change the parent version, but only if one exist for that parent
                             echoXWiki "Setting parent to: ${branchVersion}"
-                            sh script: "mvn versions:update-parent -DallowSnapshots=true -DparentVersion=[${pom.parent.version}],[${branchVersion}] -N"
+                            sh script: "mvn --no-transfer-progress versions:update-parent -DallowSnapshots=true " +
+                                "-DparentVersion=[${pom.parent.version}],[${branchVersion}] -N"
                         }
                         // Change the project version
                         // We do those changes from the root since sub modules only define the parent
                         echoXWiki "Setting version to: ${branchVersion}"
-                        sh script: "mvn versions:set -DnewVersion=${branchVersion} -P${profiles}"
+                        sh script:
+                            "mvn --no-transfer-progress versions:set -DnewVersion=${branchVersion} -P${profiles}"
                         // Update the node packages versions.
                         setPackagesVersion(branchVersion)
                         // We need to also reset the commons.version property from the pom.xml if it's building commons.
@@ -741,16 +743,12 @@ private def attachScreenshotToFailingTests(def failingTests, def targetDirectory
             }
             description = description.toString()
 
-            def testResultAction = failedTest.getParentAction()
-
             // Only modify the description if we have something to display in it (this is not the case when the only
             // file found is a video that isn't archived) and if the test page hasn't been modified already.
-            if (description && !description.equals(testResultAction.getDescription(failedTest))) {
-                // Set the description to the failing test and save it to disk.
-                testResultAction.setDescription(failedTest, description)
-                // Clear potentially problematic non-serializable object reference, after we've used it.
-                // See https://github.com/jenkinsci/pipeline-plugin/blob/master/TUTORIAL.md#serializing-local-variables
-                testResultAction = null
+            if (description && !description.equals(failedTest.getDescription())) {
+                // Set the description to the failing test and save it to disk (the description is stored in the test
+                // result action of the build, which is saved with the build).
+                failedTest.setDescription(description)
                 saveCurrentBuildChanges()
             }
         } else {
@@ -948,13 +946,10 @@ private def attachMavenCommandToFailingTests(def failingTests, def buildName, de
         "<pre style='white-space: pre-wrap; word-wrap: break-word'>${mavenCommand}</pre>").toString()
 
     for (def failedTest : failingTests) {
-        def testResultAction = failedTest.getParentAction()
-        def currentDescription = testResultAction.getDescription(failedTest) ?: ''
+        def currentDescription = failedTest.getDescription() ?: ''
         // Append the command only if it isn't listed yet: keeps it idempotent if the post-build is retried.
         if (!currentDescription.contains(commandDescription)) {
-            testResultAction.setDescription(failedTest, "${currentDescription}${commandDescription}")
-            // Clear the potentially non-serializable reference after use (see attachScreenshotToFailingTests()).
-            testResultAction = null
+            failedTest.setDescription("${currentDescription}${commandDescription}")
             saveCurrentBuildChanges()
             annotatedTests.add("${failedTest.className}#${failedTest.name}")
         }
@@ -1218,10 +1213,9 @@ private def checkForFlickers(def failingTests, def ownFailingTests)
         }
         // Only mark tests that this build ran (see ownTests above); the classification above stays job-wide so that the
         // flicker summary and the returned "only flickers?" value keep their whole-job meaning.
-        if (ownTests.contains(testResult) &&
-            (testResult.getDescription() == null || !testResult.getDescription().contains(descriptionText)))
-        {
-            testResult.setDescription("${descriptionText}${testResult.getDescription() ?: ''}")
+        def currentDescription = testResult.getDescription() ?: ''
+        if (ownTests.contains(testResult) && !currentDescription.contains(descriptionText)) {
+            testResult.setDescription("${descriptionText}${currentDescription}")
             isModified = true
         }
     }

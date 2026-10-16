@@ -19,13 +19,18 @@
  */
 package org.xwiki.jenkins.pipeline;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import com.lesfurets.jenkins.unit.BasePipelineTest;
 
+import static com.lesfurets.jenkins.unit.MethodSignature.method;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -60,5 +65,27 @@ class DockerConfigurationsTest extends BasePipelineTest
     {
         assertEquals(expected, loadScript("vars/dockerConfigurations.groovy").invokeMethod("isXWikiVersionAtLeast",
             new Object[] { version, minimalVersion }));
+    }
+
+    @Test
+    void allConfigurations()
+    {
+        getHelper().registerAllowedMethod(method("readMavenPom", Map.class),
+            (Object arg) -> Map.of("version", "18.4.0-SNAPSHOT"));
+        getHelper().registerAllowedMethod(method("echoXWiki", String.class), (Object message) -> { });
+        getHelper().registerAllowedMethod(method("sh", Map.class), (Object arg) -> {
+            String script = String.valueOf(((Map<?, ?>) arg).get("script"));
+            return script.contains("xwiki.java.version.support") ? "25" : "21";
+        });
+
+        Map<String, Map<?, ?>> configurations = new HashMap<>();
+        // Note: the configuration names are GStrings, hence the conversion of the keys to String.
+        ((Map<?, ?>) loadScript("vars/dockerConfigurations.groovy").invokeMethod("call", new Object[] { "docker-all" }))
+            .forEach((name, configuration) -> configurations.put(String.valueOf(name), (Map<?, ?>) configuration));
+
+        Map<?, ?> postgreSQLJetty = (Map<?, ?>) configurations.get("PostgreSQL 17, Jetty 12.0-jdk21, S3, Chrome");
+        assertEquals("12.0-jdk21", String.valueOf(postgreSQLJetty.get("servletEngineTag")));
+        Map<?, ?> mariaDBTomcat = (Map<?, ?>) configurations.get("MariaDB lts, Tomcat 10-jdk21, Filesystem, Firefox");
+        assertEquals("10-jdk21", String.valueOf(mariaDBTomcat.get("servletEngineTag")));
     }
 }
