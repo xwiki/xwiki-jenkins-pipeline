@@ -19,7 +19,8 @@
  */
 package org.xwiki.jenkins.pipeline;
 
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -32,9 +33,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  * @version $Id$
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class IsStableBranchTest extends BasePipelineTest
 {
-    @BeforeEach
+    @BeforeAll
     @Override
     public void setUp() throws Exception
     {
@@ -43,7 +45,7 @@ class IsStableBranchTest extends BasePipelineTest
 
     @ParameterizedTest
     @CsvSource({ "stable-17.10.x, true", "stable-18.x, true", "master, false", "PR-1234, false",
-        "feature-stable-something, false" })
+        "feature-stable-something, false", ", false" })
     void isStableBranch(String branchName, boolean expected)
     {
         assertEquals(expected,

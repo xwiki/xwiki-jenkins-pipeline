@@ -22,5 +22,5 @@
 
 def call(branchName)
 {
-    return branchName.startsWith('stable-')
+    return branchName?.startsWith('stable-') ?: false
 }

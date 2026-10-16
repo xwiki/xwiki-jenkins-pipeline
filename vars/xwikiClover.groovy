@@ -57,7 +57,7 @@ void call(baselineDefinitions)
                     currentPOMVersion = pom.version
                     echoXWiki("Current version = ${currentPOMVersion}")
                 }
-                runCloverAndGenerateReport(mvnHome, localRepository, cloverDir)
+                runCloverAndGenerateReport(repoName, mvnHome, localRepository, cloverDir)
             }
         }
     }
@@ -168,7 +168,7 @@ void call(baselineDefinitions)
     }
 }
 
-private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cloverDir)
+private void runCloverAndGenerateReport(def repoName, def mvnHome, def localRepository, def cloverDir)
 {
     // Generate Clover Report locally
     wrap([$class: 'Xvnc']) {
@@ -179,38 +179,44 @@ private void runCloverAndGenerateReport(def mvnHome, def localRepository, def cl
         withMaven(maven: 'Maven', jdk: javaMavenConfig.jdk, mavenOpts: javaMavenConfig.mavenOpts,
             options: [artifactsPublisher(disabled: true), dependenciesFingerprintPublisher(disabled: true)])
         {
-            def commonPropertiesString = getSystemPropertiesAsString([
-                    'maven.repo.local' : "'${localRepository}'",
-                    'maven.clover.cloverDatabase' : "${cloverDir}/clover.db"
-            ])
-            // Skip the maximum number of checks to speed up the build
-            // Skip Gradle plugin capture since they break clover
-            def propertiesString = getSystemPropertiesAsString([
-                    'xwiki.revapi.skip' : 'true',
-                    'xwiki.checkstyle.skip' : 'true',
-                    'xwiki.enforcer.skip' : 'true',
-                    'xwiki.license.skip' : 'true',
-                    'xwiki.surefire.captureconsole.skip' : 'true',
-                    'xwiki.test.validateconsole.skip' : 'true',
-                    'maven.test.failure.ignore' : 'true',
-                    'gradle.scan.captureBuildLogging' : 'false',
-                    'gradle.scan.captureTestLogging' : 'false'
-            ])
-            def profiles = "-Pclover,integration-tests,flavor-integration-tests,distribution,docker"
-            // Use "nice" to reduce priority of the Maven process so that Jenkins stays as responsive as possible during
-            // the build.
-            sh "nice -n 5 mvn clean clover:setup install ${profiles} ${commonPropertiesString} ${propertiesString}"
+            try {
+                def commonPropertiesString = getSystemPropertiesAsString([
+                        'maven.repo.local' : "'${localRepository}'",
+                        'maven.clover.cloverDatabase' : "${cloverDir}/clover.db"
+                ])
+                // Skip the maximum number of checks to speed up the build
+                // Skip Gradle plugin capture since they break clover
+                def propertiesString = getSystemPropertiesAsString([
+                        'xwiki.revapi.skip' : 'true',
+                        'xwiki.checkstyle.skip' : 'true',
+                        'xwiki.enforcer.skip' : 'true',
+                        'xwiki.license.skip' : 'true',
+                        'xwiki.surefire.captureconsole.skip' : 'true',
+                        'xwiki.test.validateconsole.skip' : 'true',
+                        'maven.test.failure.ignore' : 'true',
+                        'gradle.scan.captureBuildLogging' : 'false',
+                        'gradle.scan.captureTestLogging' : 'false'
+                ])
+                def profiles = "-Pclover,integration-tests,flavor-integration-tests,distribution,docker"
+                // Use "nice" to reduce priority of the Maven process so that Jenkins stays as responsive as possible
+                // during the build.
+                sh "nice -n 5 mvn clean clover:setup install ${profiles} ${commonPropertiesString} ${propertiesString}"
 
-            // Check that there are no false positives. If there are then stop the build.
-            def containsFalsePositives = checkForFalsePositives()
-            if (containsFalsePositives) {
-                throw new RuntimeException(
-                    "The build contains at least one false positive which can skew the global TPC result, stopping job")
+                // Check that there are no false positives. If there are then stop the build.
+                def containsFalsePositives = checkForFalsePositives()
+                if (containsFalsePositives) {
+                    throw new RuntimeException("The build contains at least one false positive which can skew the "
+                        + "global TPC result, stopping job")
+                }
+
+                // Note: Clover reporting requires a display. Even though we're inside XVNC and thus have a display,
+                // let's still configure the execution to be headless.
+                sh "nice -n 5 mvn clover:clover -N ${commonPropertiesString} -Djava.awt.headless=true"
+            } finally {
+                // Save the heap dumps of the Maven JVM, if any. The default branch of the repository is built, which is
+                // the master branch.
+                archiveMavenHeapDumps(javaMavenConfig.heapDumpDirectory, 'master', "Clover for ${repoName}")
             }
-
-            // Note: Clover reporting requires a display. Even though we're inside XVNC and thus have a display, let's
-            // still configure the execution to be headless.
-            sh "nice -n 5 mvn clover:clover -N ${commonPropertiesString} -Djava.awt.headless=true"
         }
     }
 }

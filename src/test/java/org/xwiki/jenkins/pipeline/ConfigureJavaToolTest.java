@@ -23,9 +23,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.lesfurets.jenkins.unit.BasePipelineTest;
 
@@ -67,15 +70,16 @@ class ConfigureJavaToolTest extends BasePipelineTest
         });
     }
 
-    @Test
-    void addHeapDumpAndGCLockerOptionsForJava17()
+    @ParameterizedTest
+    @ValueSource(strings = { "java8", "java11", "java17", "java21" })
+    void addHeapDumpAndGCLockerOptions(String javaTool)
     {
-        Map<String, Object> results = configureJavaTool("java17", null);
+        Map<?, ?> results = configureJavaTool(javaTool, null);
 
         String mavenOpts = String.valueOf(results.get("mavenOpts"));
         assertTrue(mavenOpts.startsWith("-Xmx1920m -Xms256m "));
-        assertTrue(mavenOpts.contains(HEAP_DUMP_OPTIONS));
-        assertTrue(mavenOpts.contains(GCLOCKER_OPTIONS));
+        assertEquals(1, countOccurrences(mavenOpts, HEAP_DUMP_OPTIONS));
+        assertEquals(1, countOccurrences(mavenOpts, GCLOCKER_OPTIONS));
         assertEquals(HEAP_DUMP_DIRECTORY, String.valueOf(results.get("heapDumpDirectory")));
         // The JVM only writes the heap dump when its directory exists.
         assertEquals(List.of("rm -rf " + HEAP_DUMP_DIRECTORY + " && mkdir -p " + HEAP_DUMP_DIRECTORY),
@@ -85,32 +89,46 @@ class ConfigureJavaToolTest extends BasePipelineTest
     @Test
     void addOptionsToOverriddenMavenOpts()
     {
-        Map<String, Object> results = configureJavaTool("java21", "-Xmx2048m -Xms512m");
+        Map<?, ?> results = configureJavaTool("java21", "-Xmx2048m -Xms512m");
 
         String mavenOpts = String.valueOf(results.get("mavenOpts"));
         assertTrue(mavenOpts.startsWith("-Xmx2048m -Xms512m "));
-        assertTrue(mavenOpts.contains(HEAP_DUMP_OPTIONS));
-        assertTrue(mavenOpts.contains(GCLOCKER_OPTIONS));
+        assertEquals(1, countOccurrences(mavenOpts, HEAP_DUMP_OPTIONS));
+        assertEquals(1, countOccurrences(mavenOpts, GCLOCKER_OPTIONS));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "java7", "java25", "official" })
+    void noGCLockerOption(String javaTool)
+    {
+        // Java 7 doesn't know -XX:GCLockerRetryAllocationCount and Java 25 refuses to start when it's set. The version
+        // of the "official" Java tool isn't known.
+        Map<?, ?> results = configureJavaTool(javaTool, null);
+
+        String mavenOpts = String.valueOf(results.get("mavenOpts"));
+        assertEquals(1, countOccurrences(mavenOpts, HEAP_DUMP_OPTIONS));
+        assertFalse(mavenOpts.contains("GCLockerRetryAllocationCount"));
     }
 
     @Test
-    void noGCLockerOptionForJava25()
+    void keepExistingGCLockerOption()
     {
-        // Java 25 refuses to start when -XX:GCLockerRetryAllocationCount is set.
-        Map<String, Object> results = configureJavaTool("java25", null);
+        Map<?, ?> results =
+            configureJavaTool("java17", "-Xmx2048m -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=50");
 
         String mavenOpts = String.valueOf(results.get("mavenOpts"));
-        assertTrue(mavenOpts.contains(HEAP_DUMP_OPTIONS));
-        assertFalse(mavenOpts.contains("GCLockerRetryAllocationCount"));
+        assertEquals(1, countOccurrences(mavenOpts, "GCLockerRetryAllocationCount"));
+        assertTrue(mavenOpts.contains("-XX:GCLockerRetryAllocationCount=50"));
     }
 
     @Test
     void keepExistingHeapDumpOptions()
     {
-        Map<String, Object> results =
+        Map<?, ?> results =
             configureJavaTool("java17", "-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/custom");
 
         String mavenOpts = String.valueOf(results.get("mavenOpts"));
+        assertEquals(1, countOccurrences(mavenOpts, "HeapDumpOnOutOfMemoryError"));
         assertTrue(mavenOpts.contains("-XX:HeapDumpPath=/custom"));
         assertFalse(mavenOpts.contains(HEAP_DUMP_DIRECTORY));
         // No directory to archive the dumps from since they're not written in the expected place.
@@ -118,12 +136,36 @@ class ConfigureJavaToolTest extends BasePipelineTest
         assertTrue(this.shellCommands.isEmpty());
     }
 
-    private Map<String, Object> configureJavaTool(String javaTool, String mavenOpts)
+    @Test
+    void useJava11ForSonarWhenNoJavaVersionInPOM()
+    {
+        getHelper().registerAllowedMethod(method("getPOMFile", Map.class), (Object arg) -> "pom.xml");
+        // No xwiki.java.version property in the effective pom.
+        getHelper().registerAllowedMethod(method("sh", Map.class), (Object arg) -> "null object or invalid expression");
+
+        Map<String, Object> config = new HashMap<>();
+        config.put("sonar", true);
+        Map<?, ?> results = configureJavaTool(config);
+
+        assertEquals("java11", results.get("jdk"));
+    }
+
+    private Map<?, ?> configureJavaTool(String javaTool, String mavenOpts)
     {
         Map<String, Object> config = new HashMap<>();
         config.put("javaTool", javaTool);
         config.put("mavenOpts", mavenOpts);
+        return configureJavaTool(config);
+    }
+
+    private Map<?, ?> configureJavaTool(Map<String, Object> config)
+    {
         Script script = loadScript("vars/configureJavaTool.groovy");
-        return (Map<String, Object>) script.invokeMethod("call", new Object[] { config });
+        return (Map<?, ?>) script.invokeMethod("call", new Object[] { config });
+    }
+
+    private int countOccurrences(String text, String searched)
+    {
+        return text.split(Pattern.quote(searched), -1).length - 1;
     }
 }
