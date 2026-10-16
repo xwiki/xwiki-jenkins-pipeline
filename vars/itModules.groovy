@@ -32,7 +32,10 @@ def call()
     def dockerModules = findFiles(glob: '**/*-test-docker/pom.xml')
     // Note: don't use each() since it leads to unserializable exceptions
     for (def it in dockerModules) {
-        modules.add(getParentPath(it.path))
+        // Skip 'xwiki-platform-test-docker' since it matches the glob pattern but isn't a test module.
+        if (!it.path.contains('xwiki-platform-test-docker')) {
+            modules.add(getParentPath(it.path))
+        }
     }
 
     def otherModules = findFiles(glob: '**/*-test-tests/pom.xml')

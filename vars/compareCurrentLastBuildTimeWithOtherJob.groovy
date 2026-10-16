@@ -24,13 +24,14 @@ import com.cloudbees.groovy.cps.NonCPS
 // currentBuild.rawBuild is non-serializable which is why we need the @NonCPS annotation.
 @NonCPS
 def call(otherJobName) {
-    def jenkins = Jenkins.getInstanceOrNull().get()
-    def otherJob = jenkins.getItemByFullName(otherJobName)
+    def otherJob = Jenkins.get().getItemByFullName(otherJobName)
     def lastOtherJobBuild = otherJob?.getLastCompletedBuild()
     // We compare the finish date of the last completed other job with the start date of the last completed current job
     // (since if we compared with the start date of the last completed other job, there could be a running job in
     // progress not finished).
-    def lastOtherJobBuildTime = lastOtherJobBuild?.getTimeInMillis() + lastOtherJobBuild?.getDuration()
+    // Note: the null check is needed since "null + null" throws a NullPointerException in Groovy.
+    def lastOtherJobBuildTime =
+        lastOtherJobBuild == null ? null : lastOtherJobBuild.getTimeInMillis() + lastOtherJobBuild.getDuration()
     echoXWiki "Last finish build time for compared job [${lastOtherJobBuild}]: ${lastOtherJobBuildTime}"
     echoXWiki "DEBUG: Current raw build: [${currentBuild.rawBuild}]"
     echoXWiki "DEBUG: Previous build: [${currentBuild.rawBuild.getPreviousBuild()}]"

@@ -28,7 +28,6 @@ import com.cloudbees.groovy.cps.NonCPS
 import java.text.SimpleDateFormat
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
-import static groovy.io.FileType.FILES
 
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
 //
@@ -56,7 +55,7 @@ import static groovy.io.FileType.FILES
  */
 void call(name = 'Default', body)
 {
-    echoXWiki "Calling Jenkinsfile for build [{$name}]"
+    echoXWiki "Calling Jenkinsfile for build [${name}]"
     def config = [:]
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = config
@@ -93,8 +92,7 @@ void call(name = 'Default', body)
     // -  Make sure projects are built at least once a month because SNAPSHOT older than one month are deleted
     //    by the Nexus scheduler.
     //    - This behavior can be disabled by using the "monthlyTrigger" property
-    def monthlyTrigger = config.monthlyTrigger ?: true
-    if (monthlyTrigger) {
+    if (isMonthlyTriggerEnabled(config)) {
       projectProperties.add(pipelineTriggers([cron("@monthly")]))
     }
 
@@ -287,20 +285,21 @@ void call(name = 'Default', body)
                         }
                     }
                 } catch (InterruptedException e) {
-                    // This can happen when the timeout() step reaches the timeout. We need to let this bubble up so
-                    // that Jenkins can coordinate the stopping of all threads & builds that execute in parallel.
-                    echoXWiki "XWiki build [${name}] interrupted due to timeout"
+                    // This happens when the timeout() step reaches the timeout or when the build is aborted. We need to
+                    // let this bubble up so that Jenkins marks the build as aborted (the result is only set when the
+                    // exception reaches the top of the pipeline) and coordinates the stopping of all threads & builds
+                    // that execute in parallel. Otherwise the post build stage would run and could mark the build as
+                    // successful.
+                    echoXWiki "XWiki build [${name}] interrupted (timeout or abort)"
                     StringWriter sw = new StringWriter();
                     PrintWriter pw = new PrintWriter(sw);
                     e.printStackTrace(pw);
-                    echoXWiki "[DEBUG] Cause for the timeout:\n${sw.toString()}"
+                    echoXWiki "[DEBUG] Cause for the interruption:\n${sw.toString()}"
                     displayDebugData()
                     // A JVM running out of memory can spend its time in GC until the timeout instead of failing.
-                    // Archive the dumps before restoring the interrupt flag, since the steps would be interrupted
-                    // otherwise.
                     archiveHeapDumps(javaMavenConfig, name)
-                    Thread.currentThread().interrupt();
                     // Note: Don't send email on an interrupted build.
+                    throw e
                 } catch (Exception e) {
                     // - If this line is reached it means the build has failed (other than for failing tests) or has
                     //   been aborted (because we told maven above to not stop on test failures!)
@@ -401,19 +400,30 @@ void call(name = 'Default', body)
                     // Update 2020-10-31: Temporarily only send mails when there are failing non-functional tests to
                     // reduce the number of emails sent, until we fix functional tests stability. See https://bit.ly/34GTVBe
                     echoXWiki "Checking if email should be sent or not"
-                    if (!containsFalsePositivesOrOnlyFlickers && !config.skipMail
-                        && containsNonFunctionalFailingTests(failingTests))
-                    {
-                        sendMail(currentBuild.result, name)
+                    // Note: the build result is left as is (i.e. unstable) since Jenkins only allows a build result to
+                    // get worse.
+                    if (containsFalsePositivesOrOnlyFlickers) {
+                        echoXWiki "No email sent since the failing tests are only flickers or there are false positives"
+                    } else if (config.skipMail) {
+                        echoXWiki "No email sent since emails are disabled for this build (skipMail)"
+                    } else if (!containsNonFunctionalFailingTests(failingTests)) {
+                        echoXWiki "No email sent since only functional tests are failing"
                     } else {
-                        echoXWiki "No email sent even if some tests failed because they contain only flickering tests!"
-                        echoXWiki "Considering job as successful!"
-                        currentBuild.result = 'SUCCESS'
+                        sendMail(currentBuild.result, name)
                     }
                 }
             }
         }
     }
+}
+
+/**
+ * @return true unless the {@code monthlyTrigger} configuration property is explicitly set to {@code false}
+ */
+private def isMonthlyTriggerEnabled(config)
+{
+    // Note: "config.monthlyTrigger ?: true" can't be used since it's true when monthlyTrigger is false.
+    return config.monthlyTrigger == null ? true : config.monthlyTrigger
 }
 
 private def containsNonFunctionalFailingTests(def failingTests)
@@ -453,7 +463,7 @@ private def getMavenSystemProperties(config, nodeName)
     // pushes the analysis to the right branch on sonarcloud. Note that we only pass it when not analyzing the main
     // branch as suggested by https://community.sonarsource.com/t/clarify-the-use-of-sonar-branch-name/18872/3
     def branchName = env['BRANCH_NAME']
-    if (config.sonar && !isMasterBranch(branchName)) {
+    if (config.sonar && branchName && !isMasterBranch(branchName)) {
         properties = "${properties} -Dsonar.branch.name=${branchName}"
     }
 
@@ -483,13 +493,16 @@ private def wrapInWithMaven(config, closure)
         withMaven(config) {
             closure()
         }
+    } catch (InterruptedException e) {
+        // Timeout or abort: let Jenkins set the build result (aborted) from the exception.
+        throw e
     } catch (Throwable e) {
         // Unexpected error. Since we execute all tests with -Dmaven.test.failure.ignore (ignore test failures), if
         // the withMaven step exits with an exception, the junit publisher may not be executed and thus the build may
         // be marked as successful when in reality it's not.
         echoXWiki "The withMaven step has stopped unexpectedly and the JUnit test results may not be accurate."
-        echoXWiki "Marking the build in error since something very wrong happened."
-        currentBuild.result = 'ERROR'
+        echoXWiki "Marking the build as failed since something very wrong happened."
+        currentBuild.result = 'FAILURE'
         throw e;
     }
 }
@@ -1120,8 +1133,16 @@ private def checkForFalsePositivesAndFlickers(def failingTests, def ownFailingTe
  */
 private def checkForFlickers(def failingTests, def ownFailingTests)
 {
-    def knownFlickers = getKnownFlickeringTests()
-    echoXWiki "Known flickering tests: ${knownFlickers}"
+    def knownFlickers
+    try {
+        knownFlickers = getKnownFlickeringTests()
+        echoXWiki "Known flickering tests: ${knownFlickers}"
+    } catch (Exception e) {
+        // Failing to get the known flickers (e.g. JIRA is down) mustn't fail the build. All failing tests are then
+        // considered as not being flickers.
+        echoXWiki "Failed to get the known flickering tests from JIRA, considering there are none: ${e.message}"
+        knownFlickers = [:]
+    }
 
     // The descriptions we may set below must only be set for tests this build ran; membership is checked against this
     // set. ownFailingTests holds the very same objects as (a subset of) failingTests, so a plain Set lookup works.
@@ -1194,7 +1215,7 @@ private def checkForFlickers(def failingTests, def ownFailingTests)
             manager.addWarningBadge(badgeText)
         }
         // Replace the existing summary with the accrued list of flickers found
-        manager.removeSummaries()
+        removeSummary("Flickering tests")
         def summary = manager.createSummary("warning.gif")
         summary.appendText("Flickering tests<ul>", false, false, false, 'red')
         foundFlickers.each() {
@@ -1222,7 +1243,9 @@ private def getKnownFlickeringTests()
     def knownFlickers = [:]
     def url = "https://jira.xwiki.org/sr/jira.issueviews:searchrequest-xml/temp/SearchRequest.xml?".concat(
             "jqlQuery=%22Flickering%20Test%22%20is%20not%20empty%20and%20resolution%20=%20Unresolved")
-    def root = new XmlSlurper().parseText(url.toURL().text)
+    // Use timeouts (in milliseconds) since there are none by default, which would make the build hang forever if JIRA
+    // doesn't answer.
+    def root = new XmlSlurper().parseText(url.toURL().getText(connectTimeout: 30000, readTimeout: 120000))
     // Note: slurper nodes are not serializable, hence the @NonCPS annotation above.
     def packageName = ''
     root.channel.item.customfields.customfield.each() { customfield ->
@@ -1304,39 +1327,44 @@ private def getFailingTests()
     return failingTests
 }
 
-@NonCPS
-private def setPackagesVersion(String version) {
-    def currentDir = new File(".")
-    def slurper = new JsonSlurper()
-
-    currentDir.traverse(
-        type: FILES,
-        nameFilter: "package.json",
-        excludeNameFilter: "node_modules",
-        preDir: { (it.name != "node_modules") }
-    ) { File pkgFile ->
-        // Skip root package.json
-        if (pkgFile.parentFile.canonicalPath == currentDir.canonicalPath) return
-
-        def json = slurper.parse(pkgFile)
-
-        // Skip private or unnamed packages
-        if (json.private == true) return
-
-        json.version = version
-
-        def tempFile = File.createTempFile("pkg", ".json", pkgFile.parentFile)
-        def renamed = false
+/**
+ * Set the passed version in the {@code package.json} files of the workspace (except the root one, the ones in
+ * {@code node_modules} directories and the private packages).
+ *
+ * Note: the files are read and written with pipeline steps since they are located on the agent, whereas the pipeline
+ * code (and thus any {@code java.io.File} access) executes on the Jenkins controller.
+ */
+private def setPackagesVersion(String version)
+{
+    def packageFiles = findFiles(glob: '**/package.json', excludes: '**/node_modules/**')
+    // Note: don't use each() since it leads to unserializable exceptions
+    for (def packageFile in packageFiles) {
+        // Skip the root package.json
+        if (!packageFile.path.contains('/')) {
+            continue
+        }
         try {
-            tempFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(json))
-            renamed = tempFile.renameTo(pkgFile)
-            if (!renamed) {
-                echoXWiki "Failed to rename temp file for ${pkgFile.path}"
+            def updatedContent = updatePackageVersion(readFile(packageFile.path), version)
+            if (updatedContent != null) {
+                writeFile file: packageFile.path, text: updatedContent
             }
         } catch (Exception e) {
-            echoXWiki "Failed to update ${pkgFile.path}: ${e.message}"
-        } finally {
-            if (!renamed) tempFile.delete()
+            echoXWiki "Failed to update ${packageFile.path}: ${e.message}"
         }
     }
+}
+
+/**
+ * @return the passed {@code package.json} content with its version set to the passed version, or {@code null} if the
+ *         package is private (in which case it must not be modified)
+ */
+@NonCPS
+private def updatePackageVersion(String packageContent, String version)
+{
+    def json = new JsonSlurper().parseText(packageContent)
+    if (json.private == true) {
+        return null
+    }
+    json.version = version
+    return JsonOutput.prettyPrint(JsonOutput.toJson(json))
 }

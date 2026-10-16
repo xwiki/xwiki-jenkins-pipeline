@@ -104,7 +104,7 @@ def call()
         }
         // Display the info on the job results page
         // Replace the existing summary with the accrued list of false positives found
-        manager.removeSummaries()
+        removeSummary("False positives found")
         def summary = manager.createSummary("warning.gif")
         summary.appendText("False positives found<ul>", false, false, false, 'red')
         falsePositiveMessages.each() { message ->

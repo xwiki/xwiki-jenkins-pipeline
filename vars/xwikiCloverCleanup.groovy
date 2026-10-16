@@ -27,7 +27,8 @@ void call()
     def dirs = sh(script: "${sshPrefix} ls -1t ${location}/", returnStdout: true).split()
     double previousTPC = -1
     dirs.each() {
-        if (it.startsWith('2019')) {
+        // Only consider the report directories, which are named after their date (e.g. "20190101", see xwikiClover).
+        if (it ==~ /\d{8}/) {
             def tpc = sh(script: "${sshPrefix} \"sed -ne 's/.*<td>ALL<\\/td><td>[^<]*<\\/td><td>\\([^<]*\\)<\\/td>.*/\\1/p;q;' ${location}/${it}/XWikiReport*.html\"", returnStdout: true) as Double
             echoXWiki("TPC = ${tpc}")
             if (previousTPC != -1 && tpc < previousTPC) {

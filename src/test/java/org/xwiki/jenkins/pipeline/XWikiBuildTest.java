@@ -20,6 +20,9 @@
 package org.xwiki.jenkins.pipeline;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -31,7 +34,9 @@ import com.lesfurets.jenkins.unit.BasePipelineTest;
 import groovy.lang.Script;
 import hudson.FilePath;
 
+import static com.lesfurets.jenkins.unit.MethodSignature.method;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -90,6 +95,53 @@ class XWikiBuildTest extends BasePipelineTest
         assertNull(computeArchivedArtifactPath(script, "/ws/module/screenshots/test.png", "/ws"));
         // ... and a file inside a "node_modules" directory, which the archiving excludes.
         assertNull(computeArchivedArtifactPath(script, "/ws/m/node_modules/n/target/screenshots/test.png", "/ws"));
+    }
+
+    @Test
+    void isMonthlyTriggerEnabled()
+    {
+        Script script = loadScript("vars/xwikiBuild.groovy");
+
+        Map<String, Object> config = new HashMap<>();
+        assertTrue((Boolean) script.invokeMethod("isMonthlyTriggerEnabled", new Object[] { config }));
+        config.put("monthlyTrigger", true);
+        assertTrue((Boolean) script.invokeMethod("isMonthlyTriggerEnabled", new Object[] { config }));
+        config.put("monthlyTrigger", false);
+        assertFalse((Boolean) script.invokeMethod("isMonthlyTriggerEnabled", new Object[] { config }));
+    }
+
+    @Test
+    void setPackagesVersion()
+    {
+        Map<String, String> files = new HashMap<>();
+        files.put("package.json", "{\"name\":\"root\",\"version\":\"1.0.0\"}");
+        files.put("module/package.json", "{\"name\":\"module\",\"version\":\"1.0.0\"}");
+        files.put("private/package.json", "{\"name\":\"private\",\"version\":\"1.0.0\",\"private\":true}");
+        Map<String, String> writtenFiles = new HashMap<>();
+        List<String> messages = new ArrayList<>();
+        getHelper().registerAllowedMethod(method("findFiles", Map.class), (Object arg) -> {
+            List<Map<String, String>> foundFiles = new ArrayList<>();
+            files.keySet().forEach(path -> foundFiles.add(Map.of("path", path)));
+            return foundFiles;
+        });
+        getHelper().registerAllowedMethod(method("readFile", String.class), (Object path) -> files.get(path));
+        getHelper().registerAllowedMethod(method("writeFile", Map.class), (Object arg) -> {
+            Map<?, ?> parameters = (Map<?, ?>) arg;
+            writtenFiles.put(String.valueOf(parameters.get("file")), String.valueOf(parameters.get("text")));
+        });
+        getHelper().registerAllowedMethod(method("echoXWiki", String.class), (Object message) -> {
+            messages.add(String.valueOf(message));
+        });
+
+        Script script = loadScript("vars/xwikiBuild.groovy");
+        script.invokeMethod("setPackagesVersion", new Object[] { "17.10.0-feature-SNAPSHOT" });
+
+        // Only the non-private packages located below the workspace root are modified.
+        assertEquals(List.of("module/package.json"), new ArrayList<>(writtenFiles.keySet()));
+        String moduleContent = writtenFiles.get("module/package.json");
+        assertTrue(moduleContent.contains("\"version\": \"17.10.0-feature-SNAPSHOT\""), moduleContent);
+        assertTrue(moduleContent.contains("\"name\": \"module\""), moduleContent);
+        assertTrue(messages.isEmpty(), messages.toString());
     }
 
     private Object computeArchivedArtifactPath(Script script, String filePath, String archivingDirectory)
