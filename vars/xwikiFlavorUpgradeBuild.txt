@@ -1,0 +1,22 @@
+Build and run the flavor upgrade functional tests. Each "upgrade from version X" sub-module of the flavor upgrade
+aggregator (located under `getFlavorTestPrefix()`) is discovered by the caller and passed in through `modules`. The
+sub-modules are split into `batches` groups that run in parallel across agents; within a group the versions run
+sequentially in a single reactor (each starts XWiki on the same fixed port, so there is no in-reactor parallelism).
+
+Example usage:
+
+```
+xwikiFlavorUpgradeBuild {
+  // The list of upgrade sub-module pom.xml paths, discovered by the caller.
+  modules = upgradeModulePOMPaths
+  batches = 3
+}
+```
+
+The following options are available:
+
+* `modules` (required): The list of flavor upgrade sub-module `pom.xml` paths. Nothing is done when it's empty.
+* `batches` = `3` (default is `2`). The number of parallel groups to split the sub-modules into.
+* `jobProperties` = `[pipelineTriggers([cron('@daily')])]`. Job properties to (re)apply, e.g. to protect a cron trigger
+  set by the job (see the `jobProperties` option of `xwikiBuild`).
+* `label` = `docker` (by default any agent is used). The label of the agents to run the builds on.

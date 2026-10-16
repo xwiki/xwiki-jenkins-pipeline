@@ -28,6 +28,8 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import com.lesfurets.jenkins.unit.BasePipelineTest;
 
@@ -170,6 +172,26 @@ class XWikiBuildTest extends BasePipelineTest
         assertTrue(moduleContent.contains("\"version\": \"17.10.0-feature-SNAPSHOT\""), moduleContent);
         assertTrue(moduleContent.contains("\"name\": \"module\""), moduleContent);
         assertTrue(messages.isEmpty(), messages.toString());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "org.xwiki.menu.test.ui.MenuIT, true",
+        "org.xwiki.menu.test.ui.AllIT$NestedMenuIT, true",
+        // A nested class of a functional test is a functional test too.
+        "org.xwiki.menu.test.ui.AllIT$NestedTest, true",
+        // The test suite of the legacy functional tests.
+        "org.xwiki.test.ui.AllITs, true",
+        "org.xwiki.menu.MenuTest, false",
+        // Class names containing "IT" without being functional tests.
+        "org.xwiki.pdf.ITextRendererTest, false",
+        "org.xwiki.ITest, false",
+        "org.xwiki.it.SomeTest, false"
+    })
+    void isFunctionalTestClass(String className, boolean expected)
+    {
+        assertEquals(expected,
+            loadScript("vars/xwikiBuild.groovy").invokeMethod("isFunctionalTestClass", new Object[] { className }));
     }
 
     private String computeMavenGoals(Script script, Map<String, Object> config)

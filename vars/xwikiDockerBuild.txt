@@ -1,37 +1,48 @@
 Example usage:
 
 ```
-node('docker') {
-  xwikiDockerBuild {
-    configurations = [
-      'MySQL 5.7.x, Tomcat 8.5.x, Chrome': [
-        'database' : 'mysql',
-        'databaseTag' : '5.7',
-        'jdbcVersion' : '5.1.45',
-        'servletEngine' : 'tomcat',
-        'servletEngineTag' : '8.5',
-        'browser' : 'chrome',
-        'verbose' : 'true'
-      ]]
-    modules = 'xwiki-platform-core/xwiki-platform-menu'
-  }
-)
+xwikiDockerBuild {
+  configurations = [
+    'MySQL 5.7.x, Tomcat 8.5.x, Chrome': [
+      'database' : 'mysql',
+      'databaseTag' : '5.7',
+      'jdbcVersion' : '5.1.45',
+      'servletEngine' : 'tomcat',
+      'servletEngineTag' : '8.5',
+      'browser' : 'chrome',
+      'verbose' : 'true'
+    ]]
+  modules = ['xwiki-platform-core/xwiki-platform-menu']
+}
 ```
+
+Note that each build is executed on its own agent (see `label` below), so there's no need to call this step inside a
+`node` block.
 
 The following options are available:
 
-* `configurations`: The list of XWiki configurations on which to execute the Docker/TestContainers-based tests.
-* `modules`: The list of Maven modules on which to execute the Docker/TestContainers-based tests. If not specified,
-  then look for all modules matching the pattern `*-test-docker`.
+* `configurations`: The map of XWiki configurations (configuration name to configuration properties) on which to
+  execute the Docker/TestContainers-based tests (see `dockerConfigurations`). Each configuration property is passed
+  as a `xwiki.test.ui.<property name>` system property.
+* `modules`: The list of paths of the Maven modules on which to execute the Docker/TestContainers-based tests (e.g.
+  `xwiki-platform-core/xwiki-platform-menu`, see `dockerModules` to find them all).
+* `batchSize` = `2` (default is `4`). The number of modules to test in the same build (i.e. on the same agent), for
+  each configuration.
 * `jobProperties` = `[parameters([string(defaultValue: 'standard', description: 'Job type', name: 'type')])]`. Sets
   properties that will be merged (and take precedence when on the same content) with the default ones. This allows
   adding some crons, parameters, etc.
-* `skipMail` = true (default is `false`). If true then don't send emails when the job or tests fail.
+* `skipMail` = `true` (default is `false`). If true then don't send emails when the job or tests fail.
 * `label` = `docker-outside-docker` (default is `docker`). If specified will use that label to identify on which node
   to execute the Docker-based tests.
-* `type` = the job type. Valid values are `docker-latest`, `docker-all` and `docker-unsupported`
+* `type` = the job type. Valid values are `docker-latest`, `docker-all` and `docker-unsupported`. The WCAG validation is
+  executed for the first configuration of the `docker-latest` type.
 
 Notes:
+
+* The test framework (`xwiki-platform-core/xwiki-platform-test`) is built first, in case it has changes not yet
+  deployed to the Maven remote repository.
+* The builds are executed in parallel, unless `false` is passed as the first parameter (e.g.
+  `xwikiDockerBuild(false) { ... }`).
 
 The Docker/TestContainers-based test modules must follow these rules:
 * Be located in a `XXX/XXX-test/XXX-test-docker` directory.

@@ -18,13 +18,13 @@ It'll bring the following advantages:
 * Ability to have a single Maven build executed in the CI and thus not get tons of mails whenever a test fails
   (which is the current situation).
 * Ability to have different configurations depending on the branch in the source (for example in XWiki 10.11.x we
-  don't support running on Java 11.x
+  don't support running on Java 11.x).
 
 Disadvantages:
 
-* Ability to paralellize, i.e. execute each Maven build on a different CI agent. This is because the withMaven()
+* Inability to parallelize, i.e. execute each Maven build on a different CI agent. This is because the withMaven()
   step doesn't currently support this feature (which is a pity). See also
-  https://massol.myxwiki.org/xwiki/bin/view/Blog/Jenkins%20and%20large%20Maven%20projects<li>
+  https://massol.myxwiki.org/xwiki/bin/view/Blog/Jenkins%20and%20large%20Maven%20projects
 
 Parameters:
 

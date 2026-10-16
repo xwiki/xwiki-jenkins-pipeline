@@ -1,3 +1,8 @@
-Generate a `~/.docker/config.json}` file containing authentication data to authenticate against DockerHub.
+Generate a `~/.docker/config.json` file containing authentication data to authenticate against DockerHub.
 
-Note: Jenkins must have a `xwikiorgci` credentials [defined](https://ci.xwiki.org/credentials/).
+Parameters:
+
+* `dockerHubSecretId`: The id of the Jenkins text credentials (defined at https://ci.xwiki.org/credentials/)
+  containing the Personal Access Token of the DockerHub user (e.g. `xwikici`, which is what `xwikiBuild` uses by
+  default). Nothing is done if it's null or empty.
+* `dockerHubUserId`: The id of the DockerHub user (e.g. `xwikici`)
