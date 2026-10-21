@@ -53,6 +53,11 @@ void call(body)
     def upgradePom =
         "${getFlavorTestPrefix()}/xwiki-platform-distribution-flavor-test-upgrade/pom.xml"
 
+    // Use the same build retention as the docker builds of the environment tests (see xwikiDockerBuild) since each
+    // xwikiBuild call sets the build discarder of the whole job and both run in the same job. This is computed here
+    // because env can't be read from the xwikiBuild body, which resolves properties on its configuration map first.
+    def daysToKeep = isMasterBranch(env.BRANCH_NAME) ? '30' : null
+
     // Split the independent "upgrade from version X" sub-modules into `batches` groups (the groups run in parallel).
     int batches = config.batches ?: 2
     int perBatch = Math.ceil(modulePaths.size() / (double) batches) as int
@@ -78,6 +83,7 @@ void call(body)
                     mavenFlags = "--projects ${selectors.join(',')} -e -U --fail-at-end"
                     xvnc = true
                     skipChangeLog = true
+                    daysToKeepStr = daysToKeep
                     // Reapply the passed job properties so that a racing properties() call from another build can't
                     // wipe them (e.g. the environment-test cron trigger).
                     if (config.jobProperties != null) {
