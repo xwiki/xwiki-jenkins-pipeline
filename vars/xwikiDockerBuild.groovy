@@ -20,6 +20,8 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
+import com.cloudbees.groovy.cps.NonCPS
+
 void call(boolean isParallel = true, body)
 {
     def config = [:]
@@ -49,12 +51,13 @@ void call(boolean isParallel = true, body)
     // build fails before reaching the -pageobects with the changes but the likelihood is low and we consider that the
     // tradeoff is acceptable.
     def builds = [:]
-    config.configurations.eachWithIndex() { testConfig, i ->
-        def systemProperties = []
-        // Note: don't use each() since it leads to unserializable exceptions
-        for (def entry in testConfig.value) {
-            systemProperties.add("-Dxwiki.test.ui.${entry.key}=${entry.value}")
-        }
+    // Iterate over a copy of the configuration names rather than over the configuration map: iterating over a map in
+    // CPS code keeps its current entry, which isn't serializable, in the program state (see
+    // getTestConfigurationSystemProperties()), and the build closures below would also capture it.
+    def configurationNames = new ArrayList(config.configurations.keySet())
+    configurationNames.eachWithIndex() { configurationName, i ->
+        def testConfig = config.configurations[configurationName]
+        def configurationProperties = getTestConfigurationSystemProperties(testConfig)
 
         // Execute WCAG tests for the 1st configuration only (executing on several configurations would not result in
         // additional validations but would cost a lot more in time spent).
@@ -62,15 +65,16 @@ void call(boolean isParallel = true, body)
         // would mean executing the WCAG tests at each commit and they take too long to execute and would lengthen a
         // a lot the build. Running them on "docker-latest" means executing WCAG tests only once per day.
         if (i == 0 && config.type == 'docker-latest') {
-            systemProperties.add('-Dxwiki.test.ui.wcag=true')
+            configurationProperties.add('-Dxwiki.test.ui.wcag=true')
         }
 
-        def testConfigurationName = getTestConfigurationName(testConfig.value)
+        def testConfigurationName = getTestConfigurationName(testConfig)
         // Group several modules per build so that they are executed on the same agent. This amortizes the cost of
         // acquiring an agent, checking out the sources and pulling Docker images over several modules, and lets Maven
         // reuse its local repository across the modules of a batch.
         config.modules.collate(config.batchSize ?: 4).eachWithIndex() { modulePaths, j ->
-            def buildName = "${testConfig.key} - Docker tests #${j + 1} for ${getModuleNames(modulePaths).join(', ')}"
+            def buildName =
+                "${configurationName} - Docker tests #${j + 1} for ${getModuleNames(modulePaths).join(', ')}"
             echoXWiki "Build name: ${buildName}"
             def profiles = 'docker,legacy,integration-tests,snapshotModules,distribution,flavor-integration-tests'
             def additionalSystemProperties = [
@@ -83,7 +87,7 @@ void call(boolean isParallel = true, body)
                 build(
                     name: buildName,
                     profiles: profiles,
-                    properties: "${additionalSystemProperties.join(' ')} ${systemProperties.join(' ')}",
+                    properties: "${additionalSystemProperties.join(' ')} ${configurationProperties.join(' ')}",
                     mavenFlags: "--projects ${getDockerTestModulePaths(modulePaths).join(',')} -e -U --fail-at-end",
                     xvnc: false,
                     goals: 'clean verify',
@@ -106,6 +110,16 @@ void call(boolean isParallel = true, body)
         }
     }
 
+}
+
+// Return the system properties passing the passed test configuration to the docker tests. This is @NonCPS since
+// iterating over a map keeps its iterator and current entry, which aren't serializable, in the program state: if
+// Jenkins saves that state meanwhile, for instance because another parallel branch is running, the build fails with a
+// NotSerializableException.
+@NonCPS
+private def getTestConfigurationSystemProperties(def testConfig)
+{
+    return testConfig.collect { key, value -> "-Dxwiki.test.ui.${key}=${value}".toString() }
 }
 
 private def getTestConfigurationName(def testConfig)
