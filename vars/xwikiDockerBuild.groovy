@@ -20,6 +20,8 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
+import com.cloudbees.groovy.cps.NonCPS
+
 void call(boolean isParallel = true, body)
 {
     def config = [:]
@@ -50,11 +52,7 @@ void call(boolean isParallel = true, body)
     // tradeoff is acceptable.
     def builds = [:]
     config.configurations.eachWithIndex() { testConfig, i ->
-        def systemProperties = []
-        // Note: don't use each() since it leads to unserializable exceptions
-        for (def entry in testConfig.value) {
-            systemProperties.add("-Dxwiki.test.ui.${entry.key}=${entry.value}")
-        }
+        def configurationProperties = getTestConfigurationSystemProperties(testConfig.value)
 
         // Execute WCAG tests for the 1st configuration only (executing on several configurations would not result in
         // additional validations but would cost a lot more in time spent).
@@ -62,7 +60,7 @@ void call(boolean isParallel = true, body)
         // would mean executing the WCAG tests at each commit and they take too long to execute and would lengthen a
         // a lot the build. Running them on "docker-latest" means executing WCAG tests only once per day.
         if (i == 0 && config.type == 'docker-latest') {
-            systemProperties.add('-Dxwiki.test.ui.wcag=true')
+            configurationProperties.add('-Dxwiki.test.ui.wcag=true')
         }
 
         def testConfigurationName = getTestConfigurationName(testConfig.value)
@@ -83,7 +81,7 @@ void call(boolean isParallel = true, body)
                 build(
                     name: buildName,
                     profiles: profiles,
-                    properties: "${additionalSystemProperties.join(' ')} ${systemProperties.join(' ')}",
+                    properties: "${additionalSystemProperties.join(' ')} ${configurationProperties.join(' ')}",
                     mavenFlags: "--projects ${getDockerTestModulePaths(modulePaths).join(',')} -e -U --fail-at-end",
                     xvnc: false,
                     goals: 'clean verify',
@@ -106,6 +104,16 @@ void call(boolean isParallel = true, body)
         }
     }
 
+}
+
+// Return the system properties passing the passed test configuration to the docker tests. This is @NonCPS since
+// iterating over a map keeps its iterator and current entry, which aren't serializable, in the program state: if
+// Jenkins saves that state meanwhile, for instance because another parallel branch is running, the build fails with a
+// NotSerializableException.
+@NonCPS
+private def getTestConfigurationSystemProperties(def testConfig)
+{
+    return testConfig.collect { key, value -> "-Dxwiki.test.ui.${key}=${value}".toString() }
 }
 
 private def getTestConfigurationName(def testConfig)
