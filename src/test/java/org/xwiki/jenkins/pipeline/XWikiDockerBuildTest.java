@@ -19,7 +19,6 @@
  */
 package org.xwiki.jenkins.pipeline;
 
-
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,10 +27,12 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.codehaus.groovy.runtime.GStringImpl;
 
 import com.lesfurets.jenkins.unit.BasePipelineTest;
 
 import groovy.lang.Closure;
+import groovy.lang.GString;
 
 import static com.lesfurets.jenkins.unit.MethodSignature.method;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -91,10 +92,11 @@ class XWikiDockerBuildTest extends BasePipelineTest
                 {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> config = (Map<String, Object>) getDelegate();
-                    Map<String, Map<String, String>> configurations = new LinkedHashMap<>();
-                    configurations.put("MySQL, Tomcat, Firefox", orderedMap("database", "mysql", "databaseTag", "9",
-                        "servletEngine", "tomcat", "browser", "firefox"));
-                    configurations.put("PostgreSQL, Jetty, Chrome",
+                    // Use GString names, like dockerConfigurations does.
+                    Map<Object, Map<String, String>> configurations = new LinkedHashMap<>();
+                    configurations.put(gString("MySQL", ", Tomcat, Firefox"), orderedMap("database", "mysql",
+                        "databaseTag", "9", "servletEngine", "tomcat", "browser", "firefox"));
+                    configurations.put(gString("PostgreSQL", ", Jetty, Chrome"),
                         orderedMap("database", "postgresql", "servletEngine", "jetty", "browser", "chrome"));
                     config.put("configurations", configurations);
                     config.put("modules",
@@ -116,6 +118,11 @@ class XWikiDockerBuildTest extends BasePipelineTest
             + " -Dxwiki.test.ui.database=postgresql -Dxwiki.test.ui.servletEngine=jetty"
             + " -Dxwiki.test.ui.browser=chrome",
             String.valueOf(this.buildConfigurations.get(POSTGRESQL_BUILD).get("properties")));
+    }
+
+    private static GString gString(String value, String suffix)
+    {
+        return new GStringImpl(new Object[] { value }, new String[] { "", suffix });
     }
 
     private static Map<String, String> orderedMap(String... keysAndValues)

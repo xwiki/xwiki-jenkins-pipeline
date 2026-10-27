@@ -56,7 +56,9 @@ void call(boolean isParallel = true, body)
     // getTestConfigurationSystemProperties()), and the build closures below would also capture it.
     def configurationNames = new ArrayList(config.configurations.keySet())
     configurationNames.eachWithIndex() { configurationName, i ->
-        def testConfig = config.configurations[configurationName]
+        // Use get() since the names are GStrings, which the subscript operator converts to Strings that aren't equal to
+        // them, so it wouldn't find the configuration.
+        def testConfig = config.configurations.get(configurationName)
         def configurationProperties = getTestConfigurationSystemProperties(testConfig)
 
         // Execute WCAG tests for the 1st configuration only (executing on several configurations would not result in
