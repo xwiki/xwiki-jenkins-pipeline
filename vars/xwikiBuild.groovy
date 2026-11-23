@@ -26,7 +26,6 @@ import javax.xml.bind.DatatypeConverter
 import hudson.tasks.test.AbstractTestResultAction
 import com.cloudbees.groovy.cps.NonCPS
 import java.text.SimpleDateFormat
-import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
@@ -1375,16 +1374,28 @@ private def setPackagesVersion(String version)
 }
 
 /**
+ * Important: only the version value is replaced in the text, and the JSON must NOT be serialized again (e.g. with
+ * {@code JsonOutput}). The JsonSlurper of the pipeline Groovy sorts the keys of the objects, and the order of the keys
+ * matters in a {@code package.json}: Node.js and TypeScript pick the first matching condition of {@code exports}. For
+ * example, with {@code "exports": {".": {"types": "./dist/index.d.ts", "import": "./src/index.ts"}}}, sorting the keys
+ * puts {@code import} first, so TypeScript resolves the workspace package to its sources instead of its declarations,
+ * and type-checking the packages depending on it fails (it compiles those sources without their own type
+ * dependencies, e.g. {@code Cannot find name 'JQueryStatic'}). This broke the builds of the xwiki-platform
+ * {@code feature-deploy-*} branches.
+ *
  * @return the passed {@code package.json} content with its version set to the passed version, or {@code null} if the
- *         package is private (in which case it must not be modified)
+ *         package is private or has no version (in which case it must not be modified)
  */
 @NonCPS
 private def updatePackageVersion(String packageContent, String version)
 {
     def json = new JsonSlurper().parseText(packageContent)
-    if (json.private == true) {
+    if (json.private == true || !(json.version instanceof String)) {
         return null
     }
-    json.version = version
-    return JsonOutput.prettyPrint(JsonOutput.toJson(json))
+    // Replace the first "version" entry with the current version, i.e. the top-level one (package.json files start
+    // with their name and version, before any nested object).
+    def versionPattern = ~/("version"\s*:\s*")${java.util.regex.Pattern.quote(json.version)}(")/
+    return packageContent.replaceFirst(versionPattern,
+        "\$1${java.util.regex.Matcher.quoteReplacement(version)}\$2")
 }
