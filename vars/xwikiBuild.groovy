@@ -230,6 +230,12 @@ void call(name = 'Default', body)
                         }
                         def index = pomVersion.size() - "-SNAPSHOT".size();
                         def actualVersion = pomVersion.substring(0, index)
+                        // The version is already the branch one when this build runs in a workspace where an earlier
+                        // build of the same run already set it (skipCheckout), so don't add the branch name twice.
+                        def branchSuffix = "-${branchName}"
+                        if (actualVersion.endsWith(branchSuffix)) {
+                            actualVersion = actualVersion.substring(0, actualVersion.size() - branchSuffix.size())
+                        }
                         def branchVersion = "${actualVersion}-${branchName}-SNAPSHOT"
                         if (pom.parent) {
                             // Change the parent version, but only if one exist for that parent
