@@ -1374,9 +1374,14 @@ private def setPackagesVersion(String version)
 }
 
 /**
- * Note: only the version value is replaced in the text, the JSON is not serialized again: the JsonSlurper of the
- * pipeline Groovy sorts the keys of the objects, and the order of the keys matters in a {@code package.json} (e.g. the
- * conditions of {@code exports}, where {@code types} has to come before {@code import}).
+ * Important: only the version value is replaced in the text, and the JSON must NOT be serialized again (e.g. with
+ * {@code JsonOutput}). The JsonSlurper of the pipeline Groovy sorts the keys of the objects, and the order of the keys
+ * matters in a {@code package.json}: Node.js and TypeScript pick the first matching condition of {@code exports}. For
+ * example, with {@code "exports": {".": {"types": "./dist/index.d.ts", "import": "./src/index.ts"}}}, sorting the keys
+ * puts {@code import} first, so TypeScript resolves the workspace package to its sources instead of its declarations,
+ * and type-checking the packages depending on it fails (it compiles those sources without their own type
+ * dependencies, e.g. {@code Cannot find name 'JQueryStatic'}). This broke the builds of the xwiki-platform
+ * {@code feature-deploy-*} branches.
  *
  * @return the passed {@code package.json} content with its version set to the passed version, or {@code null} if the
  *         package is private or has no version (in which case it must not be modified)
