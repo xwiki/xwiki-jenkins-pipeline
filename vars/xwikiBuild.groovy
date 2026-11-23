@@ -26,7 +26,6 @@ import javax.xml.bind.DatatypeConverter
 import hudson.tasks.test.AbstractTestResultAction
 import com.cloudbees.groovy.cps.NonCPS
 import java.text.SimpleDateFormat
-import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
 // If you need to setup a Jenkins instance where the following script will work you'll need to:
@@ -1375,16 +1374,23 @@ private def setPackagesVersion(String version)
 }
 
 /**
+ * Note: only the version value is replaced in the text, the JSON is not serialized again: the JsonSlurper of the
+ * pipeline Groovy sorts the keys of the objects, and the order of the keys matters in a {@code package.json} (e.g. the
+ * conditions of {@code exports}, where {@code types} has to come before {@code import}).
+ *
  * @return the passed {@code package.json} content with its version set to the passed version, or {@code null} if the
- *         package is private (in which case it must not be modified)
+ *         package is private or has no version (in which case it must not be modified)
  */
 @NonCPS
 private def updatePackageVersion(String packageContent, String version)
 {
     def json = new JsonSlurper().parseText(packageContent)
-    if (json.private == true) {
+    if (json.private == true || !(json.version instanceof String)) {
         return null
     }
-    json.version = version
-    return JsonOutput.prettyPrint(JsonOutput.toJson(json))
+    // Replace the first "version" entry with the current version, i.e. the top-level one (package.json files start
+    // with their name and version, before any nested object).
+    def versionPattern = ~/("version"\s*:\s*")${java.util.regex.Pattern.quote(json.version)}(")/
+    return packageContent.replaceFirst(versionPattern,
+        "\$1${java.util.regex.Matcher.quoteReplacement(version)}\$2")
 }
