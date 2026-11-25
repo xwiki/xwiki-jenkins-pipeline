@@ -63,6 +63,13 @@ void call(name = 'Default', body)
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = config
     body()
+    // Audit the pnpm dependencies only once per pipeline run, even when xwikiBuild is called several times (possibly in
+    // parallel). The check and the set below must stay together, before any step that can yield, so that no other
+    // parallel branch can run between them.
+    def runPnpmAudit = config.pnpmAudit != false && !config.disabled && env.XWIKI_PNPM_AUDIT_DONE == null
+    if (runPnpmAudit) {
+        env.XWIKI_PNPM_AUDIT_DONE = 'true'
+    }
     printConfigurationProperties(config)
 
     // Does the following:
@@ -421,6 +428,13 @@ void call(name = 'Default', body)
                     }
                 }
             }
+        }
+    }
+    // The audit runs after the "Post Build" stage so that a failure doesn't change the build result seen by it. It is
+    // skipped when the "Build" stage threw an exception since the exception stops the pipeline before this point.
+    if (runPnpmAudit) {
+        stage('pnpm audit') {
+            pnpmAudit(config, javaMavenConfig, name)
         }
     }
 }

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import com.lesfurets.jenkins.unit.BasePipelineTest;
+import com.lesfurets.jenkins.unit.MethodSignature;
 
+import groovy.lang.Closure;
 import groovy.lang.Script;
 import hudson.FilePath;
 
@@ -169,9 +172,104 @@ class XWikiBuildTest extends BasePipelineTest
         // Only the non-private packages located below the workspace root are modified.
         assertEquals(List.of("module/package.json"), new ArrayList<>(writtenFiles.keySet()));
         String moduleContent = writtenFiles.get("module/package.json");
-        assertTrue(moduleContent.contains("\"version\": \"17.10.0-feature-SNAPSHOT\""), moduleContent);
-        assertTrue(moduleContent.contains("\"name\": \"module\""), moduleContent);
+        // Only the version value changes, the formatting of the file is kept.
+        assertEquals("{\"name\":\"module\",\"version\":\"17.10.0-feature-SNAPSHOT\"}", moduleContent);
         assertTrue(messages.isEmpty(), messages.toString());
+    }
+
+    @Test
+    void pnpmAuditRunsOncePerPipelineRun()
+    {
+        List<String> audits = new ArrayList<>();
+        registerBuildStubs(audits);
+
+        runXWikiBuild("Main", new HashMap<>());
+        runXWikiBuild("Distribution", new HashMap<>());
+
+        assertEquals(List.of("Main"), audits);
+    }
+
+    @Test
+    void pnpmAuditOptOut()
+    {
+        List<String> audits = new ArrayList<>();
+        registerBuildStubs(audits);
+
+        Map<String, Object> optOut = new HashMap<>();
+        optOut.put("pnpmAudit", false);
+        runXWikiBuild("Opt-out", optOut);
+        // A build that opts out doesn't consume the audit of the run.
+        runXWikiBuild("Main", new HashMap<>());
+
+        assertEquals(List.of("Main"), audits);
+    }
+
+    private void registerBuildStubs(List<String> audits)
+    {
+        getBinding().setVariable("env", new HashMap<>(Map.of("BRANCH_NAME", "master")));
+        getBinding().setVariable("NODE_NAME", "agent");
+        getBinding().setVariable("currentBuild", new HashMap<>());
+        getHelper().registerAllowedMethod(method("echoXWiki", String.class), (Object message) -> { });
+        getHelper().registerAllowedMethod(method("isMasterBranch", String.class), (Object branch) -> true);
+        getHelper().registerAllowedMethod(method("isStableBranch", String.class), (Object branch) -> false);
+        getHelper().registerAllowedMethod(method("isFeatureDeploymentBranch", String.class),
+            (Object branch) -> false);
+        getHelper().registerAllowedMethod(method("configureJavaTool", Map.class),
+            (Object config) -> new HashMap<>(Map.of("jdk", "java21", "mavenOpts", "")));
+        stub(method("generateDockerConfig", String.class, String.class), arguments -> null);
+        getHelper().registerAllowedMethod(method("sh", Map.class), (Object arg) -> 0);
+        getHelper().registerAllowedMethod(method("sh", String.class), (Object arg) -> { });
+        getHelper().registerAllowedMethod(method("readMavenPom", Map.class),
+            (Object arg) -> new HashMap<>(Map.of("groupId", "org.xwiki.commons")));
+        getHelper().registerAllowedMethod(method("archiveArtifacts", Map.class), (Object arg) -> { });
+        stub(method("archiveMavenHeapDumps", String.class, String.class, String.class), arguments -> null);
+        for (String publisher : List.of("artifactsPublisher", "dependenciesFingerprintPublisher", "invokerPublisher")) {
+            getHelper().registerAllowedMethod(method(publisher, Map.class), (Object arg) -> publisher);
+        }
+        getHelper().registerAllowedMethod(method("withMaven", Map.class, Closure.class), new Closure<Void>(this)
+        {
+            public void doCall(Map<?, ?> arguments, Closure<?> body)
+            {
+                body.call();
+            }
+        });
+        getHelper().registerAllowedMethod(method("timeout", Integer.class, Closure.class), new Closure<Void>(this)
+        {
+            public void doCall(Integer minutes, Closure<?> body)
+            {
+                body.call();
+            }
+        });
+        stub(method("pnpmAudit", Map.class, Map.class, String.class),
+            arguments -> audits.add(String.valueOf(arguments[2])));
+    }
+
+    private void stub(MethodSignature signature, Function<Object[], Object> implementation)
+    {
+        getHelper().registerAllowedMethod(signature, new Closure<Object>(this)
+        {
+            public Object doCall(Object... arguments)
+            {
+                return implementation.apply(arguments);
+            }
+        });
+    }
+
+    private void runXWikiBuild(String name, Map<String, Object> config)
+    {
+        config.put("skipCheckout", true);
+        config.put("xvnc", false);
+        config.put("javadoc", false);
+        Script script = loadScript("vars/xwikiBuild.groovy");
+        script.invokeMethod("call", new Object[] { name, new Closure<Void>(this)
+        {
+            public void doCall()
+            {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> delegate = (Map<String, Object>) getDelegate();
+                delegate.putAll(config);
+            }
+        } });
     }
 
     @ParameterizedTest
