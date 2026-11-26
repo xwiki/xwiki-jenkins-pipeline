@@ -61,3 +61,6 @@ The following options are available:
   the Personal Access Token (PAT) for the `dockerHubUserId` user id on DockerHub. This is used to log into DockerHub
   to increase the docker image pull rate limit. Use an empty string to not log in against DockerHub.
 * `dockerHubUserId` = `userId` (by default it's `xwikici`). Id of the DockerHub user. See `dockerHubSecretId` above.
+* `pnpmAudit` = `false` (default is `true`). If false then don't run `pnpm audit` on the `pnpm-lock.yaml` files of the
+  workspace. The audit runs before the build in each `xwikiBuild` call and a failure stops the pipeline before the
+  build, see `pnpmAudit`. It only catches packages with a published advisory.

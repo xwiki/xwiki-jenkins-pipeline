@@ -1,0 +1,20 @@
+Run `pnpm audit --audit-level=high` on every `pnpm-lock.yaml` file of the workspace (the ones in `node_modules` and
+`target` directories are ignored). Development dependencies are included. Nothing is done when there is no lockfile.
+
+The step is called by `xwikiBuild` in a `pnpm audit for <name>` stage, after the checkout and before the `Build`
+stage, in each `xwikiBuild` call. A failing audit sends a mail (unless `skipMail` is set) and stops the pipeline before
+the build, so vulnerable dependencies are not installed or executed. The audit only catches packages with a published
+advisory. Use `pnpmAudit = false` in the `xwikiBuild` configuration to disable it.
+
+Node and pnpm are installed in a `pnpm-audit` directory of the temporary directory of the workspace (`pwd(tmp: true)`)
+with the `install-node-and-pnpm` goal of the `frontend-maven-plugin`, using the `node.version` and `pnpm.version`
+properties of the pom. The audit fails when these properties are not defined.
+
+Projects can accept a known vulnerability with `pnpm.auditConfig.ignoreGhsas` in their `package.json`.
+
+Parameters:
+
+* `config`: The configuration map that is passed to the `xwikiBuild` step. Specifically `config.pom`,
+  `config.mavenTool` and `config.skipMail` are read (if they exist)
+* `javaMavenConfig`: The result of `configureJavaTool`, used to run Maven
+* `name`: The name of the build, used in the mail subject

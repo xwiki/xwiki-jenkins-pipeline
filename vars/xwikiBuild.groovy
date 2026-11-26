@@ -183,6 +183,13 @@ void call(name = 'Default', body)
             echoXWiki "Firefox version installed: ${firefoxVersion}"
         }
     }
+    // Audit before the build so that vulnerable npm dependencies are never installed or executed by it. A disabled build
+    // already aborted in the preparation stage.
+    if (config.pnpmAudit != false) {
+        stage("pnpm audit for ${name}") {
+            pnpmAudit(config, javaMavenConfig, name)
+        }
+    }
     stage("Build for ${name}") {
         // Execute the XVNC plugin (useful for integration-tests)
         wrapInXvnc(config) {
