@@ -22,8 +22,8 @@
 
 /**
  * Run {@code pnpm audit} on every {@code pnpm-lock.yaml} of the workspace. Node and pnpm are installed in
- * {@code target/pnpm-audit} with the frontend-maven-plugin, using the {@code node.version} and {@code pnpm.version}
- * properties of the pom. A failing audit fails the build and sends a mail, but doesn't stop the pipeline.
+ * the temporary directory of the workspace with the frontend-maven-plugin, using the {@code node.version} and
+ * {@code pnpm.version} properties of the pom. A failing audit sends a mail and stops the pipeline.
  *
  * @param config the configuration map passed to the {@code xwikiBuild} step
  * @param javaMavenConfig the result of {@code configureJavaTool}
@@ -40,7 +40,7 @@ void call(config, javaMavenConfig, name = 'Default')
     // Same as the webjar-node lifecycle: the version comes from the pluginManagement of the project.
     def plugin = 'com.github.eirslett:frontend-maven-plugin'
     def pomFile = config.pom ?: 'pom.xml'
-    def installDirectory = "${pwd()}/target/pnpm-audit"
+    def installDirectory = "${pwd(tmp: true)}/pnpm-audit"
     def mavenTool = config.mavenTool?.trim() ?: ''
     def failures = []
     try {
@@ -93,11 +93,11 @@ void call(config, javaMavenConfig, name = 'Default')
         for (def failure in failures) {
             echoXWiki "ERROR: ${failure}"
         }
-        // Note: Jenkins only allows a build result to get worse, so this never improves an aborted build.
         currentBuild.result = 'FAILURE'
         if (!config.skipMail) {
             sendMail('ERROR', name)
         }
+        error "pnpm audit failed: ${failures.join('; ')}"
     }
 }
 

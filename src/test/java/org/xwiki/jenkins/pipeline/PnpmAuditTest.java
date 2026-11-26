@@ -34,6 +34,7 @@ import groovy.lang.Script;
 
 import static com.lesfurets.jenkins.unit.MethodSignature.method;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -84,6 +85,10 @@ class PnpmAuditTest extends BasePipelineTest
             {
                 return "/ws";
             }
+        });
+        getHelper().registerAllowedMethod(method("pwd", Map.class), (Object arg) -> "/ws@tmp");
+        getHelper().registerAllowedMethod(method("error", String.class), (Object message) -> {
+            throw new IllegalStateException(String.valueOf(message));
         });
         getHelper().registerAllowedMethod(method("findFiles", Map.class), (Object arg) -> {
             List<Map<String, String>> foundFiles = new ArrayList<>();
@@ -144,10 +149,10 @@ class PnpmAuditTest extends BasePipelineTest
         assertEquals("mvn -f pom.xml -N help:evaluate -Dexpression=pnpm.version -q -DforceStdout",
             this.shellCommands.get(1));
         assertEquals("mvn -f pom.xml -N --no-transfer-progress " + PLUGIN + ":install-node-and-pnpm "
-            + "-DinstallDirectory=/ws/target/pnpm-audit -DnodeVersion=v24.21.0 -DpnpmVersion=11.28.4",
+            + "-DinstallDirectory=/ws@tmp/pnpm-audit -DnodeVersion=v24.21.0 -DpnpmVersion=11.28.4",
             this.shellCommands.get(2));
         assertEquals("mvn -f pom.xml -N --no-transfer-progress " + PLUGIN + ":pnpm "
-            + "-DinstallDirectory=/ws/target/pnpm-audit -DworkingDirectory=/ws/. "
+            + "-DinstallDirectory=/ws@tmp/pnpm-audit -DworkingDirectory=/ws/. "
             + "'-Dfrontend.pnpm.arguments=audit --audit-level=high'", this.shellCommands.get(3));
         assertEquals("SUCCESS", this.currentBuild.get("result"));
         assertTrue(this.mails.isEmpty());
@@ -190,9 +195,11 @@ class PnpmAuditTest extends BasePipelineTest
         this.lockFiles.add("module/pnpm-lock.yaml");
         this.statuses.put("-DworkingDirectory=/ws/module ", 1);
 
-        pnpmAudit(new HashMap<>());
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> pnpmAudit(new HashMap<>()));
 
-        // The other lockfile is still audited and no exception is thrown.
+        // The other lockfile is still audited before the pipeline is stopped.
+        assertEquals("pnpm audit failed: pnpm audit failed for module/pnpm-lock.yaml (exit code 1), see the audit "
+            + "output above", error.getMessage());
         assertEquals(5, this.shellCommands.size(), this.shellCommands.toString());
         assertEquals("FAILURE", this.currentBuild.get("result"));
         assertEquals(List.of("ERROR:Default"), this.mails);
@@ -208,7 +215,7 @@ class PnpmAuditTest extends BasePipelineTest
 
         Map<String, Object> config = new HashMap<>();
         config.put("skipMail", true);
-        pnpmAudit(config);
+        assertThrows(IllegalStateException.class, () -> pnpmAudit(config));
 
         assertEquals("FAILURE", this.currentBuild.get("result"));
         assertTrue(this.mails.isEmpty());
@@ -220,7 +227,7 @@ class PnpmAuditTest extends BasePipelineTest
         this.lockFiles.add("pnpm-lock.yaml");
         this.statuses.put(":install-node-and-pnpm ", 1);
 
-        pnpmAudit(new HashMap<>());
+        assertThrows(IllegalStateException.class, () -> pnpmAudit(new HashMap<>()));
 
         assertEquals(3, this.shellCommands.size(), this.shellCommands.toString());
         assertEquals("FAILURE", this.currentBuild.get("result"));
@@ -233,7 +240,7 @@ class PnpmAuditTest extends BasePipelineTest
         this.lockFiles.add("pnpm-lock.yaml");
         this.pomProperties.remove("pnpm.version");
 
-        pnpmAudit(new HashMap<>());
+        assertThrows(IllegalStateException.class, () -> pnpmAudit(new HashMap<>()));
 
         // No guessed version: nothing is installed or audited.
         assertTrue(this.shellCommands.stream().noneMatch(command -> command.contains(PLUGIN)),

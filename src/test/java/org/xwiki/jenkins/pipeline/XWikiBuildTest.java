@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -178,34 +179,57 @@ class XWikiBuildTest extends BasePipelineTest
     }
 
     @Test
-    void pnpmAuditRunsOncePerPipelineRun()
+    void pnpmAuditRunsBeforeTheBuildInEachCall()
     {
         List<String> audits = new ArrayList<>();
-        registerBuildStubs(audits);
+        List<String> stages = registerBuildStubs(audits, false);
 
         runXWikiBuild("Main", new HashMap<>());
         runXWikiBuild("Distribution", new HashMap<>());
 
+        assertEquals(List.of("Main", "Distribution"), audits);
+        assertEquals(List.of("Preparation for Main", "pnpm audit for Main", "Build for Main", "Post Build for Main",
+            "Preparation for Distribution", "pnpm audit for Distribution", "Build for Distribution",
+            "Post Build for Distribution"), stages);
+    }
+
+    @Test
+    void pnpmAuditFailureStopsThePipelineBeforeTheBuild()
+    {
+        List<String> audits = new ArrayList<>();
+        List<String> stages = registerBuildStubs(audits, true);
+
+        assertThrows(IllegalStateException.class, () -> runXWikiBuild("Main", new HashMap<>()));
+
         assertEquals(List.of("Main"), audits);
+        assertEquals(List.of("Preparation for Main", "pnpm audit for Main"), stages);
     }
 
     @Test
     void pnpmAuditOptOut()
     {
         List<String> audits = new ArrayList<>();
-        registerBuildStubs(audits);
+        List<String> stages = registerBuildStubs(audits, false);
 
         Map<String, Object> optOut = new HashMap<>();
         optOut.put("pnpmAudit", false);
         runXWikiBuild("Opt-out", optOut);
-        // A build that opts out doesn't consume the audit of the run.
-        runXWikiBuild("Main", new HashMap<>());
 
-        assertEquals(List.of("Main"), audits);
+        assertEquals(List.of(), audits);
+        assertEquals(List.of("Preparation for Opt-out", "Build for Opt-out", "Post Build for Opt-out"), stages);
     }
 
-    private void registerBuildStubs(List<String> audits)
+    private List<String> registerBuildStubs(List<String> audits, boolean failingAudit)
     {
+        List<String> stages = new ArrayList<>();
+        getHelper().registerAllowedMethod(method("stage", String.class, Closure.class), new Closure<Void>(this)
+        {
+            public void doCall(String name, Closure<?> body)
+            {
+                stages.add(name);
+                body.call();
+            }
+        });
         getBinding().setVariable("env", new HashMap<>(Map.of("BRANCH_NAME", "master")));
         getBinding().setVariable("NODE_NAME", "agent");
         getBinding().setVariable("currentBuild", new HashMap<>());
@@ -240,8 +264,14 @@ class XWikiBuildTest extends BasePipelineTest
                 body.call();
             }
         });
-        stub(method("pnpmAudit", Map.class, Map.class, String.class),
-            arguments -> audits.add(String.valueOf(arguments[2])));
+        stub(method("pnpmAudit", Map.class, Map.class, String.class), arguments -> {
+            audits.add(String.valueOf(arguments[2]));
+            if (failingAudit) {
+                throw new IllegalStateException("pnpm audit failed");
+            }
+            return null;
+        });
+        return stages;
     }
 
     private void stub(MethodSignature signature, Function<Object[], Object> implementation)
